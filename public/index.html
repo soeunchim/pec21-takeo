@@ -230,16 +230,62 @@
             </div>
           </div>
 
-          <!-- Station Selector Bar -->
-          <div class="filter-bar">
-            <div style="flex: 2; min-width: 260px;">
-              <label class="form-label">ជ្រើសរើសការិយាល័យបោះឆ្នោត (Select Polling Station)</label>
-              <select id="scoringStationSelect" class="form-control" style="font-weight: 600;">
-                <!-- Dynamically populated -->
-              </select>
+          <!-- 4-Part Station Selector Bar -->
+          <div class="filter-bar scoring-selector-bar" style="background: #ffffff; padding: 14px 18px; border-radius: 10px; border: 1.5px solid #bfdbfe; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08); margin-bottom: 16px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; width: 100%;">
+              
+              <!-- 1. ក្រុងស្រុក (District) -->
+              <div style="flex: 1; min-width: 170px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  🏛️ ក្រុង/ស្រុក (District)
+                </label>
+                <select id="scoringDistrictFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc;" title="ជ្រើសរើសក្រុង/ស្រុក">
+                  <option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>
+                </select>
+              </div>
+
+              <!-- 2. ឃុំសង្កាត់ (Commune) -->
+              <div style="flex: 1.2; min-width: 190px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  🏘️ ឃុំ/សង្កាត់ (Commune)
+                </label>
+                <select id="scoringCommuneFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc;" title="ជ្រើសរើសឃុំ/សង្កាត់">
+                  <option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>
+                </select>
+              </div>
+
+              <!-- 3. កូដការិយាល័យ (Station Code - Select or Type) -->
+              <div style="flex: 1.2; min-width: 220px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  🔢 កូដការិយាល័យ (Code)
+                </label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="text" id="scoringCodeInput" list="scoringCodeDatalist" class="form-control" placeholder="វាយកូដ..." style="width: 105px; font-weight: 800; font-size: 15px; text-align: center; color: #1e40af; border: 2px solid #2563eb; background: #eff6ff;" title="វាយលេខកូដការិយាល័យ (ឧ. 0001 ឬ 10)" autocomplete="off">
+                  <datalist id="scoringCodeDatalist"></datalist>
+                  <select id="scoringCodeSelect" class="form-control" style="font-weight: 700; border-color: #93c5fd; flex: 1;" title="ចុចជ្រើសរើសលេខកូដការិយាល័យ">
+                    <!-- Populated with station codes -->
+                  </select>
+                </div>
+              </div>
+
+              <!-- 4. ឈ្មោះទីតាំងការិយាល័យបោះឆ្នោត (Station Location) -->
+              <div style="flex: 2; min-width: 260px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  📍 ឈ្មោះទីតាំងការិយាល័យ (Location)
+                </label>
+                <select id="scoringLocationSelect" class="form-control" style="font-weight: 600; border-color: #93c5fd; color: #0f172a;" title="ជ្រើសរើស ឬមើលទីតាំងការិយាល័យ">
+                  <!-- Dynamically populated with locations -->
+                </select>
+              </div>
+
             </div>
-            <div style="align-self: flex-end;">
-              <span id="activeStationInfo" style="font-size: 13px; color: var(--text-muted); font-weight: 600;"></span>
+
+            <!-- Hidden field for backward compatibility with existing functions that read scoringStationSelect -->
+            <input type="hidden" id="scoringStationSelect" value="">
+
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed #e2e8f0; margin-top: 10px;">
+              <span id="activeStationInfo" style="font-size: 13px; color: #1d4ed8; font-weight: 700;"></span>
+              <span id="stationCandidateCountBadge" style="font-size: 12px; color: #475569; font-weight: 600;"></span>
             </div>
           </div>
 

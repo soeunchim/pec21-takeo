@@ -417,42 +417,284 @@ function populateFilterDropdowns() {
 }
 
 function populateStationSelectors() {
-  const scoringSelect = document.getElementById('scoringStationSelect');
   const reportSelect = document.getElementById('reportStationSelect');
-
-  scoringSelect.innerHTML = '';
-  reportSelect.innerHTML = '';
+  if (reportSelect) reportSelect.innerHTML = '';
 
   if (!allPollingStations.length) {
-    scoringSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យបោះឆ្នោត --</option>';
-    reportSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យបោះឆ្នោត --</option>';
+    if (reportSelect) reportSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យបោះឆ្នោត --</option>';
     return;
   }
 
-  // Group stations by Commune for clean UX
-  const grouped = {};
-  allPollingStations.forEach(ps => {
-    const key = `ឃុំ${ps.communeName} (${ps.district})`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(ps);
-  });
+  // 1. Initialize dedicated 4-Part Scoring Selector Bar (District, Commune, Code [Select/Type], Location)
+  initScoringSelectorBar();
 
-  let html = '';
-  for (const [groupName, stations] of Object.entries(grouped)) {
-    html += `<optgroup label="${groupName}">`;
-    stations.forEach(ps => {
-      const code4 = String(ps.code || '').padStart(4, '0');
-      const locStr = ps.location ? ` - ${ps.location}` : '';
-      html += `<option value="${ps.id}">${ps.name} [កូដ: ${code4}]${locStr}</option>`;
+  // 2. Populate Report Page Station Selector grouped by Commune
+  if (reportSelect) {
+    const grouped = {};
+    allPollingStations.forEach(ps => {
+      const key = `ឃុំ${ps.communeName} (${ps.district})`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(ps);
     });
-    html += `</optgroup>`;
+
+    let html = '';
+    for (const [groupName, stations] of Object.entries(grouped)) {
+      html += `<optgroup label="${groupName}">`;
+      stations.forEach(ps => {
+        const code4 = String(ps.code || '').padStart(4, '0');
+        const locStr = ps.location ? ` - ${ps.location}` : '';
+        html += `<option value="${ps.id}">${ps.name} [កូដ: ${code4}]${locStr}</option>`;
+      });
+      html += `</optgroup>`;
+    }
+    reportSelect.innerHTML = html;
   }
 
-  scoringSelect.innerHTML = html;
-  reportSelect.innerHTML = html;
+  renderReportPreview();
+}
+
+function initScoringSelectorBar() {
+  const distSelect = document.getElementById('scoringDistrictFilter');
+  const comSelect = document.getElementById('scoringCommuneFilter');
+  const codeInput = document.getElementById('scoringCodeInput');
+  const codeSelect = document.getElementById('scoringCodeSelect');
+  const codeDatalist = document.getElementById('scoringCodeDatalist');
+  const locSelect = document.getElementById('scoringLocationSelect');
+
+  if (!distSelect || !comSelect) return;
+
+  // 1. Populate Districts
+  const distNames = allDistricts.length 
+    ? allDistricts.map(d => d.name) 
+    : [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
+
+  distSelect.innerHTML = '<option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>';
+  distNames.forEach(name => {
+    distSelect.innerHTML += `<option value="${name}">ស្រុក/ក្រុង ${name}</option>`;
+  });
+
+  // Handle role restrictions for Trainer / Commune
+  if (currentUser) {
+    if (currentUser.role === 'Trainer' && currentUser.district && currentUser.district !== 'all') {
+      distSelect.value = currentUser.district;
+      distSelect.disabled = true;
+    } else if (currentUser.role === 'Commune' && currentUser.district && currentUser.district !== 'all') {
+      distSelect.value = currentUser.district;
+      distSelect.disabled = true;
+    }
+  }
+
+  // Populate datalist with ALL station codes in province so user can type ANY code
+  if (codeDatalist) {
+    codeDatalist.innerHTML = '';
+    allPollingStations.forEach(ps => {
+      const c4 = String(ps.code || '').padStart(4, '0');
+      const opt = document.createElement('option');
+      opt.value = c4;
+      opt.label = `${ps.name} - ${ps.location || ''} (ឃុំ${ps.communeName})`;
+      codeDatalist.appendChild(opt);
+    });
+  }
+
+  // Event Listeners
+  distSelect.onchange = () => {
+    updateScoringCommunes(true);
+  };
+
+  comSelect.onchange = () => {
+    updateScoringStationsForCommune(true);
+  };
+
+  if (codeSelect) {
+    codeSelect.onchange = () => {
+      const stId = codeSelect.value;
+      if (stId) setScoringStationById(stId, 'codeSelect');
+    };
+  }
+
+  if (locSelect) {
+    locSelect.onchange = () => {
+      const stId = locSelect.value;
+      if (stId) setScoringStationById(stId, 'locSelect');
+    };
+  }
+
+  const handleCodeTyping = () => {
+    const rawVal = (codeInput.value || '').trim();
+    if (!rawVal) return;
+    const num = parseInt(rawVal, 10);
+    if (isNaN(num)) return;
+    const c4 = String(num).padStart(4, '0');
+
+    // 1. Try matching within current commune
+    const curComCode = comSelect.value;
+    const comStations = allPollingStations.filter(p => String(p.communeCode).padStart(3, '0') === String(curComCode).padStart(3, '0'));
+    let matched = comStations.find(p => String(p.code).padStart(4, '0') === c4 || String(p.displayCode).padStart(4, '0') === c4 || parseInt(p.code, 10) === num);
+
+    // 2. If not found in current commune, search whole province
+    if (!matched) {
+      matched = allPollingStations.find(p => String(p.code).padStart(4, '0') === c4 || String(p.displayCode).padStart(4, '0') === c4 || parseInt(p.code, 10) === num);
+      if (matched) {
+        if (currentUser && currentUser.role === 'Commune' && String(matched.communeCode).padStart(3, '0') !== String(currentUser.communeCode).padStart(3, '0')) {
+          alert(`ការិយាល័យកូដ ${c4} ស្ថិតនៅឃុំ ${matched.communeName}! គណនីរបស់អ្នកមានសិទ្ធិតែក្នុងឃុំ ${currentUser.communeName} ប៉ុណ្ណោះ។`);
+          return;
+        }
+        if (currentUser && currentUser.role === 'Trainer' && matched.district !== currentUser.district) {
+          alert(`ការិយាល័យកូដ ${c4} ស្ថិតនៅស្រុក ${matched.district}!`);
+          return;
+        }
+        // Auto-switch district and commune
+        distSelect.value = matched.district;
+        updateScoringCommunes(false, matched.communeCode);
+      }
+    }
+
+    if (matched) {
+      setScoringStationById(matched.id, 'codeInput');
+    } else {
+      alert(`រកមិនឃើញការិយាល័យបោះឆ្នោតដែលមានលេខកូដ ${rawVal} ឡើយ!`);
+    }
+  };
+
+  if (codeInput) {
+    codeInput.onchange = handleCodeTyping;
+    codeInput.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleCodeTyping();
+      }
+    };
+  }
+
+  // If no district is selected, select the first one
+  if (!distSelect.value && distNames.length) {
+    distSelect.value = distNames[0];
+  }
+
+  updateScoringCommunes(true);
+}
+
+function updateScoringCommunes(autoSelectFirst = true, targetCommuneCode = null) {
+  const distSelect = document.getElementById('scoringDistrictFilter');
+  const comSelect = document.getElementById('scoringCommuneFilter');
+  if (!distSelect || !comSelect) return;
+
+  const selDist = distSelect.value;
+  let matchingCommunes = allCommunes.filter(c => c.district === selDist);
+  if (!matchingCommunes.length && allPollingStations.length) {
+    const cMap = {};
+    allPollingStations.filter(p => p.district === selDist).forEach(p => {
+      const code = String(p.communeCode).padStart(3, '0');
+      if (!cMap[code]) cMap[code] = { code, name: p.communeName, district: p.district };
+    });
+    matchingCommunes = Object.values(cMap);
+  }
+
+  comSelect.innerHTML = '';
+  matchingCommunes.forEach(c => {
+    const code = String(c.code).padStart(3, '0');
+    comSelect.innerHTML += `<option value="${code}">ឃុំ/សង្កាត់ ${c.name} (${code})</option>`;
+  });
+
+  if (currentUser && currentUser.role === 'Commune') {
+    comSelect.value = String(currentUser.communeCode).padStart(3, '0');
+    comSelect.disabled = true;
+  } else if (targetCommuneCode) {
+    comSelect.value = String(targetCommuneCode).padStart(3, '0');
+  } else if (matchingCommunes.length && autoSelectFirst) {
+    comSelect.selectedIndex = 0;
+  }
+
+  updateScoringStationsForCommune(autoSelectFirst);
+}
+
+function updateScoringStationsForCommune(autoSelectFirst = true, targetStationId = null) {
+  const comSelect = document.getElementById('scoringCommuneFilter');
+  const codeSelect = document.getElementById('scoringCodeSelect');
+  const locSelect = document.getElementById('scoringLocationSelect');
+  const codeInput = document.getElementById('scoringCodeInput');
+  const hiddenStation = document.getElementById('scoringStationSelect');
+
+  if (!comSelect || !codeSelect || !locSelect) return;
+
+  const selComCode = comSelect.value;
+  const stations = allPollingStations.filter(p => String(p.communeCode).padStart(3, '0') === String(selComCode).padStart(3, '0'));
+
+  // Sort by code ascending
+  stations.sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+
+  codeSelect.innerHTML = '';
+  locSelect.innerHTML = '';
+
+  if (!stations.length) {
+    codeSelect.innerHTML = '<option value="">-- គ្មាន --</option>';
+    locSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យក្នុងឃុំនេះ --</option>';
+    if (codeInput) codeInput.value = '';
+    if (hiddenStation) hiddenStation.value = '';
+    renderScoringTableForActiveStation();
+    return;
+  }
+
+  stations.forEach(ps => {
+    const c4 = String(ps.code || '').padStart(4, '0');
+    codeSelect.innerHTML += `<option value="${ps.id}">${c4}</option>`;
+    const locText = ps.location ? ` - ${ps.location}` : '';
+    locSelect.innerHTML += `<option value="${ps.id}">${ps.name} [${c4}]${locText}</option>`;
+  });
+
+  let selectedStation = null;
+  if (targetStationId) {
+    selectedStation = stations.find(p => p.id === targetStationId);
+  }
+  if (!selectedStation && autoSelectFirst) {
+    selectedStation = stations[0];
+  }
+
+  if (selectedStation) {
+    setScoringStationById(selectedStation.id, 'init');
+  }
+}
+
+function setScoringStationById(stationId, source = '') {
+  const ps = allPollingStations.find(p => p.id === stationId);
+  if (!ps) return;
+
+  const distSelect = document.getElementById('scoringDistrictFilter');
+  const comSelect = document.getElementById('scoringCommuneFilter');
+  const codeInput = document.getElementById('scoringCodeInput');
+  const codeSelect = document.getElementById('scoringCodeSelect');
+  const locSelect = document.getElementById('scoringLocationSelect');
+  const hiddenStation = document.getElementById('scoringStationSelect');
+  const infoSpan = document.getElementById('activeStationInfo');
+
+  const c4 = String(ps.code || '').padStart(4, '0');
+
+  // Synchronize inputs
+  if (distSelect && distSelect.value !== ps.district) {
+    distSelect.value = ps.district;
+  }
+  const comCode3 = String(ps.communeCode).padStart(3, '0');
+  if (comSelect && comSelect.value !== comCode3) {
+    comSelect.value = comCode3;
+  }
+  if (source !== 'codeInput' && codeInput) {
+    codeInput.value = c4;
+  }
+  if (source !== 'codeSelect' && codeSelect) {
+    codeSelect.value = ps.id;
+  }
+  if (source !== 'locSelect' && locSelect) {
+    locSelect.value = ps.id;
+  }
+  if (hiddenStation) {
+    hiddenStation.value = ps.id;
+  }
+
+  if (infoSpan) {
+    infoSpan.textContent = `📍 ស្រុក: ${ps.district} | ឃុំ: ${ps.communeName} | ការិយាល័យ: ${ps.name} [កូដ: ${c4}] | ទីតាំង: ${ps.location || 'គ្មាន'}`;
+  }
 
   renderScoringTableForActiveStation();
-  renderReportPreview();
 }
 
 async function checkCloudStatus() {
@@ -761,13 +1003,31 @@ window.deleteStation = async function(id) {
 };
 
 window.selectStationForScoring = function(stationId) {
+  const ps = allPollingStations.find(p => p.id === stationId);
+  if (!ps) return;
+
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
   document.querySelector('[data-tab="tabScoring"]').classList.add('active');
   document.getElementById('tabScoring').classList.add('active');
 
-  document.getElementById('scoringStationSelect').value = stationId;
-  renderScoringTableForActiveStation();
+  const distSelect = document.getElementById('scoringDistrictFilter');
+  if (distSelect) distSelect.value = ps.district;
+  updateScoringCommunes(false, ps.communeCode);
+  updateScoringStationsForCommune(false, ps.id);
+  setScoringStationById(ps.id, 'external');
+};
+
+window.onCandidateNameKeyDown = function(e, input) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const allNameInputs = Array.from(document.querySelectorAll('#scoringTableBody tr[data-cand-id] .cand-name'));
+    const currentIndex = allNameInputs.indexOf(input);
+    if (currentIndex !== -1 && currentIndex + 1 < allNameInputs.length) {
+      allNameInputs[currentIndex + 1].focus();
+      allNameInputs[currentIndex + 1].select();
+    }
+  }
 };
 
 // ==============================================================================
@@ -778,22 +1038,30 @@ async function renderScoringTableForActiveStation() {
   const stationId = document.getElementById('scoringStationSelect').value;
   const tbody = document.getElementById('scoringTableBody');
   const infoSpan = document.getElementById('activeStationInfo');
+  const countBadge = document.getElementById('stationCandidateCountBadge');
 
   if (!stationId) {
     tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 25px; color: var(--text-muted); font-size: 14px;">សូមជ្រើសរើសការិយាល័យបោះឆ្នោត</td></tr>';
-    infoSpan.textContent = '';
+    if (infoSpan) infoSpan.textContent = '';
+    if (countBadge) countBadge.textContent = '';
     return;
   }
 
   const ps = allPollingStations.find(p => p.id === stationId);
-  if (ps) {
-    infoSpan.textContent = `📍 ${ps.district} / ឃុំ${ps.communeName} / លេខកូដការិយាល័យ ៖ ${ps.code}`;
+  if (ps && infoSpan) {
+    const c4 = String(ps.code || '').padStart(4, '0');
+    infoSpan.textContent = `📍 ស្រុក: ${ps.district} | ឃុំ: ${ps.communeName} | ការិយាល័យ: ${ps.name} [កូដ: ${c4}] | ទីតាំង: ${ps.location || 'គ្មាន'}`;
   }
 
   try {
     const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
     const data = await res.json();
     currentCandidates = data.candidates || [];
+
+    if (countBadge) {
+      const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
+      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${filledCount} / ១៨ នាក់`;
+    }
 
     tbody.innerHTML = '';
 
@@ -849,7 +1117,7 @@ async function renderScoringTableForActiveStation() {
           <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
             <td class="excel-col-order">${order}</td>
             <td>
-              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)" onkeydown="onCandidateNameKeyDown(event, this)">
             </td>
             <td style="text-align: center;">
               <select class="excel-cell-select cand-gender" onchange="onCandidateRowChange(this)">
@@ -1035,7 +1303,7 @@ window.clearCandidateRow = function(btn) {
 
 async function saveBatchScores() {
   const stationId = document.getElementById('scoringStationSelect').value;
-  if (!stationId) return alert('សូមជ្រើសរើសការិយាល័យ');
+  if (!stationId) return alert('សូមជ្រើសរើស ឬវាយលេខកូដការិយាល័យជាមុនសិន!');
 
   const rows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
   const candidatesPayload = [];
@@ -1044,50 +1312,52 @@ async function saveBatchScores() {
     const candId = tr.getAttribute('data-cand-id');
     const roleName = tr.getAttribute('data-role');
     const order = parseInt(tr.getAttribute('data-order')) || 1;
-    const name = tr.querySelector('.cand-name').value.trim();
+    const nameInput = tr.querySelector('.cand-name');
+    const name = nameInput ? nameInput.value.trim() : '';
 
-    // Only save rows that have candidate names or were existing
-    if (name) {
-      candidatesPayload.push({
-        id: candId.startsWith('temp_') ? undefined : candId,
-        pollingStationId: stationId,
-        role: roleName,
-        orderInRole: order,
-        name: name,
-        gender: tr.querySelector('.cand-gender').value,
-        dob: tr.querySelector('.cand-dob').value.trim(),
-        phone: tr.querySelector('.cand-phone').value.trim(),
-        degree: tr.querySelector('.cand-degree').value.trim(),
-        scoreDegree: parseFloat(tr.querySelector('.cand-score-degree').value) || 0,
-        experience: tr.querySelector('.cand-exp').value.trim(),
-        scoreExp: parseFloat(tr.querySelector('.cand-score-exp').value) || 0,
-        scoreInterview: tr.querySelector('.cand-interview').value.trim()
-      });
-    }
+    candidatesPayload.push({
+      id: candId.startsWith('temp_') ? undefined : candId,
+      pollingStationId: stationId,
+      role: roleName,
+      orderInRole: order,
+      name: name,
+      gender: tr.querySelector('.cand-gender') ? tr.querySelector('.cand-gender').value : 'ប',
+      dob: tr.querySelector('.cand-dob') ? tr.querySelector('.cand-dob').value.trim() : '',
+      phone: tr.querySelector('.cand-phone') ? tr.querySelector('.cand-phone').value.trim() : '',
+      degree: tr.querySelector('.cand-degree') ? tr.querySelector('.cand-degree').value.trim() : '',
+      scoreDegree: parseFloat(tr.querySelector('.cand-score-degree')?.value) || 0,
+      experience: tr.querySelector('.cand-exp') ? tr.querySelector('.cand-exp').value.trim() : '',
+      scoreExp: parseFloat(tr.querySelector('.cand-score-exp')?.value) || 0,
+      scoreInterview: tr.querySelector('.cand-interview') ? tr.querySelector('.cand-interview').value.trim() : ''
+    });
   });
 
   const saveBtn = document.getElementById('btnSaveBatchScores');
+  const originalText = saveBtn.innerHTML;
   saveBtn.disabled = true;
-  saveBtn.textContent = 'កំពុងរក្សាទុក...';
+  saveBtn.innerHTML = '⏳ កំពុងរក្សាទុក...';
 
   try {
-    // Upsert each candidate
-    for (const cand of candidatesPayload) {
-      await fetch('/api/candidates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cand)
-      });
-    }
+    const res = await fetch('/api/candidates/batch-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pollingStationId: stationId, candidates: candidatesPayload })
+    });
+    const result = await res.json();
+    if (!result.success) throw new Error(result.message || 'រក្សាទុកមិនបានជោគជ័យ');
 
-    alert('បានរក្សាទុកពិន្ទុ និងគណនាចំណាត់ថ្នាក់ដោយជោគជ័យ!');
+    saveBtn.innerHTML = '✅ បានរក្សាទុកជោគជ័យ!';
+    setTimeout(() => {
+      saveBtn.innerHTML = originalText;
+    }, 2500);
+
     await renderScoringTableForActiveStation();
     await checkCloudStatus();
   } catch (err) {
-    alert('Error saving scores: ' + err.message);
+    alert('មានបញ្ហាក្នុងការរក្សាទុក៖ ' + err.message);
+    saveBtn.innerHTML = originalText;
   } finally {
     saveBtn.disabled = false;
-    saveBtn.textContent = '💾 រក្សាទុកពិន្ទុទាំងអស់ (Save All Scores)';
   }
 }
 

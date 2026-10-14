@@ -906,6 +906,107 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { success: true, message: 'បានរក្សាទុកពិន្ទុ និងគណនាចំណាត់ថ្នាក់ជោគជ័យ!' });
     }
 
+    // 13.1 POST /api/candidates/batch-save (Batch Save / Upsert / Clear candidates for a polling station)
+    if (pathname === '/api/candidates/batch-save' && req.method === 'POST') {
+      const { pollingStationId, candidates } = await parseBody(req);
+      if (!pollingStationId || !Array.isArray(candidates)) {
+        return sendJSON(res, 400, { success: false, message: 'ទិន្នន័យមិនត្រឹមត្រូវ' });
+      }
+
+      const station = db.pollingStations.find(p => p.id === pollingStationId);
+      if (!station) return sendJSON(res, 404, { success: false, message: 'រកមិនឃើញការិយាល័យបោះឆ្នោត' });
+
+      if (currentUser.role === 'Commune' && String(station.communeCode).padStart(3, '0') !== String(currentUser.communeCode).padStart(3, '0')) {
+        return sendJSON(res, 403, { success: false, message: 'អ្នកគ្មានសិទ្ធិបញ្ចូលបេក្ខជនក្នុងការិយាល័យនេះឡើយ' });
+      }
+      if (currentUser.role === 'Trainer' && station.district !== currentUser.district) {
+        return sendJSON(res, 403, { success: false, message: 'អ្នកគ្មានសិទ្ធិបញ្ចូលបេក្ខជនក្រៅស្រុកឡើយ' });
+      }
+
+      const roleCodeMap = {
+        'ប្រធាន': 'a',
+        'អនុប្រធាន': 'b',
+        'លេខាធិការ': 'c',
+        'សមាជិកទី១': 'd',
+        'សមាជិកទី២': 'e',
+        'សមាជិកទី៣': 'f'
+      };
+
+      candidates.forEach(item => {
+        const name = (item.name || '').trim();
+        const role = item.role || 'ប្រធាន';
+        const roleCode = roleCodeMap[role] || 'a';
+        const order = parseInt(item.orderInRole) || 1;
+
+        // Find existing candidate by id or slot
+        let existingCand = null;
+        if (item.id && !item.id.startsWith('temp_')) {
+          existingCand = db.candidates.find(c => c.id === item.id);
+        }
+        if (!existingCand) {
+          existingCand = db.candidates.find(c => c.pollingStationId === station.id && c.role === role && c.orderInRole === order);
+        }
+
+        if (name) {
+          if (existingCand) {
+            existingCand.name = name;
+            if (item.gender !== undefined) existingCand.gender = item.gender;
+            if (item.dob !== undefined) existingCand.dob = item.dob;
+            if (item.phone !== undefined) existingCand.phone = item.phone;
+            if (item.degree !== undefined) existingCand.degree = item.degree;
+            if (item.scoreDegree !== undefined) existingCand.scoreDegree = parseFloat(item.scoreDegree) || 0;
+            if (item.experience !== undefined) existingCand.experience = item.experience;
+            if (item.scoreExp !== undefined) existingCand.scoreExp = parseFloat(item.scoreExp) || 0;
+            if (item.scoreInterview !== undefined) existingCand.scoreInterview = item.scoreInterview;
+            existingCand.updatedAt = new Date().toISOString();
+          } else {
+            const newId = `cand_${station.id}_${roleCode}${order}_${Date.now()}`;
+            const newCand = {
+              id: newId,
+              pollingStationId: station.id,
+              communeCode: station.communeCode,
+              communeName: station.communeName,
+              district: station.district,
+              role: role,
+              roleCode: roleCode,
+              orderInRole: order,
+              name: name,
+              gender: item.gender || 'ប',
+              dob: item.dob || '',
+              phone: item.phone || '',
+              degree: item.degree || '',
+              scoreDegree: parseFloat(item.scoreDegree) || 0,
+              experience: item.experience || '',
+              scoreExp: parseFloat(item.scoreExp) || 0,
+              scoreShortlist: (parseFloat(item.scoreDegree) || 0) + (parseFloat(item.scoreExp) || 0),
+              scoreInterview: item.scoreInterview !== undefined ? item.scoreInterview : '',
+              scoreTotal: '',
+              rank: order,
+              status: '',
+              notes: item.notes || '',
+              updatedAt: new Date().toISOString()
+            };
+            db.candidates.push(newCand);
+          }
+        } else if (existingCand) {
+          // Candidate name cleared: remove row
+          const idx = db.candidates.findIndex(c => c.id === existingCand.id);
+          if (idx !== -1) db.candidates.splice(idx, 1);
+        }
+      });
+
+      recalculatePollingStationRanks(station.id);
+      saveLocalDatabase();
+      syncToGoogleSheet('sync_all', { user: currentUser.username });
+
+      const updatedCands = db.candidates.filter(c => c.pollingStationId === station.id);
+      return sendJSON(res, 200, {
+        success: true,
+        message: 'បានរក្សាទុកព័ត៌មាន និងពិន្ទុបេក្ខជនដោយជោគជ័យ!',
+        candidates: updatedCands
+      });
+    }
+
     // 14. DELETE /api/candidates/:id
     if (pathname.startsWith('/api/candidates/') && req.method === 'DELETE') {
       const id = pathname.replace('/api/candidates/', '');
