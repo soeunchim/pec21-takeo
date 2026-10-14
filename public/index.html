@@ -144,7 +144,7 @@
       <section id="tabPollingStations" class="page-section">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">🏛️ បញ្ជីការិយាល័យបោះឆ្នោតក្នុងមូលដ្ឋាន</h3>
+            <h3 class="card-title">🏛️ បញ្ជីការិយាល័យបោះឆ្នោតក្នុងមូលដ្ឋាន <span id="stationCountBadge" style="font-size: 13.5px; color: var(--text-muted); font-weight: 500; margin-left: 8px;"></span></h3>
             <button id="btnOpenAddStationModal" class="btn btn-primary">
               ➕ បង្កើតការិយាល័យថ្មី (Add Station)
             </button>
@@ -152,17 +152,21 @@
 
           <!-- Filter for Trainers / Admin -->
           <div class="filter-bar" id="stationFilterBar">
-            <div style="flex: 1; min-width: 200px;">
+            <div style="flex: 1; min-width: 170px;">
               <label class="form-label">តម្រងតាមក្រុង-ស្រុក</label>
               <select id="filterStationDistrict" class="form-control">
                 <option value="">-- គ្រប់ក្រុង-ស្រុក --</option>
               </select>
             </div>
-            <div style="flex: 1; min-width: 200px;">
+            <div style="flex: 1; min-width: 170px;">
               <label class="form-label">តម្រងតាមឃុំ-សង្កាត់</label>
               <select id="filterStationCommune" class="form-control">
                 <option value="">-- គ្រប់ឃុំ-សង្កាត់ --</option>
               </select>
+            </div>
+            <div style="flex: 1.5; min-width: 220px;">
+              <label class="form-label">ស្វែងរកកូដ ឬទីតាំងការិយាល័យ</label>
+              <input type="text" id="searchStationKeyword" class="form-control" placeholder="វាយលេខកូដ (ឧ. 0001) ឬឈ្មោះទីតាំង...">
             </div>
             <div style="align-self: flex-end;">
               <button id="btnFilterStations" class="btn btn-secondary">🔍 ស្វែងរក</button>

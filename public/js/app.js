@@ -247,10 +247,41 @@ function setupEventListeners() {
     });
   }
 
-  // Filter Buttons
+  // Filter Buttons & Dynamic Filters for Polling Stations
   const btnFilterStations = document.getElementById('btnFilterStations');
   if (btnFilterStations) {
     btnFilterStations.addEventListener('click', () => {
+      renderPollingStationsTable();
+    });
+  }
+
+  const filterDistSelect = document.getElementById('filterStationDistrict');
+  const filterComSelect = document.getElementById('filterStationCommune');
+  const searchStationKw = document.getElementById('searchStationKeyword');
+
+  if (filterDistSelect) {
+    filterDistSelect.addEventListener('change', () => {
+      // Dynamically filter commune options
+      const selDist = filterDistSelect.value;
+      if (filterComSelect) {
+        filterComSelect.innerHTML = '<option value="">-- គ្រប់ឃុំ-សង្កាត់ --</option>';
+        const relevantComs = selDist ? allCommunes.filter(c => c.district === selDist) : allCommunes;
+        relevantComs.forEach(c => {
+          filterComSelect.innerHTML += `<option value="${c.code}">${c.name} (${c.code})</option>`;
+        });
+      }
+      renderPollingStationsTable();
+    });
+  }
+
+  if (filterComSelect) {
+    filterComSelect.addEventListener('change', () => {
+      renderPollingStationsTable();
+    });
+  }
+
+  if (searchStationKw) {
+    searchStationKw.addEventListener('input', () => {
       renderPollingStationsTable();
     });
   }
@@ -358,12 +389,27 @@ function populateStationSelectors() {
     return;
   }
 
+  // Group stations by Commune for clean UX
+  const grouped = {};
   allPollingStations.forEach(ps => {
-    const code4 = String(ps.code || '').padStart(4, '0');
-    const opt = `<option value="${ps.id}">ឃុំ${ps.communeName} ៖ ${ps.name} [កូដ: ${code4}]</option>`;
-    scoringSelect.innerHTML += opt;
-    reportSelect.innerHTML += opt;
+    const key = `ឃុំ${ps.communeName} (${ps.district})`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(ps);
   });
+
+  let html = '';
+  for (const [groupName, stations] of Object.entries(grouped)) {
+    html += `<optgroup label="${groupName}">`;
+    stations.forEach(ps => {
+      const code4 = String(ps.code || '').padStart(4, '0');
+      const locStr = ps.location ? ` - ${ps.location}` : '';
+      html += `<option value="${ps.id}">${ps.name} [កូដ: ${code4}]${locStr}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+
+  scoringSelect.innerHTML = html;
+  reportSelect.innerHTML = html;
 
   renderScoringTableForActiveStation();
   renderReportPreview();
@@ -437,17 +483,37 @@ function renderPollingStationsTable() {
 
   const filterDist = document.getElementById('filterStationDistrict')?.value;
   const filterCom = document.getElementById('filterStationCommune')?.value;
+  const searchKw = document.getElementById('searchStationKeyword')?.value?.trim()?.toLowerCase();
 
   let filtered = allPollingStations;
   if (filterDist) filtered = filtered.filter(p => p.district === filterDist);
   if (filterCom) filtered = filtered.filter(p => p.communeCode === filterCom);
+  if (searchKw) {
+    filtered = filtered.filter(p => 
+      String(p.code || '').includes(searchKw) || 
+      (p.location && p.location.toLowerCase().includes(searchKw)) || 
+      (p.name && p.name.toLowerCase().includes(searchKw)) ||
+      (p.communeName && p.communeName.toLowerCase().includes(searchKw))
+    );
+  }
+
+  // Counter badge
+  const countSpan = document.getElementById('stationCountBadge');
+  if (countSpan) {
+    countSpan.textContent = `(សរុប ${filtered.length.toLocaleString()} / ${allPollingStations.length.toLocaleString()} ការិយាល័យ)`;
+  }
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">មិនទាន់មានការិយាល័យបោះឆ្នោតឡើយ។ សូមចុចប៊ូតុង "➕ បង្កើតការិយាល័យថ្មី"</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">រកមិនឃើញការិយាល័យបោះឆ្នោតតាមលក្ខខណ្ឌស្វែងរកនេះឡើយ។</td></tr>';
     return;
   }
 
-  filtered.forEach(ps => {
+  // Display limit when unfiltered to maintain snappy UI rendering
+  const isFiltered = Boolean(filterDist || filterCom || searchKw);
+  const displayLimit = isFiltered ? 500 : 150;
+  const displayList = filtered.slice(0, displayLimit);
+
+  displayList.forEach(ps => {
     tbody.innerHTML += `
       <tr>
         <td style="text-align: center; font-weight: 700;">${String(ps.code || '').padStart(4, '0')}</td>
@@ -465,6 +531,16 @@ function renderPollingStationsTable() {
       </tr>
     `;
   });
+
+  if (filtered.length > displayLimit) {
+    tbody.innerHTML += `
+      <tr style="background: #f8fafc; font-style: italic; color: #64748b; text-align: center;">
+        <td colspan="8" style="padding: 12px;">
+          ℹ️ បង្ហាញ ${displayLimit} ក្នុងចំណោម ${filtered.length.toLocaleString()} ការិយាល័យ។ សូមប្រើប្រអប់ស្វែងរក ឬជ្រើសរើសតម្រងក្រុង-ស្រុក/ឃុំ-សង្កាត់ ដើម្បីមើលចំការិយាល័យដែលត្រូវការ។
+        </td>
+      </tr>
+    `;
+  }
 }
 
 function openStationModal(station = null) {
