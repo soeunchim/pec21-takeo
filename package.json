@@ -1,7 +1,7 @@
 {
   "name": "pec21-kkb-exam-score-system",
   "version": "1.0.0",
-  "description": "ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧ (PEC21 - ខេត្តតាកែវ)",
+  "description": "ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប (PEC21-ខេត្តតាកែវ)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
