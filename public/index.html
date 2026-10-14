@@ -143,11 +143,16 @@
            ===================================================================== -->
       <section id="tabPollingStations" class="page-section">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
             <h3 class="card-title">🏛️ បញ្ជីការិយាល័យបោះឆ្នោតក្នុងមូលដ្ឋាន <span id="stationCountBadge" style="font-size: 13.5px; color: var(--text-muted); font-weight: 500; margin-left: 8px;"></span></h3>
-            <button id="btnOpenAddStationModal" class="btn btn-primary">
-              ➕ បង្កើតការិយាល័យថ្មី (Add Station)
-            </button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="btnBatchCreateCommuneStations" class="btn btn-success" title="បង្កើតការិយាល័យទាំងអស់ក្នុងឃុំដែលបានជ្រើសរើសដោយស្វ័យប្រវត្តិតាមស្ថិតិផ្លូវការ">
+                ⚡ បង្កើតការិយាល័យទាំងអស់ក្នុងឃុំនេះ
+              </button>
+              <button id="btnOpenAddStationModal" class="btn btn-primary">
+                ➕ បង្កើតការិយាល័យថ្មី (Add Station)
+              </button>
+            </div>
           </div>
 
           <!-- Filter for Trainers / Admin -->

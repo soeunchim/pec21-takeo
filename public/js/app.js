@@ -286,6 +286,13 @@ function setupEventListeners() {
     });
   }
 
+  const btnBatchCreate = document.getElementById('btnBatchCreateCommuneStations');
+  if (btnBatchCreate) {
+    btnBatchCreate.addEventListener('click', () => {
+      batchCreateForSelectedCommune();
+    });
+  }
+
   // User Management Subtabs (Admins, Trainers, Communes)
   document.querySelectorAll('.user-subtab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -477,6 +484,49 @@ async function loadDashboardStats() {
 // TAB 2: POLLING STATIONS (Commune Creates Multiple Stations Dynamically)
 // ==============================================================================
 
+// Function to batch create / restore official stations for a commune
+async function batchCreateForSelectedCommune(forcedCommuneCode = null) {
+  let comCode = forcedCommuneCode || document.getElementById('filterStationCommune')?.value;
+  if (!comCode && currentUser.role === 'Commune') {
+    comCode = currentUser.communeCode;
+  }
+
+  if (!comCode) {
+    alert('សូមជ្រើសរើសឃុំ-សង្កាត់ជាមុនសិន!');
+    return;
+  }
+
+  const paddedCom = String(comCode).padStart(3, '0');
+  const comObj = allCommunes.find(c => String(c.code).padStart(3, '0') === paddedCom);
+  const comName = comObj ? comObj.name : comCode;
+
+  if (!confirm(`តើលោកអ្នកពិតជាចង់បង្កើត/ទាញយកការិយាល័យបោះឆ្នោតទាំងអស់ក្នុងឃុំ «${comName}» ដោយស្វ័យប្រវត្តិតាមស្ថិតិផ្លូវការមែនទេ?`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/polling-stations/batch-create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ communeCode: paddedCom })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      // Reload polling stations
+      const psRes = await fetch('/api/polling-stations').then(r => r.json());
+      allPollingStations = psRes.pollingStations || [];
+      populateStationSelectors();
+      renderPollingStationsTable();
+    } else {
+      alert('កំហុស៖ ' + data.message);
+    }
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  }
+}
+window.batchCreateForSelectedCommune = batchCreateForSelectedCommune;
+
 function renderPollingStationsTable() {
   const tbody = document.getElementById('pollingStationsTableBody');
   tbody.innerHTML = '';
@@ -487,7 +537,10 @@ function renderPollingStationsTable() {
 
   let filtered = allPollingStations;
   if (filterDist) filtered = filtered.filter(p => p.district === filterDist);
-  if (filterCom) filtered = filtered.filter(p => p.communeCode === filterCom);
+  if (filterCom) {
+    const paddedCom = String(filterCom).padStart(3, '0');
+    filtered = filtered.filter(p => String(p.communeCode).padStart(3, '0') === paddedCom);
+  }
   if (searchKw) {
     filtered = filtered.filter(p => 
       String(p.code || '').includes(searchKw) || 
@@ -504,7 +557,28 @@ function renderPollingStationsTable() {
   }
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">រកមិនឃើញការិយាល័យបោះឆ្នោតតាមលក្ខខណ្ឌស្វែងរកនេះឡើយ។</td></tr>';
+    if (filterCom) {
+      const paddedCom = String(filterCom).padStart(3, '0');
+      const comObj = allCommunes.find(c => String(c.code).padStart(3, '0') === paddedCom);
+      const comName = comObj ? comObj.name : filterCom;
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 36px 16px;">
+            <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">
+              🏛️ មិនទាន់ឃើញមានការិយាល័យបោះឆ្នោតក្នុងឃុំ <strong>${comName}</strong> ឡើយ។
+            </p>
+            <p style="font-size: 13.5px; color: #64748b; margin-bottom: 16px;">
+              លោកអ្នកអាចចុចប៊ូតុងខាងក្រោម ដើម្បីបង្កើតការិយាល័យបោះឆ្នោតទាំងអស់ក្នុងឃុំនេះដោយស្វ័យប្រវត្តិតាមស្ថិតិផ្លូវការ ៖
+            </p>
+            <button class="btn btn-success" onclick="batchCreateForSelectedCommune('${paddedCom}')" style="font-size: 14px; font-weight: 700; padding: 10px 24px; box-shadow: 0 4px 6px -1px rgba(22, 101, 52, 0.2);">
+              ⚡ ចុចទីនេះដើម្បីបង្កើតការិយាល័យទាំងអស់ក្នុងឃុំ${comName} ភ្លាមៗ (Auto-Create Stations)
+            </button>
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">រកមិនឃើញការិយាល័យបោះឆ្នោតតាមលក្ខខណ្ឌស្វែងរកនេះឡើយ។</td></tr>';
+    }
     return;
   }
 

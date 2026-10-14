@@ -29,6 +29,18 @@ const MIME_TYPES = {
 
 let db = null;
 
+// Load official reference polling stations (1,603 stations)
+const OFFICIAL_STATIONS_FILE = path.join(__dirname, 'data', 'official_polling_stations.json');
+let officialPollingStations = [];
+try {
+  if (fs.existsSync(OFFICIAL_STATIONS_FILE)) {
+    officialPollingStations = JSON.parse(fs.readFileSync(OFFICIAL_STATIONS_FILE, 'utf8'));
+    console.log(`[OfficialStations] Loaded ${officialPollingStations.length} reference stations from ${OFFICIAL_STATIONS_FILE}`);
+  }
+} catch (e) {
+  console.error('[OfficialStations] Failed to load reference stations:', e.message);
+}
+
 // ==============================================================================
 // Database & Google Sheets Synchronization Engine
 // ==============================================================================
@@ -38,9 +50,9 @@ function loadLocalDatabase() {
     if (fs.existsSync(DB_FILE)) {
       const raw = fs.readFileSync(DB_FILE, 'utf8');
       db = JSON.parse(raw);
-      console.log(`[DB] Local database loaded successfully. Users: ${db.users ? db.users.length : 0}, Candidates: ${db.candidates ? db.candidates.length : 0}`);
+      console.log(`[DB] Local database loaded successfully. Users: ${db.users ? db.users.length : 0}, Candidates: ${db.candidates ? db.candidates.length : 0}, Stations: ${db.pollingStations ? db.pollingStations.length : 0}`);
     } else {
-      console.error('[DB] db.json not found, initializing empty structure.');
+      console.error('[DB] db.json not found, initializing structure.');
       db = {
         appName: 'ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧',
         settings: {
@@ -57,6 +69,24 @@ function loadLocalDatabase() {
         candidates: []
       };
       saveLocalDatabase();
+    }
+
+    // Always ensure all official 1,603 polling stations exist in db
+    if (officialPollingStations.length > 0) {
+      if (!db.pollingStations || db.pollingStations.length < officialPollingStations.length) {
+        console.log(`[DB] Current stations (${db.pollingStations ? db.pollingStations.length : 0}) < official (${officialPollingStations.length}). Auto-populating...`);
+        const existingMap = {};
+        (db.pollingStations || []).forEach(s => {
+          const c = String(parseInt(s.code, 10) || s.code).padStart(4, '0');
+          existingMap[c] = s;
+        });
+        db.pollingStations = officialPollingStations.map(s => {
+          const existing = existingMap[s.code];
+          return existing || s;
+        });
+        saveLocalDatabase();
+        console.log(`[DB] Polling stations restored to full ${db.pollingStations.length} stations.`);
+      }
     }
   } catch (err) {
     console.error('[DB] Load error:', err.message);
@@ -234,8 +264,13 @@ async function initCloudSync() {
       if (cloudData.candidates && cloudData.candidates.length > 0) {
         db.candidates = cloudData.candidates;
       }
-      if (cloudData.pollingStations && cloudData.pollingStations.length > 0) {
+      // ONLY overwrite polling stations if cloudData has AT LEAST as many stations as official (1603)
+      if (cloudData.pollingStations && cloudData.pollingStations.length >= officialPollingStations.length) {
         db.pollingStations = cloudData.pollingStations;
+      } else {
+        // If cloud has fewer stations than official, push official stations to cloud!
+        console.log(`[GoogleSheet] Cloud has ${cloudData.pollingStations ? cloudData.pollingStations.length : 0} stations < ${officialPollingStations.length}. Pushing full stations to cloud...`);
+        syncToGoogleSheet('sync_all');
       }
       if (cloudData.users && cloudData.users.length > 0) {
         // Merge user updates (preserve local passwords if not set)
@@ -555,17 +590,18 @@ const server = http.createServer(async (req, res) => {
     // 7. GET /api/polling-stations
     if (pathname === '/api/polling-stations' && req.method === 'GET') {
       let list = db.pollingStations || [];
-      const filterCommune = parsedUrl.query.communeCode;
+      const filterCommune = parsedUrl.query.communeCode ? String(parsedUrl.query.communeCode).padStart(3, '0') : null;
       const filterDistrict = parsedUrl.query.district;
 
       if (currentUser.role === 'Commune') {
-        list = list.filter(p => p.communeCode === currentUser.communeCode);
+        const userComCode = String(currentUser.communeCode).padStart(3, '0');
+        list = list.filter(p => String(p.communeCode).padStart(3, '0') === userComCode);
       } else if (currentUser.role === 'Trainer') {
         list = list.filter(p => p.district === currentUser.district);
-        if (filterCommune) list = list.filter(p => p.communeCode === filterCommune);
+        if (filterCommune) list = list.filter(p => String(p.communeCode).padStart(3, '0') === filterCommune);
       } else {
         if (filterDistrict) list = list.filter(p => p.district === filterDistrict);
-        if (filterCommune) list = list.filter(p => p.communeCode === filterCommune);
+        if (filterCommune) list = list.filter(p => String(p.communeCode).padStart(3, '0') === filterCommune);
       }
 
       // Add candidate count for each polling station
@@ -574,7 +610,64 @@ const server = http.createServer(async (req, res) => {
         return { ...ps, candidateCount: count };
       });
 
-      return sendJSON(res, 200, { success: true, pollingStations: enriched });
+      return sendJSON(res, 200, { success: true, pollingStations: enriched, totalInDb: db.pollingStations.length });
+    }
+
+    // 7.1 POST /api/polling-stations/batch-create (Auto create stations for commune or all 1603)
+    if (pathname === '/api/polling-stations/batch-create' && req.method === 'POST') {
+      const data = await parseBody(req);
+      let targetCommuneCode = data.communeCode ? String(data.communeCode).padStart(3, '0') : null;
+      const createAll = Boolean(data.all);
+
+      if (currentUser.role === 'Commune') {
+        targetCommuneCode = String(currentUser.communeCode).padStart(3, '0');
+      }
+
+      let stationsToAdd = [];
+      if (createAll) {
+        if (currentUser.role !== 'SuperAdmin' && currentUser.role !== 'Admin') {
+          return sendJSON(res, 403, { success: false, message: 'សិទ្ធិមិនគ្រប់គ្រាន់ដើម្បីបង្កើតគ្រប់ការិយាល័យឡើយ' });
+        }
+        stationsToAdd = officialPollingStations;
+      } else if (targetCommuneCode) {
+        stationsToAdd = officialPollingStations.filter(s => String(s.communeCode).padStart(3, '0') === targetCommuneCode);
+      } else {
+        return sendJSON(res, 400, { success: false, message: 'សូមជ្រើសរើសឃុំ-សង្កាត់' });
+      }
+
+      if (!stationsToAdd.length) {
+        return sendJSON(res, 404, { success: false, message: 'រកមិនឃើញទិន្នន័យការិយាល័យសម្រាប់ឃុំនេះឡើយ' });
+      }
+
+      // Merge into db.pollingStations
+      const existingMap = {};
+      (db.pollingStations || []).forEach(s => {
+        const c = String(parseInt(s.code, 10) || s.code).padStart(4, '0');
+        existingMap[c] = s;
+      });
+
+      let addedCount = 0;
+      stationsToAdd.forEach(s => {
+        const c = String(parseInt(s.code, 10) || s.code).padStart(4, '0');
+        if (!existingMap[c]) {
+          db.pollingStations.push(s);
+          existingMap[c] = s;
+          addedCount++;
+        }
+      });
+
+      saveLocalDatabase();
+      syncToGoogleSheet('sync_all', { user: currentUser.username });
+
+      const comName = stationsToAdd[0] ? stationsToAdd[0].communeName : '';
+      return sendJSON(res, 200, {
+        success: true,
+        message: createAll
+          ? `🎉 បានបង្កើតការិយាល័យបោះឆ្នោតទាំង ១,៦០៣ ការិយាល័យក្នុងខេត្តតាកែវរួចរាល់!`
+          : `🎉 បានបង្កើតការិយាល័យបោះឆ្នោតចំនួន ${stationsToAdd.length} ក្នុងឃុំ${comName} រួចរាល់!`,
+        count: stationsToAdd.length,
+        addedCount
+      });
     }
 
     // 8. POST /api/polling-stations (Create Polling Station)
