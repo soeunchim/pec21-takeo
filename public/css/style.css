@@ -3,7 +3,58 @@
    Modern Governmental Theme & Print Stylesheet for NEC / PEC Reports
    ============================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&family=Moul&family=Siemreap&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap');
+
+/* ==============================================================================
+   Khmer OS Fonts Definition (Local System First, Local Server Asset Next, Fallback)
+   ============================================================================== */
+
+@font-face {
+  font-family: 'Khmer OS Muol Light';
+  src: local('Khmer OS Muol Light'),
+       local('KhmerOSmuollight'),
+       local('KhmerOS Muol Light'),
+       local('KhmerOSmuollight-Kh Auto'),
+       url('/fonts/KhmerOSmuollight.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Khmer OS Muol';
+  src: local('Khmer OS Muol'),
+       local('KhmerOSmuol'),
+       local('KhmerOS Muol'),
+       url('/fonts/KhmerOSmuol.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Khmer OS Siemreap';
+  src: local('Khmer OS Siemreap'),
+       local('KhmerOSsiemreap'),
+       local('KhmerOS Siemreap'),
+       local('Khmer OS Siemreap-Kh Auto'),
+       url('/fonts/KhmerOSsiemreap.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Khmer OS Battambang';
+  src: local('Khmer OS Battambang'),
+       local('KhmerOSbattambang'),
+       local('KhmerOS Battambang'),
+       local('Khmer OS Battambang-Kh Auto'),
+       url('/fonts/KhmerOSbattambang.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --primary: #1e3a8a;
@@ -22,8 +73,8 @@
   --border-dark: #cbd5e1;
   --radius: 8px;
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --font-body: 'Kantumruy Pro', 'Khmer OS Siemreap', 'Siemreap', sans-serif;
-  --font-heading: 'Moul', 'Khmer OS Muol Light', serif;
+  --font-body: 'Khmer OS Siemreap', 'Siemreap', 'Khmer OS', 'Khmer OS Battambang', 'Kantumruy Pro', sans-serif;
+  --font-heading: 'Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', serif;
 }
 
 * {
@@ -33,11 +84,47 @@
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--font-body) !important;
   background-color: var(--bg-main);
   color: var(--text-main);
-  line-height: 1.5;
+  line-height: 1.6;
   font-size: 14px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings: Khmer OS Muol Light */
+h1, h2, h3, h4, h5, h6,
+.brand-title h1,
+.card-title,
+.modal-title,
+.login-header h2,
+.report-title,
+.form-title {
+  font-family: var(--font-heading) !important;
+  font-weight: normal;
+  line-height: 1.5;
+}
+
+/* General Body, Controls & Tables: Khmer OS Siemreap */
+table,
+th,
+td,
+input,
+button,
+select,
+textarea,
+.form-control,
+.btn,
+.tab-btn,
+.user-subtab-btn,
+.brand-title p,
+.user-badge,
+.cloud-status,
+.stat-box,
+.stat-label,
+.stat-value {
+  font-family: var(--font-body) !important;
 }
 
 /* Header & Navbar */
