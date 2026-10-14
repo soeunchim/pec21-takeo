@@ -3307,8 +3307,16 @@ async function loadSettingsForm() {
 }
 
 async function handleSaveSettings() {
+  const urlInput = document.getElementById('settingGoogleSheetUrl');
+  let rawUrl = urlInput ? urlInput.value.trim() : '';
+  
+  if (rawUrl && rawUrl.includes('script.google.com/macros/s/') && !rawUrl.endsWith('/exec')) {
+    rawUrl = rawUrl.replace(/\/+$/, '') + '/exec';
+    if (urlInput) urlInput.value = rawUrl;
+  }
+
   const payload = {
-    googleSheetUrl: document.getElementById('settingGoogleSheetUrl').value.trim(),
+    googleSheetUrl: rawUrl,
     pecName: document.getElementById('settingPecName').value.trim(),
     mandateTitle: document.getElementById('settingMandate').value.trim()
   };
@@ -3321,10 +3329,10 @@ async function handleSaveSettings() {
     });
     const data = await res.json();
     if (data.success) {
-      alert('បានរក្សាទុកការកំណត់ជោគជ័យ!');
+      alert('✅ បានរក្សាទុកការកំណត់ជោគជ័យ!');
       await checkCloudStatus();
     } else {
-      alert(data.message);
+      alert('កំហុស៖ ' + data.message);
     }
   } catch (e) {
     alert(e.message);
@@ -3333,17 +3341,50 @@ async function handleSaveSettings() {
 
 async function handleManualGoogleSync() {
   const btn = document.getElementById('btnManualGoogleSync');
+  const urlInput = document.getElementById('settingGoogleSheetUrl');
+  let currentUrl = urlInput ? urlInput.value.trim() : '';
+
+  if (!currentUrl) {
+    alert('⚠️ សូមបញ្ចូល Google Apps Script Web App URL ក្នុងប្រអប់ Settings ជាមុនសិន!');
+    if (urlInput) urlInput.focus();
+    return;
+  }
+
+  // Auto-correct missing /exec
+  if (currentUrl.includes('script.google.com/macros/s/') && !currentUrl.endsWith('/exec')) {
+    currentUrl = currentUrl.replace(/\/+$/, '') + '/exec';
+    if (urlInput) urlInput.value = currentUrl;
+  }
+
   btn.disabled = true;
   btn.textContent = 'កំពុង Sync...';
 
   try {
-    const res = await fetch('/api/sync-google-sheet', { method: 'POST' });
+    // 1. Auto-save current URL to settings first
+    const pecName = document.getElementById('settingPecName')?.value.trim() || '';
+    const mandateTitle = document.getElementById('settingMandate')?.value.trim() || '';
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        googleSheetUrl: currentUrl,
+        pecName: pecName,
+        mandateTitle: mandateTitle
+      })
+    });
+
+    // 2. Perform sync with currentUrl
+    const res = await fetch('/api/sync-google-sheet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: currentUrl })
+    });
     const data = await res.json();
     if (data.success) {
-      alert('បានធ្វើសមកាលកម្មទិន្នន័យទៅកាន់ Google Sheets រួចរាល់ដោយជោគជ័យ!');
+      alert('✅ បានធ្វើសមកាលកម្មទិន្នន័យទៅកាន់ Google Sheets រួចរាល់ដោយជោគជ័យ!');
       await checkCloudStatus();
     } else {
-      alert('កំហុស៖ ' + data.message + (data.error ? '\n' + data.error : ''));
+      alert('❌ ' + data.message + (data.error ? '\n\nមូលហេតុ៖ ' + data.error : ''));
     }
   } catch (e) {
     alert('Network error: ' + e.message);

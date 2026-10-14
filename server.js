@@ -96,12 +96,67 @@ function saveLocalDatabase() {
 }
 
 // Google Sheets Sync Functions
-function getGoogleSheetEndpoint() {
-  const urlConfig = (db && db.settings && db.settings.googleSheetUrl) || process.env.GOOGLE_SHEET_URL || '';
+function getGoogleSheetEndpoint(customUrl) {
+  let urlConfig = customUrl || (db && db.settings && db.settings.googleSheetUrl) || process.env.GOOGLE_SHEET_URL || '';
   if (!urlConfig || typeof urlConfig !== 'string') return null;
-  const clean = urlConfig.trim();
+  let clean = urlConfig.trim();
   if (!clean.startsWith('http://') && !clean.startsWith('https://')) return null;
+
+  // Auto-correct missing /exec for Google Apps Script Web App URLs
+  if (clean.includes('script.google.com/macros/s/') && !clean.endsWith('/exec')) {
+    clean = clean.replace(/\/+$/, '') + '/exec';
+  }
   return clean;
+}
+
+function fetchGoogleSheetRedirect(targetUrl, redirectCount = 0) {
+  return new Promise((resolve) => {
+    if (redirectCount > 5) {
+      return resolve({ success: false, error: 'Too many redirects' });
+    }
+    try {
+      const parsedUrl = new URL(targetUrl);
+      const client = parsedUrl.protocol === 'http:' ? http : https;
+      const req = client.get(parsedUrl, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          let nextTarget = res.headers.location;
+          if (!nextTarget.startsWith('http://') && !nextTarget.startsWith('https://')) {
+            nextTarget = `${parsedUrl.protocol}//${parsedUrl.hostname}${nextTarget}`;
+          }
+          return resolve(fetchGoogleSheetRedirect(nextTarget, redirectCount + 1));
+        }
+
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(body);
+            if (res.statusCode >= 200 && res.statusCode < 300 && (parsed.status === 'success' || parsed.success)) {
+              console.log('[GoogleSheet] Cloud synchronization successful via redirect!');
+              return resolve({ success: true, data: parsed });
+            }
+            resolve({ success: false, error: parsed.message || `Status ${res.statusCode}` });
+          } catch (e) {
+            if (body.includes('accounts.google.com') || body.includes('Sign in') || body.includes('ServiceLogin')) {
+              resolve({ success: false, error: 'Google Apps Script ទាមទារ Login! សូមកំណត់ Web app "Who has access: Anyone"' });
+            } else {
+              resolve({ success: res.statusCode >= 200 && res.statusCode < 300, raw: body });
+            }
+          }
+        });
+      });
+
+      req.on('error', (e) => {
+        resolve({ success: false, error: e.message });
+      });
+      req.setTimeout(15000, () => {
+        req.destroy();
+        resolve({ success: false, error: 'Timeout waiting for Google Sheet' });
+      });
+    } catch (err) {
+      resolve({ success: false, error: err.message });
+    }
+  });
 }
 
 function fetchFromGoogleSheet(targetUrl, redirectCount = 0) {
@@ -125,7 +180,7 @@ function fetchFromGoogleSheet(targetUrl, redirectCount = 0) {
           try {
             if (res.statusCode >= 200 && res.statusCode < 300) {
               const parsed = JSON.parse(body);
-              if (parsed && parsed.status === 'success' && parsed.data) {
+              if (parsed && (parsed.status === 'success' || parsed.success) && parsed.data) {
                 return resolve(parsed.data);
               }
             }
@@ -172,12 +227,13 @@ function sendGoogleSheetPost(targetUrl, payload, redirectCount = 0) {
       };
 
       const req = client.request(options, (res) => {
+        // When Google Apps Script responds with 302, redirect to echo endpoint with GET
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           let redirectTarget = res.headers.location;
           if (!redirectTarget.startsWith('http://') && !redirectTarget.startsWith('https://')) {
             redirectTarget = `${parsedUrl.protocol}//${parsedUrl.hostname}${redirectTarget}`;
           }
-          return resolve(sendGoogleSheetPost(redirectTarget, payload, redirectCount + 1));
+          return resolve(fetchGoogleSheetRedirect(redirectTarget, redirectCount + 1));
         }
 
         let body = '';
@@ -185,13 +241,17 @@ function sendGoogleSheetPost(targetUrl, payload, redirectCount = 0) {
         res.on('end', () => {
           try {
             const parsed = JSON.parse(body);
-            if (res.statusCode >= 200 && res.statusCode < 300 && parsed.status === 'success') {
+            if (res.statusCode >= 200 && res.statusCode < 300 && (parsed.status === 'success' || parsed.success)) {
               console.log('[GoogleSheet] Cloud synchronization successful!');
               return resolve({ success: true, data: parsed });
             }
             resolve({ success: false, error: parsed.message || `Status ${res.statusCode}` });
           } catch (e) {
-            resolve({ success: res.statusCode >= 200 && res.statusCode < 300, raw: body });
+            if (body.includes('accounts.google.com') || body.includes('Sign in') || body.includes('ServiceLogin')) {
+              resolve({ success: false, error: 'Google Apps Script ទាមទារ Login! សូមកំណត់ Web app "Who has access: Anyone"' });
+            } else {
+              resolve({ success: res.statusCode >= 200 && res.statusCode < 300, raw: body });
+            }
           }
         });
       });
@@ -1174,14 +1234,41 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, 403, { success: false, message: 'មានតែ Admin ទើបអាចធ្វើសមកាលកម្មដោយផ្ទាល់បាន' });
       }
 
+      let reqBody = {};
+      try {
+        reqBody = await parseBody(req);
+      } catch (e) {}
+
+      if (reqBody && reqBody.url) {
+        let clean = String(reqBody.url).trim();
+        if (clean.includes('script.google.com/macros/s/') && !clean.endsWith('/exec')) {
+          clean = clean.replace(/\/+$/, '') + '/exec';
+        }
+        db.settings.googleSheetUrl = clean;
+        saveLocalDatabase();
+      }
+
+      const endpoint = getGoogleSheetEndpoint();
+      if (!endpoint) {
+        return sendJSON(res, 400, {
+          success: false,
+          message: 'មិនទាន់មាន Google Apps Script URL នៅឡើយទេ។ សូមបញ្ចូល URL ក្នុងប្រអប់ Settings ជាមុនសិន!',
+          error: 'URL is empty'
+        });
+      }
+
       const syncResult = await syncToGoogleSheet('sync_all', { user: currentUser.username });
       if (syncResult && syncResult.success) {
-        return sendJSON(res, 200, { success: true, message: 'បានធ្វើសមកាលកម្មទិន្នន័យទៅកាន់ Google Sheets រួចរាល់!', timestamp: new Date().toISOString() });
+        return sendJSON(res, 200, {
+          success: true,
+          message: 'បានធ្វើសមកាលកម្មទិន្នន័យទៅកាន់ Google Sheets រួចរាល់!',
+          timestamp: new Date().toISOString()
+        });
       } else {
         return sendJSON(res, 500, {
           success: false,
-          message: 'ការតភ្ជាប់ទៅកាន់ Google Sheets បរាជ័យ។ សូមពិនិត្យមើល URL ក្នុង Settings!',
-          error: syncResult ? syncResult.error : 'Endpoint not set'
+          message: 'ការតភ្ជាប់ទៅកាន់ Google Sheets បរាជ័យ! សូមពិនិត្យមើល URL ឬការកំណត់សិទ្ធិ (Who has access: Anyone) ក្នុង Google Apps Script!',
+          error: syncResult ? syncResult.error : 'Cannot connect'
         });
       }
     }
