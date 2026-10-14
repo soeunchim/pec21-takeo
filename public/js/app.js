@@ -597,7 +597,7 @@ async function renderScoringTableForActiveStation() {
   const infoSpan = document.getElementById('activeStationInfo');
 
   if (!stationId) {
-    tbody.innerHTML = '<tr><td colspan="16" style="text-align: center; padding: 25px; color: var(--text-muted); font-size: 14px;">សូមជ្រើសរើសការិយាល័យបោះឆ្នោត</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 25px; color: var(--text-muted); font-size: 14px;">សូមជ្រើសរើសការិយាល័យបោះឆ្នោត</td></tr>';
     infoSpan.textContent = '';
     return;
   }
@@ -619,13 +619,13 @@ async function renderScoringTableForActiveStation() {
       const roleCode = ROLE_CODES[roleName];
       tbody.innerHTML += `
         <tr class="excel-position-banner">
-          <td colspan="16">
+          <td colspan="15">
             📋 មុខតំណែង ៖ <strong>${roleName}</strong> (កូដ: ${roleCode})
           </td>
         </tr>
       `;
 
-      // 3 candidates per position slot (a1-a3, b1-b3, etc.)
+      // 3 candidates per position slot (1 to 3)
       for (let order = 1; order <= 3; order++) {
         const slotCode = `${roleCode}${order}`;
         let cand = currentCandidates.find(c => c.role === roleName && c.orderInRole === order);
@@ -665,7 +665,6 @@ async function renderScoringTableForActiveStation() {
         tbody.innerHTML += `
           <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
             <td class="excel-col-order">${order}</td>
-            <td class="excel-col-slot">${slotCode}</td>
             <td>
               <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)">
             </td>
