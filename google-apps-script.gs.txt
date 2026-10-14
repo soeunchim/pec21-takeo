@@ -67,7 +67,7 @@ function doPost(e) {
       if (data.districts && data.districts.length) writeSheetObjects(ss, 'Districts', data.districts);
       if (data.communes && data.communes.length) writeSheetObjects(ss, 'Communes', data.communes);
       if (data.pollingStations && data.pollingStations.length) writeSheetObjects(ss, 'PollingStations', data.pollingStations);
-      if (data.candidates && data.candidates.length) writeSheetObjects(ss, 'Candidates', data.candidates);
+      if (data.candidates !== undefined) writeSheetObjects(ss, 'Candidates', data.candidates);
       
       logAudit(ss, 'SYNC_ALL', payload.user || 'system', `Updated ${data.candidates ? data.candidates.length : 0} candidates`);
       
@@ -123,10 +123,19 @@ function readSheetObjects(ss, sheetName) {
 }
 
 function writeSheetObjects(ss, sheetName, objects) {
-  if (!objects || !objects.length) return;
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
+  }
+  
+  if (!objects || !objects.length) {
+    sheet.clear();
+    if (sheetName === 'Candidates') {
+      const defaultHeaders = ['id', 'pollingStationId', 'role', 'name', 'gender', 'scoreDegree', 'scoreExp', 'scoreInterview', 'scoreShortlist', 'scoreTotal', 'rank', 'status'];
+      sheet.getRange(1, 1, 1, defaultHeaders.length).setValues([defaultHeaders]);
+      sheet.getRange(1, 1, 1, defaultHeaders.length).setBackground('#1a365d').setFontColor('#ffffff').setFontWeight('bold');
+    }
+    return;
   }
   
   // Extract all unique keys

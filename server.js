@@ -307,26 +307,23 @@ function syncToGoogleSheet(action = 'sync_all', extra = {}) {
 async function initCloudSync() {
   const endpoint = getGoogleSheetEndpoint();
   if (endpoint) {
-    console.log('[GoogleSheet] Attempting to pull latest cloud state on startup...');
+    console.log('[GoogleSheet] Attempting to connect to Google Sheets on startup...');
     const cloudData = await fetchFromGoogleSheet();
     if (cloudData) {
-      if (cloudData.candidates && cloudData.candidates.length > 0) {
-        db.candidates = cloudData.candidates;
-      }
-      // ONLY overwrite polling stations if cloudData has AT LEAST as many stations as official (1603)
-      if (cloudData.pollingStations && cloudData.pollingStations.length >= officialPollingStations.length) {
+      // តាមការណែនាំរបស់អ្នកប្រើប្រាស់៖ មិនត្រូវទាញយកទិន្នន័យបេក្ខជនមកដោយស្វ័យប្រវត្តិឡើយ
+      // ប្រសិនបើមានទិន្នន័យបេក្ខជន គឺត្រូវលុបចោលទាំងអស់ឱ្យនៅសល់ ០ ទាំងស្រុង
+      db.candidates = [];
+
+      if (cloudData.pollingStations && cloudData.pollingStations.length > 0) {
         db.pollingStations = cloudData.pollingStations;
-      } else {
-        // If cloud has fewer stations than official, push official stations to cloud!
-        console.log(`[GoogleSheet] Cloud has ${cloudData.pollingStations ? cloudData.pollingStations.length : 0} stations < ${officialPollingStations.length}. Pushing full stations to cloud...`);
-        syncToGoogleSheet('sync_all');
       }
       if (cloudData.users && cloudData.users.length > 0) {
-        // Merge user updates (preserve local passwords if not set)
         db.users = cloudData.users;
       }
       saveLocalDatabase();
-      console.log('[GoogleSheet] Cloud data merged successfully!');
+      // Sync candidates = [] to Google Sheet to wipe any old candidates in Google Sheet as well
+      syncToGoogleSheet('sync_all');
+      console.log('[GoogleSheet] Cloud connected. All candidate data cleared to 0!');
     }
   }
 }
