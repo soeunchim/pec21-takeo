@@ -962,7 +962,38 @@ function exportCurrentStationToExcel() {
   const comName = ps ? ps.communeName : 'ឃុំ';
   const mandate = (appSettings && appSettings.mandateTitle) || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧';
 
-  // --- SHEET 1: SortList ---
+  // --- PRIMARY SHEET: តារាងបញ្ចូលពិន្ទុ គ.ក.ប (Matches Form 14 columns exactly) ---
+  const formAOA = [
+    [null, null, null, null, null, "ព្រះរាជាណាចក្រកម្ពុជា"],
+    [null, null, null, null, null, "ជាតិ  សាសនា  ព្រះមហាក្សត្រ"],
+    [],
+    ["គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត"],
+    ["គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ"],
+    ["គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប"],
+    [`ឃុំ${comName}`],
+    [],
+    [null, null, null, "តារាងបញ្ចូលពិន្ទុ និងបូកស្រង់លទ្ធផលបេក្ខជន គ.ក.ប"],
+    [null, null, null, mandate],
+    [null, null, null, null, null, null, null, null, null, null, "លេខកូដការិយាល័យ ៖", stCode],
+    // Tier 1 Header (Row index 11):
+    ["ល.រ", "ព័ត៌មានបេក្ខជន", null, null, null, "តារាងសម្រាំងបេក្ខជន", null, null, null, null, "សម្ភាសន៍ (0-20)", "លទ្ធផលបូកស្រង់", null, null],
+    // Tier 2 Header (Row index 12):
+    [null, "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃ ខែ ឆ្នាំកំណើត", "លេខទូរសព្ទ", "កម្រិតសញ្ញាបត្រ", "ពិន្ទុ", "បទពិសោធន៍", "ពិន្ទុ", "សរុបសម្រាំង", null, "សរុបពិន្ទុ", "ចំណាត់ថ្នាក់", "និទ្ទេស"]
+  ];
+
+  const formMerges = [
+    { s: { r: 0, c: 4 }, e: { r: 0, c: 9 } },
+    { s: { r: 1, c: 4 }, e: { r: 1, c: 9 } },
+    { s: { r: 8, c: 2 }, e: { r: 8, c: 11 } },
+    { s: { r: 9, c: 2 }, e: { r: 9, c: 11 } },
+    { s: { r: 11, c: 0 }, e: { r: 12, c: 0 } },  // ល.រ (Rowspan 2)
+    { s: { r: 11, c: 1 }, e: { r: 11, c: 4 } },  // ព័ត៌មានបេក្ខជន (Colspan 4)
+    { s: { r: 11, c: 5 }, e: { r: 11, c: 9 } },  // តារាងសម្រាំងបេក្ខជន (Colspan 5)
+    { s: { r: 11, c: 10 }, e: { r: 12, c: 10 } }, // សម្ភាសន៍ (Rowspan 2)
+    { s: { r: 11, c: 11 }, e: { r: 11, c: 13 } }  // លទ្ធផលបូកស្រង់ (Colspan 3)
+  ];
+
+  // --- SHEET 2: SortList ---
   const sortListAOA = [
     [null, null, null, "ព្រះរាជាណាចក្រកម្ពុជា"],
     [null, null, null, "ជាតិ  សាសនា  ព្រះមហាក្សត្រ"],
@@ -978,7 +1009,7 @@ function exportCurrentStationToExcel() {
     ["កូដ", "មុខតំណែង", "ល.រ", "ល.រ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃ ខែ ឆ្នាំកំណើត", "កម្រិតសញ្ញាបត្រ", "ពិន្ទុ", "បទពិសោធន៍", "ពិន្ទុ", "សរុបពិន្ទុ", "លេខទូរសព្ទ"]
   ];
 
-  // --- SHEET 2: បញ្ចូលពិន្ទុ (Scoring) ---
+  // --- SHEET 3: បញ្ចូលពិន្ទុ (Scoring) ---
   const scoreAOA = [
     [null, "ព្រះរាជាណាចក្រកម្ពុជា"],
     [null, "ជាតិ  សាសនា  ព្រះមហាក្សត្រ"],
@@ -994,7 +1025,7 @@ function exportCurrentStationToExcel() {
     ["កូដ", "ល.រ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃ ខែ ឆ្នាំកំណើត", "ពិន្ទុសម្រាំង", "ពិន្ទុសម្ភាសន៍", "សរុបពិន្ទុ", "ផ្សេងៗ"]
   ];
 
-  // --- SHEET 3: លទ្ធផលតាមលំដាប់ (Ranked Results) ---
+  // --- SHEET 4: លទ្ធផលតាមលំដាប់ (Ranked Results) ---
   const resultsAOA = [
     [null, null, null, "ព្រះរាជាណាចក្រកម្ពុជា"],
     [null, null, null, "ជាតិ សាសនា ព្រះមហាក្សត្រ"],
@@ -1012,7 +1043,13 @@ function exportCurrentStationToExcel() {
 
   ROLES_ORDER.forEach(roleName => {
     const roleCode = ROLE_CODES[roleName];
-    // Position Banner rows
+
+    // Form Banner Row (No role codes like (កូដ: a))
+    const formBannerRow = formAOA.length;
+    formAOA.push([`📋 មុខតំណែង ៖ ${roleName}`]);
+    formMerges.push({ s: { r: formBannerRow, c: 0 }, e: { r: formBannerRow, c: 13 } });
+
+    // Legacy Banner rows
     sortListAOA.push([`--`, `-`, `-`, `- មុខតំណែង ៖ ${roleName}`]);
     scoreAOA.push([`-`, `- មុខតំណែង ៖ ${roleName}`]);
     resultsAOA.push([`--`, `-`, `-`, `- មុខតំណែង ៖ ${roleName}`]);
@@ -1020,6 +1057,27 @@ function exportCurrentStationToExcel() {
     for (let ord = 1; ord <= 3; ord++) {
       const slotCode = `${roleCode}${ord}`;
       const cand = currentCandidates.find(c => c.role === roleName && c.orderInRole === ord) || {};
+      const degScore = cand.scoreDegree !== undefined && cand.scoreDegree !== '' ? parseFloat(cand.scoreDegree) || 0 : 0;
+      const expScore = cand.scoreExp !== undefined && cand.scoreExp !== '' ? parseFloat(cand.scoreExp) || 0 : 0;
+      const shortlistScore = cand.scoreShortlist !== undefined && cand.scoreShortlist !== '' ? cand.scoreShortlist : (degScore + expScore);
+
+      // Unified Form row matching UI table exactly
+      formAOA.push([
+        ord,
+        cand.name || '',
+        cand.gender || '',
+        cand.dob || '',
+        cand.phone || '',
+        cand.degree || '',
+        degScore,
+        cand.experience || '',
+        expScore,
+        shortlistScore,
+        cand.scoreInterview !== undefined ? cand.scoreInterview : '',
+        cand.scoreTotal !== undefined ? cand.scoreTotal : '',
+        cand.rank || ord,
+        cand.status || ''
+      ]);
 
       sortListAOA.push([
         slotCode,
@@ -1066,11 +1124,29 @@ function exportCurrentStationToExcel() {
 
   const wb = XLSX.utils.book_new();
 
+  const wsForm = XLSX.utils.aoa_to_sheet(formAOA);
+  wsForm['!merges'] = formMerges;
+  wsForm['!cols'] = [
+    { wch: 6 },   // 0: ល.រ
+    { wch: 22 },  // 1: គោត្តនាម-នាម
+    { wch: 6 },   // 2: ភេទ
+    { wch: 15 },  // 3: ថ្ងៃ ខែ ឆ្នាំកំណើត
+    { wch: 15 },  // 4: លេខទូរសព្ទ
+    { wch: 18 },  // 5: កម្រិតសញ្ញាបត្រ
+    { wch: 8 },   // 6: ពិន្ទុ
+    { wch: 20 },  // 7: បទពិសោធន៍
+    { wch: 8 },   // 8: ពិន្ទុ
+    { wch: 14 },  // 9: សរុបសម្រាំង
+    { wch: 16 },  // 10: សម្ភាសន៍ (0-20)
+    { wch: 12 },  // 11: សរុបពិន្ទុ
+    { wch: 12 },  // 12: ចំណាត់ថ្នាក់
+    { wch: 16 }   // 13: និទ្ទេស
+  ];
+
   const wsSort = XLSX.utils.aoa_to_sheet(sortListAOA);
   const wsScore = XLSX.utils.aoa_to_sheet(scoreAOA);
   const wsResult = XLSX.utils.aoa_to_sheet(resultsAOA);
 
-  // Column widths
   wsSort['!cols'] = [
     { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 },
     { wch: 22 }, { wch: 6 }, { wch: 14 }, { wch: 18 },
@@ -1085,6 +1161,8 @@ function exportCurrentStationToExcel() {
     { wch: 6 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 10 }
   ];
 
+  // Primary sheet is the unified 14-column Form table
+  XLSX.utils.book_append_sheet(wb, wsForm, "តារាងបញ្ចូលពិន្ទុ គ.ក.ប");
   XLSX.utils.book_append_sheet(wb, wsSort, "SortList");
   XLSX.utils.book_append_sheet(wb, wsScore, "បញ្ចូលពិន្ទុ");
   XLSX.utils.book_append_sheet(wb, wsResult, "លទ្ធផលតាមលំដាប់");
@@ -1093,7 +1171,7 @@ function exportCurrentStationToExcel() {
   XLSX.writeFile(wb, fileName);
 }
 
-// 2. Download Blank Excel Template
+// 2. Download Blank Excel Template (Matches 14-column Form exactly)
 function downloadBlankExcelTemplate() {
   if (typeof XLSX === 'undefined') {
     alert('កំពុងទាញយកបណ្ណាល័យ Excel សូមរង់ចាំបន្តិច!');
@@ -1101,18 +1179,41 @@ function downloadBlankExcelTemplate() {
   }
 
   const templateAOA = [
-    ["គំរូតារាងបញ្ចូលពិន្ទុ និងបូកស្រង់ចំណាត់ថ្នាក់ គ.ក.ប ២០២៧ (PEC21 - ខេត្តតាកែវ)"],
-    ["(សូមបំពេញទិន្នន័យបេក្ខជនតាមជួរដេកនីមួយៗ ហើយអាច Import ចូលទៅក្នុងប្រព័ន្ធវិញបាន)"],
+    [null, null, null, null, null, "ព្រះរាជាណាចក្រកម្ពុជា"],
+    [null, null, null, null, null, "ជាតិ  សាសនា  ព្រះមហាក្សត្រ"],
     [],
-    ["កូដ", "មុខតំណែង", "ល.រ", "គោត្តនាម-នាម", "ភេទ (ប/ស)", "ថ្ងៃខែឆ្នាំកំណើត (DD-MM-YYYY)", "លេខទូរសព្ទ", "កម្រិតសញ្ញាបត្រ", "ពិន្ទុសញ្ញាបត្រ", "បទពិសោធន៍", "ពិន្ទុបទពិសោធន៍", "ពិន្ទុសម្ភាសន៍ (0-20 ឬ អវត្តមាន)"]
+    ["គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត"],
+    ["គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ"],
+    ["គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប"],
+    [],
+    [null, null, null, "គំរូតារាងបញ្ចូលពិន្ទុ និងបូកស្រង់លទ្ធផលបេក្ខជន គ.ក.ប (Template)"],
+    [null, null, null, "(សូមបំពេញព័ត៌មានបេក្ខជនតាមជួរដេកនីមួយៗ ហើយអាច Import ចូលក្នុងប្រព័ន្ធវិញបាន)"],
+    [],
+    // Tier 1 Header:
+    ["ល.រ", "ព័ត៌មានបេក្ខជន", null, null, null, "តារាងសម្រាំងបេក្ខជន", null, null, null, null, "សម្ភាសន៍ (0-20)", "លទ្ធផលបូកស្រង់", null, null],
+    // Tier 2 Header:
+    [null, "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃ ខែ ឆ្នាំកំណើត", "លេខទូរសព្ទ", "កម្រិតសញ្ញាបត្រ", "ពិន្ទុ", "បទពិសោធន៍", "ពិន្ទុ", "សរុបសម្រាំង", null, "សរុបពិន្ទុ", "ចំណាត់ថ្នាក់", "និទ្ទេស"]
+  ];
+
+  const templateMerges = [
+    { s: { r: 0, c: 4 }, e: { r: 0, c: 9 } },
+    { s: { r: 1, c: 4 }, e: { r: 1, c: 9 } },
+    { s: { r: 7, c: 2 }, e: { r: 7, c: 11 } },
+    { s: { r: 8, c: 2 }, e: { r: 8, c: 11 } },
+    { s: { r: 10, c: 0 }, e: { r: 11, c: 0 } },  // ល.រ
+    { s: { r: 10, c: 1 }, e: { r: 10, c: 4 } },  // ព័ត៌មានបេក្ខជន
+    { s: { r: 10, c: 5 }, e: { r: 10, c: 9 } },  // តារាងសម្រាំងបេក្ខជន
+    { s: { r: 10, c: 10 }, e: { r: 11, c: 10 } }, // សម្ភាសន៍
+    { s: { r: 10, c: 11 }, e: { r: 10, c: 13 } }  // លទ្ធផលបូកស្រង់
   ];
 
   ROLES_ORDER.forEach(roleName => {
-    const roleCode = ROLE_CODES[roleName];
+    const bannerRowIdx = templateAOA.length;
+    templateAOA.push([`📋 មុខតំណែង ៖ ${roleName}`]);
+    templateMerges.push({ s: { r: bannerRowIdx, c: 0 }, e: { r: bannerRowIdx, c: 13 } });
+
     for (let ord = 1; ord <= 3; ord++) {
       templateAOA.push([
-        `${roleCode}${ord}`,
-        roleName,
         ord,
         '',
         'ប',
@@ -1122,6 +1223,10 @@ function downloadBlankExcelTemplate() {
         5,
         'ការិយាល័យ១ដង',
         8,
+        13,
+        '',
+        '',
+        ord,
         ''
       ]);
     }
@@ -1129,14 +1234,26 @@ function downloadBlankExcelTemplate() {
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(templateAOA);
+  ws['!merges'] = templateMerges;
   ws['!cols'] = [
-    { wch: 8 }, { wch: 14 }, { wch: 6 }, { wch: 22 },
-    { wch: 12 }, { wch: 22 }, { wch: 15 }, { wch: 18 },
-    { wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 24 }
+    { wch: 6 },   // 0: ល.រ
+    { wch: 22 },  // 1: គោត្តនាម-នាម
+    { wch: 6 },   // 2: ភេទ
+    { wch: 15 },  // 3: ថ្ងៃ ខែ ឆ្នាំកំណើត
+    { wch: 15 },  // 4: លេខទូរសព្ទ
+    { wch: 18 },  // 5: កម្រិតសញ្ញាបត្រ
+    { wch: 8 },   // 6: ពិន្ទុ
+    { wch: 20 },  // 7: បទពិសោធន៍
+    { wch: 8 },   // 8: ពិន្ទុ
+    { wch: 14 },  // 9: សរុបសម្រាំង
+    { wch: 16 },  // 10: សម្ភាសន៍ (0-20)
+    { wch: 12 },  // 11: សរុបពិន្ទុ
+    { wch: 12 },  // 12: ចំណាត់ថ្នាក់
+    { wch: 16 }   // 13: និទ្ទេស
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, "គំរូបញ្ចូលពិន្ទុ");
-  XLSX.writeFile(wb, "គំរូ_គកប_២០២៧_សម្រាប់បញ្ចូលទិន្នន័យ.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "តារាងបញ្ចូលពិន្ទុ គ.ក.ប");
+  XLSX.writeFile(wb, "គំរូ_តារាងបញ្ចូលពិន្ទុ_គកប_២០២៧.xlsx");
 }
 
 // 3. Handle File Upload (Import .xlsx or .xlsm)
@@ -1157,7 +1274,7 @@ function handleExcelFileUpload(e) {
       const candidates = parseCandidatesFromWorkbook(wb);
 
       if (!candidates || candidates.length === 0) {
-        alert('រកមិនឃើញទិន្នន័យបេក្ខជនក្នុងឯកសារនេះឡើយ! សូមប្រាកដថាឯកសារមានសន្លឹក SortList ឬ បញ្ចូលពិន្ទុ។');
+        alert('រកមិនឃើញទិន្នន័យបេក្ខជនក្នុងឯកសារនេះឡើយ! សូមប្រាកដថាឯកសារមានតារាងបញ្ចូលពិន្ទុ គ.ក.ប ឬ សន្លឹក SortList/បញ្ចូលពិន្ទុ។');
         return;
       }
 
@@ -1180,7 +1297,7 @@ function handleExcelFileUpload(e) {
         const shortlist = (c.scoreDegree || 0) + (c.scoreExp || 0);
         tbody.innerHTML += `
           <tr>
-            <td style="text-align: center; font-weight: 700;">${c.slotCode}</td>
+            <td style="text-align: center; font-weight: 700;">${c.orderInRole || 1}</td>
             <td style="font-weight: 600;">${c.role}</td>
             <td style="font-weight: 600; color: #1e3a8a;">${c.name}</td>
             <td style="text-align: center;">${c.gender}</td>
@@ -1203,99 +1320,181 @@ function handleExcelFileUpload(e) {
   reader.readAsBinaryString(file);
 }
 
-// 4. Parser function that handles both គ.ក.ប 2027.xlsm and standard Excel exports
+// 4. Parser function that handles both the 14-column Form layout and legacy គ.ក.ប 2027.xlsm
 function parseCandidatesFromWorkbook(wb) {
-  const roles = [
-    { name: 'ប្រធាន', code: 'a' },
+  // Check roles in order so 'អនុប្រធាន' is checked BEFORE 'ប្រធាន'
+  const CHECK_ROLES = [
     { name: 'អនុប្រធាន', code: 'b' },
     { name: 'លេខាធិការ', code: 'c' },
     { name: 'សមាជិកទី១', code: 'd' },
     { name: 'សមាជិកទី២', code: 'e' },
-    { name: 'សមាជិកទី៣', code: 'f' }
+    { name: 'សមាជិកទី៣', code: 'f' },
+    { name: 'ប្រធាន', code: 'a' }
   ];
 
-  const extracted = [];
+  let extracted = [];
 
-  // Sheet lookups
-  const sortSheetName = wb.SheetNames.find(n => n.toLowerCase().includes('sort') || n.toLowerCase().includes('short'));
-  const scoreSheetName = wb.SheetNames.find(n => n.includes('បញ្ចូលពិន្ទុ') || n.toLowerCase().includes('score'));
-  const noticeSheetName = wb.SheetNames.find(n => n.includes('ជូនដំណឹង') || n.toLowerCase().includes('notice'));
+  // PRIORITY 1: Look for Form table layout with មុខតំណែង banners
+  for (const sheetName of wb.SheetNames) {
+    const sNameLower = sheetName.toLowerCase();
+    // Skip legacy SortList or separate scoring sheet in Priority 1
+    if (sNameLower.includes('sort') || sNameLower.includes('short') || (sheetName.includes('បញ្ចូលពិន្ទុ') && !sheetName.includes('តារាង'))) {
+      continue;
+    }
 
-  const sortSheet = sortSheetName ? wb.Sheets[sortSheetName] : null;
-  const scoreSheet = scoreSheetName ? wb.Sheets[scoreSheetName] : null;
-  const noticeSheet = noticeSheetName ? wb.Sheets[noticeSheetName] : null;
+    const ws = wb.Sheets[sheetName];
+    if (!ws) continue;
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+    if (!rows || rows.length < 5) continue;
 
-  if (sortSheet) {
-    const sortRows = XLSX.utils.sheet_to_json(sortSheet, { header: 1, raw: false });
-    const scoreRows = scoreSheet ? XLSX.utils.sheet_to_json(scoreSheet, { header: 1, raw: false }) : [];
-    const noticeRows = noticeSheet ? XLSX.utils.sheet_to_json(noticeSheet, { header: 1, raw: false }) : [];
+    let currentRole = null;
+    let currentRoleCode = 'a';
+    const sheetCandidates = [];
 
-    roles.forEach(role => {
-      for (let ord = 1; ord <= 3; ord++) {
-        const slotCode = `${role.code}${ord}`;
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0) continue;
 
-        let candName = '', gender = 'ប', dob = '', phone = '', degree = '', scoreDegree = 0, exp = '', scoreExp = 0, scoreInterview = '';
+      const rowStr = row.map(cell => String(cell || '').trim()).join(' ');
 
-        // Search SortList
-        for (let r = 0; r < sortRows.length; r++) {
-          const row = sortRows[r];
-          if (!row) continue;
-          if (row[0] === slotCode || (row[1] === role.code && String(row[2]) === String(ord))) {
-            candName = (row[4] || row[3] || '').trim();
-            gender = (row[5] || 'ប').trim();
-            dob = formatExcelDate(row[6]);
-            degree = (row[7] || '').trim();
-            scoreDegree = parseFloat(row[8]) || 0;
-            exp = (row[9] || '').trim();
-            scoreExp = parseFloat(row[10]) || 0;
-            phone = (row[12] || '').trim();
+      // Check if this row is a position banner
+      if (rowStr.includes('មុខតំណែង')) {
+        for (const rInfo of CHECK_ROLES) {
+          if (rowStr.includes(rInfo.name)) {
+            currentRole = rInfo.name;
+            currentRoleCode = rInfo.code;
             break;
           }
         }
+        continue;
+      }
 
-        // Search ជូនដំណឹង for phone
-        if (!phone) {
-          for (let r = 0; r < noticeRows.length; r++) {
-            const row = noticeRows[r];
+      // If within a role section and row starts with order 1..3
+      if (currentRole) {
+        const col0Val = String(row[0] || '').trim();
+        const ordNum = parseInt(col0Val, 10);
+        if (ordNum >= 1 && ordNum <= 3) {
+          const candName = String(row[1] || '').trim();
+          if (candName) {
+            sheetCandidates.push({
+              slotCode: `${currentRoleCode}${ordNum}`,
+              role: currentRole,
+              roleCode: currentRoleCode,
+              orderInRole: ordNum,
+              name: candName,
+              gender: String(row[2] || 'ប').trim() === 'ស' ? 'ស' : 'ប',
+              dob: formatExcelDate(row[3]),
+              phone: String(row[4] || '').trim(),
+              degree: String(row[5] || '').trim(),
+              scoreDegree: parseFloat(row[6]) || 0,
+              experience: String(row[7] || '').trim(),
+              scoreExp: parseFloat(row[8]) || 0,
+              scoreInterview: row[10] !== undefined && row[10] !== null ? String(row[10]).trim() : ''
+            });
+          }
+        }
+      }
+    }
+
+    if (sheetCandidates.length > 0) {
+      extracted = sheetCandidates;
+      break;
+    }
+  }
+
+  // PRIORITY 2: Legacy SortList / បញ្ចូលពិន្ទុ format (from original គ.ក.ប 2027.xlsm)
+  if (extracted.length === 0) {
+    const roles = [
+      { name: 'ប្រធាន', code: 'a' },
+      { name: 'អនុប្រធាន', code: 'b' },
+      { name: 'លេខាធិការ', code: 'c' },
+      { name: 'សមាជិកទី១', code: 'd' },
+      { name: 'សមាជិកទី២', code: 'e' },
+      { name: 'សមាជិកទី៣', code: 'f' }
+    ];
+
+    const sortSheetName = wb.SheetNames.find(n => n.toLowerCase().includes('sort') || n.toLowerCase().includes('short'));
+    const scoreSheetName = wb.SheetNames.find(n => n.includes('បញ្ចូលពិន្ទុ') || n.toLowerCase().includes('score'));
+    const noticeSheetName = wb.SheetNames.find(n => n.includes('ជូនដំណឹង') || n.toLowerCase().includes('notice'));
+
+    const sortSheet = sortSheetName ? wb.Sheets[sortSheetName] : null;
+    const scoreSheet = scoreSheetName ? wb.Sheets[scoreSheetName] : null;
+    const noticeSheet = noticeSheetName ? wb.Sheets[noticeSheetName] : null;
+
+    if (sortSheet) {
+      const sortRows = XLSX.utils.sheet_to_json(sortSheet, { header: 1, raw: false });
+      const scoreRows = scoreSheet ? XLSX.utils.sheet_to_json(scoreSheet, { header: 1, raw: false }) : [];
+      const noticeRows = noticeSheet ? XLSX.utils.sheet_to_json(noticeSheet, { header: 1, raw: false }) : [];
+
+      roles.forEach(role => {
+        for (let ord = 1; ord <= 3; ord++) {
+          const slotCode = `${role.code}${ord}`;
+
+          let candName = '', gender = 'ប', dob = '', phone = '', degree = '', scoreDegree = 0, exp = '', scoreExp = 0, scoreInterview = '';
+
+          // Search SortList
+          for (let r = 0; r < sortRows.length; r++) {
+            const row = sortRows[r];
             if (!row) continue;
-            if (row[0] === slotCode && row[5]) {
-              phone = String(row[5]).trim();
+            if (row[0] === slotCode || (row[1] === role.code && String(row[2]) === String(ord))) {
+              candName = (row[4] || row[3] || '').trim();
+              gender = (row[5] || 'ប').trim();
+              dob = formatExcelDate(row[6]);
+              degree = (row[7] || '').trim();
+              scoreDegree = parseFloat(row[8]) || 0;
+              exp = (row[9] || '').trim();
+              scoreExp = parseFloat(row[10]) || 0;
+              phone = (row[12] || '').trim();
               break;
             }
           }
-        }
 
-        // Search បញ្ចូលពិន្ទុ for interview score
-        for (let r = 0; r < scoreRows.length; r++) {
-          const row = scoreRows[r];
-          if (!row) continue;
-          if (row[0] === slotCode) {
-            scoreInterview = (row[6] !== undefined ? String(row[6]) : '').trim();
-            break;
+          // Search ជូនដំណឹង for phone
+          if (!phone) {
+            for (let r = 0; r < noticeRows.length; r++) {
+              const row = noticeRows[r];
+              if (!row) continue;
+              if (row[0] === slotCode && row[5]) {
+                phone = String(row[5]).trim();
+                break;
+              }
+            }
+          }
+
+          // Search បញ្ចូលពិន្ទុ for interview score
+          for (let r = 0; r < scoreRows.length; r++) {
+            const row = scoreRows[r];
+            if (!row) continue;
+            if (row[0] === slotCode) {
+              scoreInterview = (row[6] !== undefined ? String(row[6]) : '').trim();
+              break;
+            }
+          }
+
+          if (candName) {
+            extracted.push({
+              slotCode,
+              role: role.name,
+              roleCode: role.code,
+              orderInRole: ord,
+              name: candName,
+              gender: gender === 'ស' ? 'ស' : 'ប',
+              dob: dob,
+              phone: phone,
+              degree: degree,
+              scoreDegree: scoreDegree,
+              experience: exp,
+              scoreExp: scoreExp,
+              scoreInterview: scoreInterview
+            });
           }
         }
+      });
+    }
+  }
 
-        if (candName) {
-          extracted.push({
-            slotCode,
-            role: role.name,
-            roleCode: role.code,
-            orderInRole: ord,
-            name: candName,
-            gender: gender === 'ស' ? 'ស' : 'ប',
-            dob: dob,
-            phone: phone,
-            degree: degree,
-            scoreDegree: scoreDegree,
-            experience: exp,
-            scoreExp: scoreExp,
-            scoreInterview: scoreInterview
-          });
-        }
-      }
-    });
-  } else {
-    // Generic sheet fallback
+  // PRIORITY 3: Generic fallback scanning for header columns
+  if (extracted.length === 0 && wb.SheetNames.length > 0) {
     const firstSheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false });
     let headerRowIdx = -1;
@@ -1315,6 +1514,8 @@ function parseCandidatesFromWorkbook(wb) {
       const phoneCol = header.findIndex(c => String(c).includes('ទូរសព្ទ'));
       const roleCol = header.findIndex(c => String(c).includes('មុខតំណែង'));
       const slotCol = header.findIndex(c => String(c).includes('កូដ'));
+      const degreeCol = header.findIndex(c => String(c).includes('សញ្ញាបត្រ'));
+      const expCol = header.findIndex(c => String(c).includes('ពិសោធន៍'));
       const interviewCol = header.findIndex(c => String(c).includes('សម្ភាសន៍'));
 
       let currentRole = 'ប្រធាន';
@@ -1338,10 +1539,10 @@ function parseCandidatesFromWorkbook(wb) {
           gender: (genderCol !== -1 && row[genderCol]) ? String(row[genderCol]).trim() : 'ប',
           dob: (dobCol !== -1) ? formatExcelDate(row[dobCol]) : '',
           phone: (phoneCol !== -1 && row[phoneCol]) ? String(row[phoneCol]).trim() : '',
-          degree: '',
-          scoreDegree: 0,
-          experience: '',
-          scoreExp: 0,
+          degree: (degreeCol !== -1 && row[degreeCol]) ? String(row[degreeCol]).trim() : '',
+          scoreDegree: (degreeCol !== -1 && row[degreeCol + 1]) ? parseFloat(row[degreeCol + 1]) || 0 : 0,
+          experience: (expCol !== -1 && row[expCol]) ? String(row[expCol]).trim() : '',
+          scoreExp: (expCol !== -1 && row[expCol + 1]) ? parseFloat(row[expCol + 1]) || 0 : 0,
           scoreInterview: (interviewCol !== -1 && row[interviewCol]) ? String(row[interviewCol]).trim() : ''
         });
 
