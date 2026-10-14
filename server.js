@@ -71,22 +71,11 @@ function loadLocalDatabase() {
       saveLocalDatabase();
     }
 
-    // Always ensure all official 1,603 polling stations exist in db
-    if (officialPollingStations.length > 0) {
-      if (!db.pollingStations || db.pollingStations.length < officialPollingStations.length) {
-        console.log(`[DB] Current stations (${db.pollingStations ? db.pollingStations.length : 0}) < official (${officialPollingStations.length}). Auto-populating...`);
-        const existingMap = {};
-        (db.pollingStations || []).forEach(s => {
-          const c = String(parseInt(s.code, 10) || s.code).padStart(4, '0');
-          existingMap[c] = s;
-        });
-        db.pollingStations = officialPollingStations.map(s => {
-          const existing = existingMap[s.code];
-          return existing || s;
-        });
-        saveLocalDatabase();
-        console.log(`[DB] Polling stations restored to full ${db.pollingStations.length} stations.`);
-      }
+    if (!db.pollingStations) {
+      db.pollingStations = [];
+    }
+    if (!db.candidates) {
+      db.candidates = [];
     }
   } catch (err) {
     console.error('[DB] Load error:', err.message);
@@ -776,6 +765,54 @@ const server = http.createServer(async (req, res) => {
       saveLocalDatabase();
       syncToGoogleSheet('sync_all', { user: currentUser.username });
       return sendJSON(res, 200, { success: true, message: 'បានលុបការិយាល័យ និងបេក្ខជនទាំងអស់ជោគជ័យ!' });
+    }
+
+    // 10.1 POST /api/polling-stations/delete-all (Delete all stations & candidates within user scope)
+    if (pathname === '/api/polling-stations/delete-all' && req.method === 'POST') {
+      let deletedStationsCount = 0;
+      if (currentUser.role === 'Commune') {
+        const cCode = String(currentUser.communeCode).padStart(3, '0');
+        const toDeleteIds = db.pollingStations.filter(p => String(p.communeCode).padStart(3, '0') === cCode).map(p => p.id);
+        deletedStationsCount = toDeleteIds.length;
+        db.pollingStations = db.pollingStations.filter(p => String(p.communeCode).padStart(3, '0') !== cCode);
+        db.candidates = (db.candidates || []).filter(c => !toDeleteIds.includes(c.pollingStationId));
+      } else if (currentUser.role === 'Trainer') {
+        const dist = currentUser.district;
+        const toDeleteIds = db.pollingStations.filter(p => p.district === dist).map(p => p.id);
+        deletedStationsCount = toDeleteIds.length;
+        db.pollingStations = db.pollingStations.filter(p => p.district !== dist);
+        db.candidates = (db.candidates || []).filter(c => !toDeleteIds.includes(c.pollingStationId));
+      } else {
+        // SuperAdmin / Admin
+        deletedStationsCount = (db.pollingStations || []).length;
+        db.pollingStations = [];
+        db.candidates = [];
+      }
+
+      saveLocalDatabase();
+      syncToGoogleSheet('sync_all', { user: currentUser.username });
+      return sendJSON(res, 200, {
+        success: true,
+        message: `🎉 បានលុបការិយាល័យបោះឆ្នោតទាំងអស់ចំនួន ${deletedStationsCount} និងបេក្ខជនពាក់ព័ន្ធរួចរាល់!`,
+        count: deletedStationsCount
+      });
+    }
+
+    // 10.2 POST /api/system/reset-all-data (Full clean reset: 0 stations, 0 candidates)
+    if (pathname === '/api/system/reset-all-data' && req.method === 'POST') {
+      if (currentUser.role !== 'SuperAdmin' && currentUser.role !== 'Admin') {
+        return sendJSON(res, 403, { success: false, message: 'សិទ្ធិមិនគ្រប់គ្រាន់ដើម្បី Reset ទិន្នន័យទាំងអស់ឡើយ' });
+      }
+
+      db.pollingStations = [];
+      db.candidates = [];
+
+      saveLocalDatabase();
+      syncToGoogleSheet('sync_all', { user: currentUser.username });
+      return sendJSON(res, 200, {
+        success: true,
+        message: '🎉 បាន Reset សម្អាតទិន្នន័យទាំងអស់ (ការិយាល័យ និងបេក្ខជន) ឱ្យទទេស្អាតដោយជោគជ័យ!'
+      });
     }
 
     // 11. GET /api/candidates

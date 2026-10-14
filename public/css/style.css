@@ -461,6 +461,16 @@ body {
   font-size: 13px;
 }
 
+.table-actions-nowrap {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
 .table-custom tr:last-child td {
   border-bottom: none;
 }

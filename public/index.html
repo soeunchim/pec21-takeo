@@ -146,6 +146,9 @@
           <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
             <h3 class="card-title">🏛️ បញ្ជីការិយាល័យបោះឆ្នោតក្នុងមូលដ្ឋាន <span id="stationCountBadge" style="font-size: 13.5px; color: var(--text-muted); font-weight: 500; margin-left: 8px;"></span></h3>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="btnDeleteAllStations" class="btn btn-danger" style="font-weight: 600;" title="លុបការិយាល័យទាំងអស់ចេញពីប្រព័ន្ធ">
+                🗑️ លុបការិយាល័យទាំងអស់
+              </button>
               <button id="btnBatchCreateAllStations" class="btn btn-outline" style="border: 1px solid #0284c7; color: #0284c7; background: #f0f9ff; font-weight: 600;" title="បង្កើត/ស្តារការិយាល័យទាំងអស់ទាំង ១,៦០៣ ការិយាល័យក្នុងខេត្តតាកែវ">
                 🌐 បង្កើតគ្រប់ការិយាល័យ (១,៦០៣)
               </button>
@@ -190,9 +193,8 @@
                   <th>ឃុំ-សង្កាត់</th>
                   <th>ក្រុង-ស្រុក</th>
                   <th>ទីតាំងការិយាល័យ</th>
-                  <th style="text-align: center;">កាលបរិច្ឆេទសម្ភាសន៍</th>
-                  <th style="text-align: center;">ចំនួនបេក្ខជន</th>
-                  <th style="width: 140px; text-align: center;">សកម្មភាព</th>
+                  <th style="text-align: center; width: 110px;">ចំនួនបេក្ខជន</th>
+                  <th style="width: 175px; text-align: center;">សកម្មភាព</th>
                 </tr>
               </thead>
               <tbody id="pollingStationsTableBody">
@@ -529,6 +531,21 @@
               <button id="btnSaveSettings" class="btn btn-primary">រក្សាទុកការកំណត់ (Save Settings)</button>
               <a href="/api/backup" class="btn btn-secondary" download>📥 Backup Data (JSON)</a>
             </div>
+          </div>
+        </div>
+
+        <!-- Danger Zone / Data Reset -->
+        <div class="card" style="border: 1px solid #ef4444; margin-top: 20px;">
+          <div class="card-header" style="background: #fef2f2; border-bottom: 1px solid #fecaca;">
+            <h3 class="card-title" style="color: #b91c1c;">⚠️ តំបន់គ្រោះថ្នាក់ ៖ Reset សម្អាតទិន្នន័យទាំងអស់ (Reset All Data)</h3>
+          </div>
+          <div style="padding: 18px 20px;">
+            <p style="color: #334155; font-size: 14px; margin-bottom: 14px; line-height: 1.6;">
+              មុខងារនេះនឹងសម្អាតទិន្នន័យ<strong>ការិយាល័យបោះឆ្នោតទាំងអស់ និងពិន្ទុបេក្ខជនទាំងអស់</strong>ឱ្យទៅជាទទេស្អាត (០ ការិយាល័យ, ០ បេក្ខជន) ដោយរក្សាទុកតែគណនីអ្នកប្រើប្រាស់ប៉ុណ្ណោះ។ ទិន្នន័យនឹងនៅតែទទេស្អាត លុះត្រាតែលោកអ្នកធ្វើការបង្កើតថ្មី ឬចុចប៊ូតុងបង្កើតឡើងវិញ។
+            </p>
+            <button id="btnResetAllData" class="btn btn-danger" type="button" style="font-weight: 700; padding: 10px 20px;">
+              🗑️ Reset សម្អាតទិន្នន័យទាំងអស់ឱ្យទទេស្អាត (Reset All Data)
+            </button>
           </div>
         </div>
       </section>

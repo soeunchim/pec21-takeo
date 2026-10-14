@@ -223,6 +223,67 @@ function setupEventListeners() {
   const btnManualSync = document.getElementById('btnManualGoogleSync');
   if (btnManualSync) btnManualSync.addEventListener('click', handleManualGoogleSync);
 
+  // Delete All Stations Button
+  const btnDeleteAllStations = document.getElementById('btnDeleteAllStations');
+  if (btnDeleteAllStations) {
+    btnDeleteAllStations.addEventListener('click', async () => {
+      if (!allPollingStations.length) {
+        alert('គ្មានការិយាល័យបោះឆ្នោតសម្រាប់លុបឡើយ!');
+        return;
+      }
+      const confirmMsg = '⚠️ តើលោកអ្នកពិតជាចង់លុបការិយាល័យបោះឆ្នោតទាំងអស់មែនទេ?\n\n(ទិន្នន័យបេក្ខជនទាំងអស់ដែលនៅក្នុងការិយាល័យទាំងនោះក៏នឹងត្រូវលុបចេញផងដែរ)';
+      if (!confirm(confirmMsg)) return;
+
+      btnDeleteAllStations.disabled = true;
+      btnDeleteAllStations.textContent = 'កំពុងលុប...';
+      try {
+        const res = await fetch('/api/polling-stations/delete-all', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message || 'បានលុបការិយាល័យទាំងអស់ដោយជោគជ័យ!');
+          await loadInitialData();
+          renderPollingStationsTable();
+        } else {
+          alert(data.message || 'មិនអាចលុបបានឡើយ');
+        }
+      } catch (err) {
+        alert('កំហុសប្រព័ន្ធ ៖ ' + err.message);
+      } finally {
+        btnDeleteAllStations.disabled = false;
+        btnDeleteAllStations.textContent = '🗑️ លុបការិយាល័យទាំងអស់';
+      }
+    });
+  }
+
+  // Reset All Data Button (Complete Clean Reset)
+  const btnResetAll = document.getElementById('btnResetAllData');
+  if (btnResetAll) {
+    btnResetAll.addEventListener('click', async () => {
+      const confirmMsg = '⚠️ តើលោកអ្នកពិតជាចង់ Reset សម្អាតទិន្នន័យទាំងអស់ (ការិយាល័យបោះឆ្នោត និងពិន្ទុបេក្ខជន) ឱ្យទទេស្អាតមែនទេ?\n\nសកម្មភាពនេះនឹងលុបការិយាល័យ និងបេក្ខជនទាំងអស់ចេញពីប្រព័ន្ធ រហូតទាល់តែលោកអ្នកបង្កើតថ្មី ឬចុចបង្កើតឡើងវិញ!';
+      if (!confirm(confirmMsg)) return;
+
+      btnResetAll.disabled = true;
+      btnResetAll.textContent = 'កំពុង Reset...';
+      try {
+        const res = await fetch('/api/system/reset-all-data', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message || 'បាន Reset សម្អាតទិន្នន័យទាំងអស់ជោគជ័យ!');
+          await loadInitialData();
+          renderPollingStationsTable();
+          loadDashboardStats();
+        } else {
+          alert(data.message || 'មិនអាច Reset បានឡើយ');
+        }
+      } catch (err) {
+        alert('កំហុសប្រព័ន្ធ ៖ ' + err.message);
+      } finally {
+        btnResetAll.disabled = false;
+        btnResetAll.textContent = '🗑️ Reset សម្អាតទិន្នន័យទាំងអស់ឱ្យទទេស្អាត (Reset All Data)';
+      }
+    });
+  }
+
   // Score modal auto helpers
   document.getElementById('candFormDegreeSelect').addEventListener('change', (e) => {
     const val = parseFloat(e.target.value) || 0;
@@ -881,7 +942,7 @@ function renderPollingStationsTable() {
       const comName = comObj ? comObj.name : filterCom;
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" style="text-align: center; padding: 36px 16px;">
+          <td colspan="7" style="text-align: center; padding: 36px 16px;">
             <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">
               🏛️ មិនទាន់ឃើញមានការិយាល័យបោះឆ្នោតក្នុងឃុំ <strong>${comName}</strong> ឡើយ។
             </p>
@@ -895,7 +956,7 @@ function renderPollingStationsTable() {
         </tr>
       `;
     } else {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">រកមិនឃើញការិយាល័យបោះឆ្នោតតាមលក្ខខណ្ឌស្វែងរកនេះឡើយ។</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">រកមិនឃើញការិយាល័យបោះឆ្នោតតាមលក្ខខណ្ឌស្វែងរកនេះឡើយ។</td></tr>';
     }
     return;
   }
@@ -906,19 +967,22 @@ function renderPollingStationsTable() {
   const displayList = filtered.slice(0, displayLimit);
 
   displayList.forEach(ps => {
+    const comLabel = getCommunePrefix(ps.communeName, ps.district);
+    const distLabel = getDistrictPrefix(ps.district);
     tbody.innerHTML += `
       <tr>
         <td style="text-align: center; font-weight: 700;">${String(ps.code || '').padStart(4, '0')}</td>
         <td style="font-weight: 600; color: var(--primary);">${ps.name}</td>
-        <td>ឃុំ${ps.communeName}</td>
-        <td>${ps.district}</td>
+        <td>${comLabel}</td>
+        <td>${distLabel}</td>
         <td>${ps.location || '---'}</td>
-        <td style="text-align: center;">${ps.interviewDate || '09-07-2027'} (${ps.interviewTime || '07:00'})</td>
         <td style="text-align: center;"><span class="badge badge-passed">${ps.candidateCount || 0} នាក់</span></td>
-        <td style="text-align: center;">
-          <button class="btn btn-secondary btn-sm" onclick="selectStationForScoring('${ps.id}')">📝 ពិន្ទុ</button>
-          <button class="btn btn-secondary btn-sm" onclick="editStation('${ps.id}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteStation('${ps.id}')">🗑️</button>
+        <td style="text-align: center; white-space: nowrap;">
+          <div class="table-actions-nowrap" style="display: inline-flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; justify-content: center;">
+            <button class="btn btn-secondary btn-sm" onclick="selectStationForScoring('${ps.id}')" title="បញ្ចូលពិន្ទុ" style="white-space: nowrap; padding: 4px 8px; font-weight: 600;">📝 ពិន្ទុ</button>
+            <button class="btn btn-secondary btn-sm" onclick="editStation('${ps.id}')" title="កែប្រែ" style="padding: 4px 8px;">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteStation('${ps.id}')" title="លុប" style="padding: 4px 8px;">🗑️</button>
+          </div>
         </td>
       </tr>
     `;
@@ -927,7 +991,7 @@ function renderPollingStationsTable() {
   if (filtered.length > displayLimit) {
     tbody.innerHTML += `
       <tr style="background: #f8fafc; font-style: italic; color: #64748b; text-align: center;">
-        <td colspan="8" style="padding: 12px;">
+        <td colspan="7" style="padding: 12px;">
           ℹ️ បង្ហាញ ${displayLimit} ក្នុងចំណោម ${filtered.length.toLocaleString()} ការិយាល័យ។ សូមប្រើប្រអប់ស្វែងរក ឬជ្រើសរើសតម្រងក្រុង-ស្រុក/ឃុំ-សង្កាត់ ដើម្បីមើលចំការិយាល័យដែលត្រូវការ។
         </td>
       </tr>
