@@ -3144,13 +3144,13 @@ async function loadUsersList() {
   const filterDistSelect = document.getElementById('filterUserDistrict');
   if (filterDistSelect && filterDistSelect.options.length <= 1 && allDistricts.length) {
     allDistricts.forEach(d => {
-      filterDistSelect.innerHTML += `<option value="${d.name}">${d.name}</option>`;
+      filterDistSelect.innerHTML += `<option value="${d.name}">${getDistrictPrefix(d.name)}</option>`;
     });
   }
 
   if (currentUser.role === 'Trainer') {
-    title.textContent = `👥 គណនីឃុំ-សង្កាត់ក្នុង ${currentUser.district} (ចំនួន ${allCommunes.length} ឃុំ)`;
-    scopeBadge.textContent = `ដែនសមត្ថកិច្ច៖ ${currentUser.district}`;
+    title.textContent = `👥 គណនីឃុំ-សង្កាត់ក្នុង ${getDistrictPrefix(currentUser.district)} (ចំនួន ${allCommunes.length} ឃុំ)`;
+    scopeBadge.textContent = `ដែនសមត្ថកិច្ច៖ ${getDistrictPrefix(currentUser.district)}`;
     if (btnSubtabAdmins) btnSubtabAdmins.style.display = 'none';
     if (btnSubtabTrainers) btnSubtabTrainers.style.display = 'none';
     if (districtFilterGroup) districtFilterGroup.style.display = 'none';
@@ -3207,7 +3207,8 @@ function renderUsersTable() {
 
   // Filter by District dropdown
   if (filterDistrict) {
-    list = list.filter(u => u.district === filterDistrict);
+    const cleanDist = filterDistrict.replace(/^(ស្រុក|ក្រុង)\s*/, '').trim();
+    list = list.filter(u => (u.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '').trim() === cleanDist);
   }
 
   // Filter by Search text
@@ -3233,18 +3234,60 @@ function renderUsersTable() {
     if (!u.active) statusBadge = '<span class="badge badge-absent">ផ្អាក</span>';
     else if (u.mustChangePassword) statusBadge = '<span class="badge badge-reserve">រង់ចាំប្តូរលេខសម្ងាត់</span>';
 
+    // Format District
+    let districtDisplay = 'ទូទាំងខេត្ត';
+    if (u.district && u.district !== 'all') {
+      districtDisplay = getDistrictPrefix(u.district);
+    }
+
+    // Format Commune
+    let communeDisplay = 'គ្រប់ឃុំ-សង្កាត់';
+    if (u.communeCode && u.communeCode !== 'all') {
+      communeDisplay = getCommunePrefix(u.communeName || u.communeCode, u.district);
+    }
+
+    // Format Full Name / Title cleanly
+    let nameDisplay = u.fullName || '';
+    if (u.role === 'Commune') {
+      const cLabel = getCommunePrefix(u.communeName, u.district);
+      const cCode = String(u.communeCode || '').padStart(3, '0');
+      nameDisplay = `គ.ឃ.ប ${cLabel} (${cCode})`;
+    } else if (u.role === 'Trainer') {
+      if (u.username === 'PEC2101T001' && u.fullName && !u.fullName.includes('គប.ឃស') && !u.fullName.includes('\ufffd') && !u.fullName.startsWith('PEC21')) {
+        nameDisplay = u.fullName; // ញ៉ែម សុផាត
+      } else {
+        const dLabel = getDistrictPrefix(u.district);
+        const tCode = u.username.includes('T') ? 'T001' : 'R001';
+        nameDisplay = `គ្រូប្រចាំ ${dLabel} (${tCode})`;
+      }
+    } else if (u.role === 'SuperAdmin') {
+      nameDisplay = 'អភិបាលជាន់ខ្ពស់ (SuperAdmin)';
+    } else if (u.role === 'Admin') {
+      nameDisplay = 'អ្នកគ្រប់គ្រងទូទៅ (Admin PEC21)';
+    } else if (u.role === 'PEC21') {
+      nameDisplay = 'គ.ខ.ប លេខ ២១ ខេត្តតាកែវ (PEC21)';
+    }
+
+    // Format Role Badge
+    let roleBadge = `<span class="badge badge-reserve">${u.role}</span>`;
+    if (u.role === 'SuperAdmin') roleBadge = `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-weight:700;">SuperAdmin</span>`;
+    else if (u.role === 'Admin') roleBadge = `<span class="badge" style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-weight:700;">Admin</span>`;
+    else if (u.role === 'PEC21') roleBadge = `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe; font-weight:700;">PEC21</span>`;
+    else if (u.role === 'Trainer') roleBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff; font-weight:700;">គ្រូបង្គោល</span>`;
+    else if (u.role === 'Commune') roleBadge = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-weight:700;">គ.ឃ.ប</span>`;
+
     tbody.innerHTML += `
       <tr>
-        <td style="text-align: center;">${idx + 1}</td>
+        <td style="text-align: center; font-weight: 600;">${idx + 1}</td>
         <td style="font-weight: 700; color: var(--primary);">${u.username}</td>
-        <td>${u.fullName || '---'}</td>
-        <td><span class="badge badge-reserve">${u.role}</span></td>
-        <td>${u.district || 'all'}</td>
-        <td>${u.communeName || (u.communeCode !== 'all' ? u.communeCode : 'all')}</td>
+        <td style="font-weight: 600;">${nameDisplay}</td>
+        <td>${roleBadge}</td>
+        <td>${districtDisplay}</td>
+        <td>${communeDisplay}</td>
         <td style="text-align: center;">${statusBadge}</td>
         <td style="text-align: center;">
-          <button class="btn btn-secondary btn-sm" onclick="resetUserPassword('${u.id}', '${u.username}')">
-            🔄 Reset Password
+          <button class="btn btn-secondary btn-sm" onclick="resetUserPassword('${u.id}', '${u.username}')" style="font-size: 12px; padding: 4px 10px;">
+            🔄 Reset
           </button>
         </td>
       </tr>

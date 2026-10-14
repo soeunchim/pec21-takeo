@@ -126,6 +126,7 @@ function fetchGoogleSheetRedirect(targetUrl, redirectCount = 0) {
           return resolve(fetchGoogleSheetRedirect(nextTarget, redirectCount + 1));
         }
 
+        res.setEncoding('utf8');
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
@@ -174,6 +175,7 @@ function fetchFromGoogleSheet(targetUrl, redirectCount = 0) {
           }
           return resolve(fetchFromGoogleSheet(redirectTarget, redirectCount + 1));
         }
+        res.setEncoding('utf8');
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
@@ -236,6 +238,7 @@ function sendGoogleSheetPost(targetUrl, payload, redirectCount = 0) {
           return resolve(fetchGoogleSheetRedirect(redirectTarget, redirectCount + 1));
         }
 
+        res.setEncoding('utf8');
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
@@ -303,6 +306,39 @@ function syncToGoogleSheet(action = 'sync_all', extra = {}) {
   });
 }
 
+function canonicalizeUser(u) {
+  if (!u) return u;
+  const clone = { ...u };
+  if (clone.district && clone.district !== 'all') {
+    clone.district = String(clone.district).replace(/^(ស្រុក|ក្រុង)\s*/, '').trim();
+    if (clone.district === 'កោះអណ្តែត') clone.district = 'កោះអណ្ដែត';
+  }
+  if (clone.communeName && clone.communeName !== 'all') {
+    clone.communeName = String(clone.communeName).replace(/^(ឃុំ|សង្កាត់)\s*/, '').trim();
+  }
+  if (clone.role === 'Commune') {
+    const comName = clone.communeName || '';
+    const prefix = clone.district === 'ដូនកែវ' ? 'សង្កាត់' : 'ឃុំ';
+    const code = String(clone.communeCode || '').padStart(3, '0');
+    clone.fullName = `គ.ឃ.ប ${prefix}${comName} (${code})`;
+  } else if (clone.role === 'Trainer') {
+    if (clone.username === 'PEC2101T001' && clone.fullName && !clone.fullName.includes('គប.ឃស') && !clone.fullName.includes('\ufffd')) {
+      clone.fullName = 'ញ៉ែម សុផាត';
+    } else {
+      const distPrefix = clone.district === 'ដូនកែវ' ? 'ក្រុងដូនកែវ' : `ស្រុក${clone.district}`;
+      const tCode = clone.username.includes('T') ? 'T001' : 'R001';
+      clone.fullName = `គ្រូប្រចាំ ${distPrefix} (${tCode})`;
+    }
+  } else if (clone.role === 'SuperAdmin') {
+    clone.fullName = 'អភិបាលជាន់ខ្ពស់ (SuperAdmin)';
+  } else if (clone.role === 'Admin') {
+    clone.fullName = 'អ្នកគ្រប់គ្រងទូទៅ (Admin PEC21)';
+  } else if (clone.role === 'PEC21') {
+    clone.fullName = 'គ.ខ.ប លេខ ២១ ខេត្តតាកែវ (PEC21)';
+  }
+  return clone;
+}
+
 // Initial pull on server boot
 async function initCloudSync() {
   const endpoint = getGoogleSheetEndpoint();
@@ -318,8 +354,20 @@ async function initCloudSync() {
         db.pollingStations = cloudData.pollingStations;
       }
       if (cloudData.users && cloudData.users.length > 0) {
-        db.users = cloudData.users;
+        // Merge credentials/active status into canonical db.users while preserving official Khmer names
+        cloudData.users.forEach(cu => {
+          const localUser = db.users.find(u => u.username.toLowerCase() === (cu.username || '').toLowerCase());
+          if (localUser) {
+            if (cu.password) localUser.password = cu.password;
+            if (cu.active !== undefined) localUser.active = Boolean(cu.active);
+            if (cu.mustChangePassword !== undefined) localUser.mustChangePassword = Boolean(cu.mustChangePassword);
+            if (cu.isActivated !== undefined) localUser.isActivated = Boolean(cu.isActivated);
+            if (cu.phone) localUser.phone = cu.phone;
+            if (cu.email) localUser.email = cu.email;
+          }
+        });
       }
+      db.users = (db.users || []).map(canonicalizeUser);
       saveLocalDatabase();
       // Sync candidates = [] to Google Sheet to wipe any old candidates in Google Sheet as well
       syncToGoogleSheet('sync_all');
@@ -1122,7 +1170,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/users' && req.method === 'GET') {
       let filtered = [];
       if (currentUser.role === 'SuperAdmin' || currentUser.role === 'Admin') {
-        filtered = db.users.map(u => ({
+        filtered = db.users.map(canonicalizeUser).map(u => ({
           id: u.id,
           username: u.username,
           fullName: u.fullName,
@@ -1138,20 +1186,24 @@ const server = http.createServer(async (req, res) => {
         }));
       } else if (currentUser.role === 'Trainer') {
         // Requirement 2: District trainer only manages their own district's commune accounts!
-        filtered = db.users.filter(u => u.role === 'Commune' && u.district === currentUser.district).map(u => ({
-          id: u.id,
-          username: u.username,
-          fullName: u.fullName,
-          role: u.role,
-          district: u.district,
-          communeCode: u.communeCode,
-          communeName: u.communeName,
-          active: u.active,
-          isActivated: u.isActivated,
-          mustChangePassword: u.mustChangePassword,
-          phone: u.phone || '',
-          email: u.email || ''
-        }));
+        const trainerDist = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '').trim();
+        filtered = db.users
+          .map(canonicalizeUser)
+          .filter(u => u.role === 'Commune' && (u.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '').trim() === trainerDist)
+          .map(u => ({
+            id: u.id,
+            username: u.username,
+            fullName: u.fullName,
+            role: u.role,
+            district: u.district,
+            communeCode: u.communeCode,
+            communeName: u.communeName,
+            active: u.active,
+            isActivated: u.isActivated,
+            mustChangePassword: u.mustChangePassword,
+            phone: u.phone || '',
+            email: u.email || ''
+          }));
       } else {
         return sendJSON(res, 403, { success: false, message: 'គ្មានសិទ្ធិ' });
       }

@@ -339,6 +339,40 @@ textarea,
   color: var(--primary);
 }
 
+/* User Management (Tab 5) Typography & Styling */
+#tabUsers {
+  font-family: var(--font-body) !important;
+}
+
+#tabUsers .card-title,
+#usersTabHeaderTitle {
+  font-family: var(--font-heading) !important;
+  font-weight: normal;
+  letter-spacing: 0.2px;
+}
+
+#tabUsers table,
+#tabUsers th,
+#tabUsers td,
+#usersTableBody,
+#usersTableBody td,
+#usersTableBody th,
+.user-subtabs,
+.user-subtab-btn,
+#userFilterBar,
+#userFilterBar input,
+#userFilterBar select,
+#userFilterBar button,
+#userScopeNotice {
+  font-family: var(--font-body) !important;
+}
+
+#usersTableBody td {
+  font-size: 13.5px;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
 /* Main Content Layout */
 .container {
   max-width: 1440px;
