@@ -3249,9 +3249,8 @@ function renderUsersTable() {
     // Format Full Name / Title cleanly
     let nameDisplay = u.fullName || '';
     if (u.role === 'Commune') {
-      const cLabel = getCommunePrefix(u.communeName, u.district);
       const cCode = String(u.communeCode || '').padStart(3, '0');
-      nameDisplay = `គ.ឃ.ប ${cLabel} (${cCode})`;
+      nameDisplay = `គប.ឃស ${u.communeName} (${cCode})`;
     } else if (u.role === 'Trainer') {
       if (u.username === 'PEC2101T001' && u.fullName && !u.fullName.includes('គប.ឃស') && !u.fullName.includes('\ufffd') && !u.fullName.startsWith('PEC21')) {
         nameDisplay = u.fullName; // ញ៉ែម សុផាត
@@ -3274,7 +3273,7 @@ function renderUsersTable() {
     else if (u.role === 'Admin') roleBadge = `<span class="badge" style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-weight:700;">Admin</span>`;
     else if (u.role === 'PEC21') roleBadge = `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe; font-weight:700;">PEC21</span>`;
     else if (u.role === 'Trainer') roleBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff; font-weight:700;">គ្រូបង្គោល</span>`;
-    else if (u.role === 'Commune') roleBadge = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-weight:700;">គ.ឃ.ប</span>`;
+    else if (u.role === 'Commune') roleBadge = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-weight:700;">គប.ឃស</span>`;
 
     tbody.innerHTML += `
       <tr>

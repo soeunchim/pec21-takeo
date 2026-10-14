@@ -318,9 +318,8 @@ function canonicalizeUser(u) {
   }
   if (clone.role === 'Commune') {
     const comName = clone.communeName || '';
-    const prefix = clone.district === 'ដូនកែវ' ? 'សង្កាត់' : 'ឃុំ';
     const code = String(clone.communeCode || '').padStart(3, '0');
-    clone.fullName = `គ.ឃ.ប ${prefix}${comName} (${code})`;
+    clone.fullName = `គប.ឃស ${comName} (${code})`;
   } else if (clone.role === 'Trainer') {
     if (clone.username === 'PEC2101T001' && clone.fullName && !clone.fullName.includes('គប.ឃស') && !clone.fullName.includes('\ufffd')) {
       clone.fullName = 'ញ៉ែម សុផាត';
