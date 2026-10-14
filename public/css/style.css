@@ -797,3 +797,193 @@ body {
     margin-bottom: 60px;
   }
 }
+
+/* ==============================================================================
+   EXCEL-LIKE SPREADSHEET TABLE STYLING
+   ============================================================================== */
+.excel-scoring-table {
+  border-collapse: collapse !important;
+  width: 100%;
+  border: 2px solid #64748b !important;
+  background: #ffffff;
+  font-family: 'Khmer OS Siemreap', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-top: 10px;
+}
+
+.excel-scoring-table th,
+.excel-scoring-table td {
+  border: 1px solid #94a3b8 !important;
+  padding: 0 !important;
+  vertical-align: middle;
+  height: 38px;
+}
+
+/* Two-tier Excel Header */
+.excel-header-group th {
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  padding: 7px 8px !important;
+  border-bottom: 1px solid #475569 !important;
+  letter-spacing: 0.3px;
+}
+
+.excel-header-group .th-group-shortlist {
+  background: #15803d !important; /* Excel dark emerald green */
+  color: #ffffff !important;
+}
+
+.excel-header-group .th-group-interview {
+  background: #b45309 !important; /* Amber / Bronze */
+  color: #ffffff !important;
+}
+
+.excel-header-group .th-group-result {
+  background: #1d4ed8 !important; /* Royal blue */
+  color: #ffffff !important;
+}
+
+.excel-header-sub th {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 6px !important;
+  text-align: center;
+  border-bottom: 2px solid #64748b !important;
+}
+
+/* Excel Flat Cell Inputs */
+.excel-cell-input {
+  width: 100%;
+  height: 38px;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  box-shadow: none !important;
+  outline: none !important;
+  box-sizing: border-box;
+  display: block;
+}
+
+.excel-cell-input:focus {
+  background: #ffffff !important;
+  outline: 2px solid #107c41 !important; /* Authentic Excel cell selection green */
+  outline-offset: -2px;
+  z-index: 5;
+  position: relative;
+}
+
+.excel-cell-select {
+  width: 100%;
+  height: 38px;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent;
+  padding: 6px 4px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none !important;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.excel-cell-select:focus {
+  background: #ffffff !important;
+  outline: 2px solid #107c41 !important;
+  outline-offset: -2px;
+  z-index: 5;
+  position: relative;
+}
+
+/* Position Section Banner (Header row for each of the 6 roles) */
+.excel-position-banner {
+  background: #e8f5e9 !important;
+  color: #166534 !important;
+  font-weight: 700;
+  font-size: 13.5px;
+  border-top: 2px solid #2e7d32 !important;
+  border-bottom: 1px solid #81c784 !important;
+}
+
+.excel-position-banner td {
+  padding: 7px 12px !important;
+  background: #e8f5e9 !important;
+}
+
+/* Excel Slot & Order Column */
+.excel-col-slot {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #334155;
+  text-align: center;
+  font-size: 13px;
+  user-select: none;
+}
+
+.excel-col-order {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+  user-select: none;
+}
+
+/* Calculated Formula-Like Shaded Cells */
+.excel-calc-shortlist {
+  background: #f0fdf4 !important;
+  color: #15803d !important;
+  font-weight: 700;
+  text-align: center;
+  font-size: 14px;
+}
+
+.excel-calc-total {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  font-weight: 700;
+  text-align: center;
+  font-size: 14px;
+}
+
+.excel-calc-rank {
+  background: #faf5ff !important;
+  color: #7e22ce !important;
+  font-weight: 700;
+  text-align: center;
+  font-size: 13px;
+}
+
+.excel-calc-status {
+  background: #ffffff;
+  text-align: center;
+  padding: 3px 6px !important;
+}
+
+/* Buttons for Excel Operations */
+.btn-excel {
+  background: #107c41 !important;
+  color: white !important;
+  border: 1px solid #0d5e31 !important;
+  font-weight: 600;
+}
+
+.btn-excel:hover {
+  background: #0d6334 !important;
+  box-shadow: 0 2px 6px rgba(16, 124, 65, 0.3);
+}
+
+.excel-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}

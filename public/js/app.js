@@ -167,6 +167,36 @@ function setupEventListeners() {
     await saveBatchScores();
   });
 
+  // Excel Export
+  const btnExport = document.getElementById('btnExportExcel');
+  if (btnExport) btnExport.addEventListener('click', exportCurrentStationToExcel);
+
+  // Excel Import Trigger & File Input
+  const btnImport = document.getElementById('btnImportExcel');
+  const fileInput = document.getElementById('excelFileInput');
+  if (btnImport && fileInput) {
+    btnImport.addEventListener('click', () => {
+      const stationId = document.getElementById('scoringStationSelect').value;
+      if (!stationId) {
+        alert('សូមជ្រើសរើសការិយាល័យបោះឆ្នោតជាមុនសិន!');
+        return;
+      }
+      fileInput.value = '';
+      fileInput.click();
+    });
+    fileInput.addEventListener('change', handleExcelFileUpload);
+  }
+
+  // Confirm Excel Import
+  const btnConfirmImport = document.getElementById('btnConfirmExcelImport');
+  if (btnConfirmImport) {
+    btnConfirmImport.addEventListener('click', confirmAndSaveExcelImport);
+  }
+
+  // Download Blank Template
+  const btnTemplate = document.getElementById('btnDownloadTemplate');
+  if (btnTemplate) btnTemplate.addEventListener('click', downloadBlankExcelTemplate);
+
   // Modal Triggers
   document.getElementById('btnOpenAddStationModal').addEventListener('click', () => {
     openStationModal();
@@ -567,14 +597,14 @@ async function renderScoringTableForActiveStation() {
   const infoSpan = document.getElementById('activeStationInfo');
 
   if (!stationId) {
-    tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px;">សូមជ្រើសរើសការិយាល័យបោះឆ្នោត</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="16" style="text-align: center; padding: 25px; color: var(--text-muted); font-size: 14px;">សូមជ្រើសរើសការិយាល័យបោះឆ្នោត</td></tr>';
     infoSpan.textContent = '';
     return;
   }
 
   const ps = allPollingStations.find(p => p.id === stationId);
   if (ps) {
-    infoSpan.textContent = `📍 ${ps.district} / ឃុំ${ps.communeName} / ${ps.location || ''}`;
+    infoSpan.textContent = `📍 ${ps.district} / ឃុំ${ps.communeName} / លេខកូដការិយាល័យ ៖ ${ps.code}`;
   }
 
   try {
@@ -584,24 +614,24 @@ async function renderScoringTableForActiveStation() {
 
     tbody.innerHTML = '';
 
-    // Render grouped by the 6 roles
+    // Render grouped by the 6 roles matching Excel structure
     ROLES_ORDER.forEach(roleName => {
       const roleCode = ROLE_CODES[roleName];
       tbody.innerHTML += `
-        <tr class="role-header-row">
-          <td colspan="15">
-            📌 មុខតំណែង ៖ <strong>${roleName}</strong> (កូដ: ${roleCode})
+        <tr class="excel-position-banner">
+          <td colspan="16">
+            📋 មុខតំណែង ៖ <strong>${roleName}</strong> (កូដ: ${roleCode})
           </td>
         </tr>
       `;
 
-      // Up to 3 candidates per position slot
+      // 3 candidates per position slot (a1-a3, b1-b3, etc.)
       for (let order = 1; order <= 3; order++) {
         const slotCode = `${roleCode}${order}`;
         let cand = currentCandidates.find(c => c.role === roleName && c.orderInRole === order);
 
         if (!cand) {
-          // Placeholder template slot
+          // Placeholder slot matching official 18 slots
           cand = {
             id: `temp_${stationId}_${slotCode}`,
             pollingStationId: stationId,
@@ -634,51 +664,52 @@ async function renderScoringTableForActiveStation() {
 
         tbody.innerHTML += `
           <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
-            <td style="text-align: center; font-weight: 600;">${slotCode}</td>
+            <td class="excel-col-order">${order}</td>
+            <td class="excel-col-slot">${slotCode}</td>
             <td>
-              <input type="text" class="form-control form-control-sm cand-name" value="${cand.name || ''}" placeholder="ឈ្មោះបេក្ខជន" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)">
             </td>
             <td style="text-align: center;">
-              <select class="form-control form-control-sm cand-gender" onchange="onCandidateRowChange(this)">
+              <select class="excel-cell-select cand-gender" onchange="onCandidateRowChange(this)">
                 <option value="ប" ${cand.gender === 'ប' ? 'selected' : ''}>ប</option>
                 <option value="ស" ${cand.gender === 'ស' ? 'selected' : ''}>ស</option>
               </select>
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm cand-dob" value="${cand.dob || ''}" placeholder="DD-MM-YYYY" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-dob" value="${cand.dob || ''}" placeholder="DD-MM-YYYY" style="text-align: center;" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm cand-phone" value="${cand.phone || ''}" placeholder="012..." onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-phone" value="${cand.phone || ''}" placeholder="012..." onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm cand-degree" value="${cand.degree || ''}" placeholder="កម្រិតសញ្ញាបត្រ" onchange="onCandidateRowChange(this)">
+              <input type="text" list="degreePresets" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="number" class="form-control form-control-sm cand-score-degree" value="${cand.scoreDegree || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
+              <input type="number" class="excel-cell-input cand-score-degree" value="${cand.scoreDegree || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm cand-exp" value="${cand.experience || ''}" placeholder="បទពិសោធន៍" onchange="onCandidateRowChange(this)">
+              <input type="text" list="expPresets" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="number" class="form-control form-control-sm cand-score-exp" value="${cand.scoreExp || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
+              <input type="number" class="excel-cell-input cand-score-exp" value="${cand.scoreExp || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
             </td>
-            <td style="text-align: center; font-weight: 700; background: #f0f9ff;" class="cand-shortlist-display">
+            <td class="excel-calc-shortlist cand-shortlist-display">
               ${cand.scoreShortlist || 0}
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm cand-interview" value="${cand.scoreInterview !== undefined ? cand.scoreInterview : ''}" placeholder="0-20 ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" onchange="onCandidateRowChange(this)">
+              <input type="text" list="interviewPresets" class="excel-cell-input cand-interview" value="${cand.scoreInterview !== undefined ? cand.scoreInterview : ''}" placeholder="0-20 ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" onchange="onCandidateRowChange(this)">
             </td>
-            <td style="text-align: center; font-weight: 700; background: #ecfdf5;" class="cand-total-display">
+            <td class="excel-calc-total cand-total-display">
               ${cand.scoreTotal !== undefined && cand.scoreTotal !== null && cand.scoreTotal !== '' ? cand.scoreTotal : '---'}
             </td>
-            <td style="text-align: center; font-weight: 600;" class="cand-rank-display">
+            <td class="excel-calc-rank cand-rank-display">
               ${cand.rank || order}
             </td>
-            <td style="text-align: center;" class="cand-status-display">
+            <td class="excel-calc-status cand-status-display">
               ${badgeHtml}
             </td>
             <td style="text-align: center;">
-              <button class="btn btn-danger btn-sm" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក">❌</button>
+              <button class="btn btn-danger btn-sm" style="padding: 2px 7px; font-size: 11px;" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក">❌</button>
             </td>
           </tr>
         `;
@@ -696,14 +727,37 @@ window.onCandidateRowChange = function(inputElem) {
   const roleName = tr.getAttribute('data-role');
   const order = parseInt(tr.getAttribute('data-order')) || 1;
 
+  const degInput = tr.querySelector('.cand-degree');
+  const degScoreInput = tr.querySelector('.cand-score-degree');
+  const expInput = tr.querySelector('.cand-exp');
+  const expScoreInput = tr.querySelector('.cand-score-exp');
+
+  // Auto preset score when typing / selecting Degree
+  if (inputElem === degInput) {
+    const val = degInput.value.trim();
+    if (val.includes('បរិញ្ញាបត្រ')) degScoreInput.value = 12;
+    else if (val.includes('ជាន់ខ្ពស់')) degScoreInput.value = 8;
+    else if (val.includes('បាក់ឌុប')) degScoreInput.value = 5;
+    else if (val.includes('ក្រោម') || val.includes('គ្មាន')) degScoreInput.value = 0;
+  }
+
+  // Auto preset score when typing / selecting Experience
+  if (inputElem === expInput) {
+    const val = expInput.value.trim();
+    if (val.includes('២ដង') || val.includes('2ដង') || val.includes('2 ដង')) expScoreInput.value = 12;
+    else if (val.includes('១ដង') || val.includes('1ដង') || val.includes('1 ដង')) expScoreInput.value = 8;
+    else if (val.includes('ស្ទង់មតិ')) expScoreInput.value = 4;
+    else if (val.includes('គ្មាន')) expScoreInput.value = 0;
+  }
+
   const name = tr.querySelector('.cand-name').value.trim();
   const gender = tr.querySelector('.cand-gender').value;
   const dob = tr.querySelector('.cand-dob').value.trim();
   const phone = tr.querySelector('.cand-phone').value.trim();
-  const degree = tr.querySelector('.cand-degree').value.trim();
-  const scoreDeg = parseFloat(tr.querySelector('.cand-score-degree').value) || 0;
-  const exp = tr.querySelector('.cand-exp').value.trim();
-  const scoreExp = parseFloat(tr.querySelector('.cand-score-exp').value) || 0;
+  const degree = degInput.value.trim();
+  const scoreDeg = parseFloat(degScoreInput.value) || 0;
+  const exp = expInput.value.trim();
+  const scoreExp = parseFloat(expScoreInput.value) || 0;
   const interviewRaw = tr.querySelector('.cand-interview').value.trim();
 
   const shortlist = scoreDeg + scoreExp;
@@ -852,6 +906,506 @@ async function saveBatchScores() {
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = '💾 រក្សាទុកពិន្ទុទាំងអស់ (Save All Scores)';
+  }
+}
+
+// ==============================================================================
+// EXCEL IMPORT & EXPORT ENGINE (SheetJS Integration)
+// ==============================================================================
+
+let pendingImportCandidates = [];
+
+// Helper to convert Excel serial dates (e.g. 31188) or JS dates to DD-MM-YYYY
+function formatExcelDate(val) {
+  if (!val) return '';
+  if (typeof val === 'number') {
+    try {
+      if (typeof XLSX !== 'undefined' && XLSX.SSF) {
+        const parsed = XLSX.SSF.parse_date_code(val);
+        if (parsed && parsed.y) {
+          const d = String(parsed.d).padStart(2, '0');
+          const m = String(parsed.m).padStart(2, '0');
+          return `${d}-${m}-${parsed.y}`;
+        }
+      }
+    } catch (e) {}
+    // Fallback formula
+    const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+    if (!isNaN(date.getTime())) {
+      const d = String(date.getUTCDate()).padStart(2, '0');
+      const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+      return `${d}-${m}-${date.getUTCFullYear()}`;
+    }
+  }
+  if (val instanceof Date) {
+    const d = String(val.getDate()).padStart(2, '0');
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    return `${d}-${m}-${val.getFullYear()}`;
+  }
+  return String(val).trim().replace(/\//g, '-');
+}
+
+// 1. Export Current Polling Station Candidates to Excel (.xlsx)
+function exportCurrentStationToExcel() {
+  if (typeof XLSX === 'undefined') {
+    alert('កំពុងទាញយកបណ្ណាល័យ Excel សូមរង់ចាំបន្តិច ឬ Refresh ទំព័រឡើងវិញ!');
+    return;
+  }
+
+  const stationId = document.getElementById('scoringStationSelect').value;
+  if (!stationId) {
+    alert('សូមជ្រើសរើសការិយាល័យបោះឆ្នោតជាមុនសិន!');
+    return;
+  }
+
+  const ps = allPollingStations.find(p => p.id === stationId);
+  const stCode = ps ? ps.code : '0001';
+  const comName = ps ? ps.communeName : 'ឃុំ';
+  const mandate = (appSettings && appSettings.mandateTitle) || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧';
+
+  // --- SHEET 1: SortList ---
+  const sortListAOA = [
+    [null, null, null, "ព្រះរាជាណាចក្រកម្ពុជា"],
+    [null, null, null, "ជាតិ  សាសនា  ព្រះមហាក្សត្រ"],
+    [],
+    [null, null, null, "គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត"],
+    [null, null, null, "គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ"],
+    [null, null, null, "គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប"],
+    [null, null, null, `ឃុំ${comName}`],
+    [],
+    [null, null, null, "តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប"],
+    [null, null, null, mandate],
+    [null, null, null, null, null, null, null, "លេខកូដការិយាល័យ ៖", stCode],
+    ["កូដ", "មុខតំណែង", "ល.រ", "ល.រ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃ ខែ ឆ្នាំកំណើត", "កម្រិតសញ្ញាបត្រ", "ពិន្ទុ", "បទពិសោធន៍", "ពិន្ទុ", "សរុបពិន្ទុ", "លេខទូរសព្ទ"]
+  ];
+
+  // --- SHEET 2: បញ្ចូលពិន្ទុ (Scoring) ---
+  const scoreAOA = [
+    [null, "ព្រះរាជាណាចក្រកម្ពុជា"],
+    [null, "ជាតិ  សាសនា  ព្រះមហាក្សត្រ"],
+    [],
+    [null, "គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត"],
+    [null, "គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ"],
+    [null, "គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប"],
+    [null, `ឃុំ${comName}`],
+    [],
+    [null, "តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប"],
+    [null, mandate],
+    [null, null, null, null, null, null, "លេខកូដការិយាល័យ ៖", stCode],
+    ["កូដ", "ល.រ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃ ខែ ឆ្នាំកំណើត", "ពិន្ទុសម្រាំង", "ពិន្ទុសម្ភាសន៍", "សរុបពិន្ទុ", "ផ្សេងៗ"]
+  ];
+
+  // --- SHEET 3: លទ្ធផលតាមលំដាប់ (Ranked Results) ---
+  const resultsAOA = [
+    [null, null, null, "ព្រះរាជាណាចក្រកម្ពុជា"],
+    [null, null, null, "ជាតិ សាសនា ព្រះមហាក្សត្រ"],
+    [],
+    [null, null, null, "គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត"],
+    [null, null, null, "គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ"],
+    [null, null, null, "គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប"],
+    [null, null, null, `ឃុំ${comName}`],
+    [],
+    [null, null, null, "លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប"],
+    [null, null, null, mandate],
+    [null, null, null, null, null, null, null, "លេខកូដការិយាល័យ ៖", stCode],
+    ["កូដ", "មុខតំណែង", "ល.រ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃ ខែ ឆ្នាំកំណើត", "សរុបពិន្ទុ", "ចំណាត់ថ្នាក់", "និទ្ទេស", "ផ្សេងៗ"]
+  ];
+
+  ROLES_ORDER.forEach(roleName => {
+    const roleCode = ROLE_CODES[roleName];
+    // Position Banner rows
+    sortListAOA.push([`--`, `-`, `-`, `- មុខតំណែង ៖ ${roleName}`]);
+    scoreAOA.push([`-`, `- មុខតំណែង ៖ ${roleName}`]);
+    resultsAOA.push([`--`, `-`, `-`, `- មុខតំណែង ៖ ${roleName}`]);
+
+    for (let ord = 1; ord <= 3; ord++) {
+      const slotCode = `${roleCode}${ord}`;
+      const cand = currentCandidates.find(c => c.role === roleName && c.orderInRole === ord) || {};
+
+      sortListAOA.push([
+        slotCode,
+        roleCode,
+        ord,
+        ord,
+        cand.name || '',
+        cand.gender || '',
+        cand.dob || '',
+        cand.degree || '',
+        cand.scoreDegree || 0,
+        cand.experience || '',
+        cand.scoreExp || 0,
+        cand.scoreShortlist || 0,
+        cand.phone || ''
+      ]);
+
+      scoreAOA.push([
+        slotCode,
+        ord,
+        cand.name || '',
+        cand.gender || '',
+        cand.dob || '',
+        cand.scoreShortlist || 0,
+        cand.scoreInterview !== undefined ? cand.scoreInterview : '',
+        cand.scoreTotal !== undefined ? cand.scoreTotal : '',
+        ''
+      ]);
+
+      resultsAOA.push([
+        slotCode,
+        roleName,
+        ord,
+        cand.name || '',
+        cand.gender || '',
+        cand.dob || '',
+        cand.scoreTotal !== undefined ? cand.scoreTotal : '',
+        cand.rank || ord,
+        cand.status || '',
+        ''
+      ]);
+    }
+  });
+
+  const wb = XLSX.utils.book_new();
+
+  const wsSort = XLSX.utils.aoa_to_sheet(sortListAOA);
+  const wsScore = XLSX.utils.aoa_to_sheet(scoreAOA);
+  const wsResult = XLSX.utils.aoa_to_sheet(resultsAOA);
+
+  // Column widths
+  wsSort['!cols'] = [
+    { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 },
+    { wch: 22 }, { wch: 6 }, { wch: 14 }, { wch: 18 },
+    { wch: 8 }, { wch: 18 }, { wch: 8 }, { wch: 12 }, { wch: 15 }
+  ];
+  wsScore['!cols'] = [
+    { wch: 6 }, { wch: 6 }, { wch: 22 }, { wch: 6 },
+    { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 10 }
+  ];
+  wsResult['!cols'] = [
+    { wch: 6 }, { wch: 14 }, { wch: 6 }, { wch: 22 },
+    { wch: 6 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 10 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, wsSort, "SortList");
+  XLSX.utils.book_append_sheet(wb, wsScore, "បញ្ចូលពិន្ទុ");
+  XLSX.utils.book_append_sheet(wb, wsResult, "លទ្ធផលតាមលំដាប់");
+
+  const fileName = `គកប_២០២៧_ការិយាល័យ_${stCode}_ឃុំ${comName}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+}
+
+// 2. Download Blank Excel Template
+function downloadBlankExcelTemplate() {
+  if (typeof XLSX === 'undefined') {
+    alert('កំពុងទាញយកបណ្ណាល័យ Excel សូមរង់ចាំបន្តិច!');
+    return;
+  }
+
+  const templateAOA = [
+    ["គំរូតារាងបញ្ចូលពិន្ទុ និងបូកស្រង់ចំណាត់ថ្នាក់ គ.ក.ប ២០២៧ (PEC21 - ខេត្តតាកែវ)"],
+    ["(សូមបំពេញទិន្នន័យបេក្ខជនតាមជួរដេកនីមួយៗ ហើយអាច Import ចូលទៅក្នុងប្រព័ន្ធវិញបាន)"],
+    [],
+    ["កូដ", "មុខតំណែង", "ល.រ", "គោត្តនាម-នាម", "ភេទ (ប/ស)", "ថ្ងៃខែឆ្នាំកំណើត (DD-MM-YYYY)", "លេខទូរសព្ទ", "កម្រិតសញ្ញាបត្រ", "ពិន្ទុសញ្ញាបត្រ", "បទពិសោធន៍", "ពិន្ទុបទពិសោធន៍", "ពិន្ទុសម្ភាសន៍ (0-20 ឬ អវត្តមាន)"]
+  ];
+
+  ROLES_ORDER.forEach(roleName => {
+    const roleCode = ROLE_CODES[roleName];
+    for (let ord = 1; ord <= 3; ord++) {
+      templateAOA.push([
+        `${roleCode}${ord}`,
+        roleName,
+        ord,
+        '',
+        'ប',
+        '',
+        '',
+        'បាក់ឌុប',
+        5,
+        'ការិយាល័យ១ដង',
+        8,
+        ''
+      ]);
+    }
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(templateAOA);
+  ws['!cols'] = [
+    { wch: 8 }, { wch: 14 }, { wch: 6 }, { wch: 22 },
+    { wch: 12 }, { wch: 22 }, { wch: 15 }, { wch: 18 },
+    { wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 24 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "គំរូបញ្ចូលពិន្ទុ");
+  XLSX.writeFile(wb, "គំរូ_គកប_២០២៧_សម្រាប់បញ្ចូលទិន្នន័យ.xlsx");
+}
+
+// 3. Handle File Upload (Import .xlsx or .xlsm)
+function handleExcelFileUpload(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  if (typeof XLSX === 'undefined') {
+    alert('មិនទាន់ដំណើរការបណ្ណាល័យ XLSX សូម Refresh ទំព័រ!');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = evt.target.result;
+      const wb = XLSX.read(data, { type: 'binary', cellDates: true });
+      const candidates = parseCandidatesFromWorkbook(wb);
+
+      if (!candidates || candidates.length === 0) {
+        alert('រកមិនឃើញទិន្នន័យបេក្ខជនក្នុងឯកសារនេះឡើយ! សូមប្រាកដថាឯកសារមានសន្លឹក SortList ឬ បញ្ចូលពិន្ទុ។');
+        return;
+      }
+
+      pendingImportCandidates = candidates;
+
+      // Populate preview modal
+      const summaryElem = document.getElementById('excelImportSummary');
+      const countElem = document.getElementById('excelImportCount');
+      const tbody = document.getElementById('excelImportPreviewBody');
+
+      countElem.textContent = candidates.length;
+      summaryElem.innerHTML = `
+        📁 <strong>ឯកសារ ៖</strong> ${file.name} &nbsp;|&nbsp; 
+        🎯 <strong>បេក្ខជនរកឃើញ ៖</strong> ${candidates.length} នាក់ &nbsp;|&nbsp; 
+        🏛️ <strong>ការិយាល័យគោលដៅ ៖</strong> ${document.getElementById('activeStationInfo').textContent || 'ការិយាល័យដែលបានជ្រើស'}
+      `;
+
+      tbody.innerHTML = '';
+      candidates.forEach(c => {
+        const shortlist = (c.scoreDegree || 0) + (c.scoreExp || 0);
+        tbody.innerHTML += `
+          <tr>
+            <td style="text-align: center; font-weight: 700;">${c.slotCode}</td>
+            <td style="font-weight: 600;">${c.role}</td>
+            <td style="font-weight: 600; color: #1e3a8a;">${c.name}</td>
+            <td style="text-align: center;">${c.gender}</td>
+            <td style="text-align: center;">${c.dob}</td>
+            <td>${c.phone || '---'}</td>
+            <td>${c.degree || ''} (${c.scoreDegree}ពិន្ទុ)</td>
+            <td style="text-align: center; font-weight: 700; color: #15803d; background: #f0fdf4;">${shortlist}</td>
+            <td style="text-align: center; font-weight: 700; color: #92400e; background: #fef3c7;">${c.scoreInterview || '---'}</td>
+          </tr>
+        `;
+      });
+
+      openModal('modalExcelImport');
+    } catch (err) {
+      console.error('Error reading Excel file:', err);
+      alert('កំហុសក្នុងការអានឯកសារ Excel ៖ ' + err.message);
+    }
+  };
+
+  reader.readAsBinaryString(file);
+}
+
+// 4. Parser function that handles both គ.ក.ប 2027.xlsm and standard Excel exports
+function parseCandidatesFromWorkbook(wb) {
+  const roles = [
+    { name: 'ប្រធាន', code: 'a' },
+    { name: 'អនុប្រធាន', code: 'b' },
+    { name: 'លេខាធិការ', code: 'c' },
+    { name: 'សមាជិកទី១', code: 'd' },
+    { name: 'សមាជិកទី២', code: 'e' },
+    { name: 'សមាជិកទី៣', code: 'f' }
+  ];
+
+  const extracted = [];
+
+  // Sheet lookups
+  const sortSheetName = wb.SheetNames.find(n => n.toLowerCase().includes('sort') || n.toLowerCase().includes('short'));
+  const scoreSheetName = wb.SheetNames.find(n => n.includes('បញ្ចូលពិន្ទុ') || n.toLowerCase().includes('score'));
+  const noticeSheetName = wb.SheetNames.find(n => n.includes('ជូនដំណឹង') || n.toLowerCase().includes('notice'));
+
+  const sortSheet = sortSheetName ? wb.Sheets[sortSheetName] : null;
+  const scoreSheet = scoreSheetName ? wb.Sheets[scoreSheetName] : null;
+  const noticeSheet = noticeSheetName ? wb.Sheets[noticeSheetName] : null;
+
+  if (sortSheet) {
+    const sortRows = XLSX.utils.sheet_to_json(sortSheet, { header: 1, raw: false });
+    const scoreRows = scoreSheet ? XLSX.utils.sheet_to_json(scoreSheet, { header: 1, raw: false }) : [];
+    const noticeRows = noticeSheet ? XLSX.utils.sheet_to_json(noticeSheet, { header: 1, raw: false }) : [];
+
+    roles.forEach(role => {
+      for (let ord = 1; ord <= 3; ord++) {
+        const slotCode = `${role.code}${ord}`;
+
+        let candName = '', gender = 'ប', dob = '', phone = '', degree = '', scoreDegree = 0, exp = '', scoreExp = 0, scoreInterview = '';
+
+        // Search SortList
+        for (let r = 0; r < sortRows.length; r++) {
+          const row = sortRows[r];
+          if (!row) continue;
+          if (row[0] === slotCode || (row[1] === role.code && String(row[2]) === String(ord))) {
+            candName = (row[4] || row[3] || '').trim();
+            gender = (row[5] || 'ប').trim();
+            dob = formatExcelDate(row[6]);
+            degree = (row[7] || '').trim();
+            scoreDegree = parseFloat(row[8]) || 0;
+            exp = (row[9] || '').trim();
+            scoreExp = parseFloat(row[10]) || 0;
+            phone = (row[12] || '').trim();
+            break;
+          }
+        }
+
+        // Search ជូនដំណឹង for phone
+        if (!phone) {
+          for (let r = 0; r < noticeRows.length; r++) {
+            const row = noticeRows[r];
+            if (!row) continue;
+            if (row[0] === slotCode && row[5]) {
+              phone = String(row[5]).trim();
+              break;
+            }
+          }
+        }
+
+        // Search បញ្ចូលពិន្ទុ for interview score
+        for (let r = 0; r < scoreRows.length; r++) {
+          const row = scoreRows[r];
+          if (!row) continue;
+          if (row[0] === slotCode) {
+            scoreInterview = (row[6] !== undefined ? String(row[6]) : '').trim();
+            break;
+          }
+        }
+
+        if (candName) {
+          extracted.push({
+            slotCode,
+            role: role.name,
+            roleCode: role.code,
+            orderInRole: ord,
+            name: candName,
+            gender: gender === 'ស' ? 'ស' : 'ប',
+            dob: dob,
+            phone: phone,
+            degree: degree,
+            scoreDegree: scoreDegree,
+            experience: exp,
+            scoreExp: scoreExp,
+            scoreInterview: scoreInterview
+          });
+        }
+      }
+    });
+  } else {
+    // Generic sheet fallback
+    const firstSheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false });
+    let headerRowIdx = -1;
+    for (let i = 0; i < Math.min(15, rows.length); i++) {
+      const r = rows[i] || [];
+      if (r.some(c => typeof c === 'string' && (c.includes('ឈ្មោះ') || c.includes('គោត្តនាម')))) {
+        headerRowIdx = i;
+        break;
+      }
+    }
+
+    if (headerRowIdx !== -1) {
+      const header = rows[headerRowIdx];
+      const nameCol = header.findIndex(c => String(c).includes('ឈ្មោះ') || String(c).includes('គោត្តនាម'));
+      const genderCol = header.findIndex(c => String(c).includes('ភេទ'));
+      const dobCol = header.findIndex(c => String(c).includes('កំណើត'));
+      const phoneCol = header.findIndex(c => String(c).includes('ទូរសព្ទ'));
+      const roleCol = header.findIndex(c => String(c).includes('មុខតំណែង'));
+      const slotCol = header.findIndex(c => String(c).includes('កូដ'));
+      const interviewCol = header.findIndex(c => String(c).includes('សម្ភាសន៍'));
+
+      let currentRole = 'ប្រធាន';
+      let currentOrder = 1;
+
+      for (let i = headerRowIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row) continue;
+        const name = (row[nameCol] || '').trim();
+        if (!name) continue;
+
+        let role = (roleCol !== -1 && row[roleCol]) ? String(row[roleCol]).trim() : currentRole;
+        let slot = (slotCol !== -1 && row[slotCol]) ? String(row[slotCol]).trim() : '';
+
+        extracted.push({
+          slotCode: slot || `a${currentOrder}`,
+          role: role,
+          roleCode: ROLE_CODES[role] || 'a',
+          orderInRole: currentOrder,
+          name: name,
+          gender: (genderCol !== -1 && row[genderCol]) ? String(row[genderCol]).trim() : 'ប',
+          dob: (dobCol !== -1) ? formatExcelDate(row[dobCol]) : '',
+          phone: (phoneCol !== -1 && row[phoneCol]) ? String(row[phoneCol]).trim() : '',
+          degree: '',
+          scoreDegree: 0,
+          experience: '',
+          scoreExp: 0,
+          scoreInterview: (interviewCol !== -1 && row[interviewCol]) ? String(row[interviewCol]).trim() : ''
+        });
+
+        currentOrder++;
+      }
+    }
+  }
+
+  return extracted;
+}
+
+// 5. Confirm and Apply Excel Import to Current Station
+async function confirmAndSaveExcelImport() {
+  const stationId = document.getElementById('scoringStationSelect').value;
+  if (!stationId) {
+    alert('សូមជ្រើសរើសការិយាល័យបោះឆ្នោតជាមុនសិន!');
+    return;
+  }
+
+  if (!pendingImportCandidates || pendingImportCandidates.length === 0) {
+    alert('គ្មានទិន្នន័យសម្រាប់បញ្ចូលឡើយ!');
+    return;
+  }
+
+  const btnConfirm = document.getElementById('btnConfirmExcelImport');
+  btnConfirm.disabled = true;
+  btnConfirm.textContent = 'កំពុងរក្សាទុក...';
+
+  try {
+    for (const item of pendingImportCandidates) {
+      const payload = {
+        pollingStationId: stationId,
+        role: item.role,
+        roleCode: item.roleCode,
+        orderInRole: item.orderInRole,
+        name: item.name,
+        gender: item.gender,
+        dob: item.dob,
+        phone: item.phone,
+        degree: item.degree,
+        scoreDegree: item.scoreDegree,
+        experience: item.experience,
+        scoreExp: item.scoreExp,
+        scoreInterview: item.scoreInterview
+      };
+
+      await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    closeModal('modalExcelImport');
+    alert(`🎉 ជោគជ័យ! បាន Import បេក្ខជនចំនួន ${pendingImportCandidates.length} នាក់ និងរក្សាទុកក្នុងប្រព័ន្ធរួចរាល់!`);
+    await renderScoringTableForActiveStation();
+    await checkCloudStatus();
+  } catch (err) {
+    console.error('Error importing candidates:', err);
+    alert('កំហុសក្នុងការរក្សាទុកទិន្នន័យ ៖ ' + err.message);
+  } finally {
+    btnConfirm.disabled = false;
+    btnConfirm.textContent = '✅ យល់ព្រមបញ្ចូលទិន្នន័យ (Import Now)';
   }
 }
 

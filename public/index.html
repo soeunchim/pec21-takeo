@@ -196,13 +196,23 @@
            ===================================================================== -->
       <section id="tabScoring" class="page-section">
         <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">📝 បញ្ចូលពិន្ទុ និងបូកស្រង់ចំណាត់ថ្នាក់ គ.ក.ប (Scoring Table)</h3>
-            <div style="display: flex; gap: 8px;">
-              <button id="btnSaveBatchScores" class="btn btn-success">
-                💾 រក្សាទុកពិន្ទុទាំងអស់ (Save All Scores)
+          <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+            <h3 class="card-title">📊 បញ្ចូលពិន្ទុ និងបូកស្រង់ចំណាត់ថ្នាក់ គ.ក.ប (Spreadsheet Table)</h3>
+            <div class="excel-toolbar">
+              <button id="btnSaveBatchScores" class="btn btn-success" title="រក្សាទុកពិន្ទុទាំងអស់ចូលប្រព័ន្ធ">
+                💾 រក្សាទុកពិន្ទុ (Save All)
               </button>
-              <button id="btnOpenAddCandidateModal" class="btn btn-primary btn-sm">
+              <button id="btnExportExcel" class="btn btn-excel" title="ទាញយកទិន្នន័យជាឯកសារ Excel (.xlsx)">
+                📥 Export ជា Excel (.xlsx)
+              </button>
+              <button id="btnImportExcel" class="btn btn-primary" title="នាំចូលទិន្នន័យពីឯកសារ Excel (.xlsx ឬ .xlsm)">
+                📤 Import ពី Excel (.xlsx / .xlsm)
+              </button>
+              <button id="btnDownloadTemplate" class="btn btn-outline" style="border: 1px solid #15803d; color: #15803d; background: #f0fdf4;" title="ទាញយកគំរូ Excel ផ្លូវការសម្រាប់បំពេញក្រៅប្រព័ន្ធ">
+                📄 គំរូ Excel
+              </button>
+              <input type="file" id="excelFileInput" accept=".xlsx, .xlsm, .xls" style="display: none;">
+              <button id="btnOpenAddCandidateModal" class="btn btn-secondary btn-sm" title="បន្ថែមបេក្ខជនថ្មីដោយផ្ទាល់">
                 ➕ បន្ថែមបេក្ខជន
               </button>
             </div>
@@ -217,30 +227,37 @@
               </select>
             </div>
             <div style="align-self: flex-end;">
-              <span id="activeStationInfo" style="font-size: 13px; color: var(--text-muted); font-weight: 500;"></span>
+              <span id="activeStationInfo" style="font-size: 13px; color: var(--text-muted); font-weight: 600;"></span>
             </div>
           </div>
 
-          <!-- Scoring Grid Matching Excel -->
+          <!-- Scoring Grid Matching Official Excel -->
           <div class="table-responsive">
-            <table class="table-custom" id="scoringTable">
+            <table class="excel-scoring-table" id="scoringTable">
               <thead>
-                <tr>
-                  <th style="width: 50px; text-align: center;">ល.រ</th>
-                  <th style="min-width: 160px;">គោត្តនាម-នាម</th>
-                  <th style="width: 60px; text-align: center;">ភេទ</th>
-                  <th style="width: 110px; text-align: center;">ថ្ងៃខែឆ្នាំកំណើត</th>
-                  <th style="width: 110px;">លេខទូរសព្ទ</th>
+                <tr class="excel-header-group">
+                  <th rowspan="2" style="width: 45px;">ល.រ</th>
+                  <th rowspan="2" style="width: 55px;">កូដ</th>
+                  <th colspan="4" class="th-group-info">ព័ត៌មានបេក្ខជន (Candidate Information)</th>
+                  <th colspan="5" class="th-group-shortlist">តារាងសម្រាំងបេក្ខជន (Shortlist Score)</th>
+                  <th colspan="1" class="th-group-interview">សម្ភាសន៍ (Interview)</th>
+                  <th colspan="3" class="th-group-result">លទ្ធផលបូកស្រង់ (Final Results)</th>
+                  <th rowspan="2" style="width: 55px;">លុប</th>
+                </tr>
+                <tr class="excel-header-sub">
+                  <th style="min-width: 170px;">គោត្តនាម-នាម</th>
+                  <th style="width: 55px;">ភេទ</th>
+                  <th style="width: 110px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+                  <th style="width: 115px;">លេខទូរសព្ទ</th>
                   <th style="min-width: 130px;">កម្រិតសញ្ញាបត្រ</th>
-                  <th style="width: 75px; text-align: center;">ពិន្ទុ</th>
+                  <th style="width: 60px;">ពិន្ទុ</th>
                   <th style="min-width: 130px;">បទពិសោធន៍</th>
-                  <th style="width: 75px; text-align: center;">ពិន្ទុ</th>
-                  <th style="width: 80px; text-align: center; background: #e0f2fe;">ពិន្ទុសម្រាំង</th>
-                  <th style="width: 110px; text-align: center; background: #fef3c7;">ពិន្ទុសម្ភាសន៍ (max 20)</th>
-                  <th style="width: 85px; text-align: center; background: #dcfce7;">សរុបពិន្ទុ</th>
-                  <th style="width: 70px; text-align: center;">ចំណាត់ថ្នាក់</th>
-                  <th style="width: 110px; text-align: center;">និទ្ទេស</th>
-                  <th style="width: 80px; text-align: center;">លុប</th>
+                  <th style="width: 60px;">ពិន្ទុ</th>
+                  <th style="width: 80px; background: #dcfce7; color: #166534; font-weight: 700;">សរុបសម្រាំង</th>
+                  <th style="width: 110px; background: #fef3c7; color: #92400e; font-weight: 700;">សម្ភាសន៍ (0-20)</th>
+                  <th style="width: 85px; background: #dbeafe; color: #1e40af; font-weight: 700;">សរុបពិន្ទុ</th>
+                  <th style="width: 70px; background: #f3e8ff; color: #6b21a8; font-weight: 700;">ចំណាត់ថ្នាក់</th>
+                  <th style="width: 110px;">និទ្ទេស</th>
                 </tr>
               </thead>
               <tbody id="scoringTableBody">
@@ -592,8 +609,83 @@
         </div>
       </form>
     </div>
+  <!-- Modal: Excel Import Preview -->
+  <div id="modalExcelImport" class="modal-overlay">
+    <div class="modal-content" style="max-width: 950px; width: 95%;">
+      <div class="modal-header">
+        <h3 class="card-title">📤 ពិនិត្យទិន្នន័យនាំចូលពី Excel (Excel Import Preview)</h3>
+        <button class="btn-close" onclick="closeModal('modalExcelImport')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="excelImportSummary" style="margin-bottom: 14px; padding: 12px 16px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; font-size: 13.5px; color: #166534;">
+          <!-- Dynamically populated summary -->
+        </div>
+
+        <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; font-weight: 600; color: #334155;">តារាងបេក្ខជនដែលបានស្រង់ចេញពី Excel (សរុប <span id="excelImportCount">0</span> នាក់) ៖</span>
+          <label style="font-size: 12.5px; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="chkReplaceCurrentStation" checked>
+            <span>ជំនួសទិន្នន័យក្នុងការិយាល័យបច្ចុប្បន្ន</span>
+          </label>
+        </div>
+
+        <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+          <table class="table-custom" id="excelImportPreviewTable" style="font-size: 12.5px;">
+            <thead>
+              <tr style="background: #f1f5f9; position: sticky; top: 0; z-index: 2;">
+                <th style="width: 50px; text-align: center;">កូដ</th>
+                <th style="width: 110px;">មុខតំណែង</th>
+                <th>គោត្តនាម-នាម</th>
+                <th style="width: 50px; text-align: center;">ភេទ</th>
+                <th style="width: 100px; text-align: center;">ថ្ងៃខែឆ្នាំកំណើត</th>
+                <th style="width: 105px;">លេខទូរសព្ទ</th>
+                <th style="text-align: center;">កម្រិតសញ្ញាបត្រ</th>
+                <th style="width: 75px; text-align: center;">ពិន្ទុសម្រាំង</th>
+                <th style="width: 80px; text-align: center;">សម្ភាសន៍</th>
+              </tr>
+            </thead>
+            <tbody id="excelImportPreviewBody">
+              <!-- Dynamically populated preview rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between;">
+        <span style="font-size: 12px; color: #64748b;">💡 ពេលចុចយល់ព្រម ទិន្នន័យនឹងត្រូវរក្សាទុកក្នុងប្រព័ន្ធ និង Sync ទៅ Google Sheets ដោយស្វ័យប្រវត្តិ។</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalExcelImport')">បោះបង់</button>
+          <button type="button" id="btnConfirmExcelImport" class="btn btn-success" style="font-weight: 700;">
+            ✅ យល់ព្រមបញ្ចូលទិន្នន័យ (Import Now)
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- Datalist Autocomplete Presets for Degree & Experience -->
+  <datalist id="degreePresets">
+    <option value="បរិញ្ញាបត្រ" label="ពិន្ទុ 12"></option>
+    <option value="ជាន់ខ្ពស់" label="ពិន្ទុ 8"></option>
+    <option value="បាក់ឌុប" label="ពិន្ទុ 5"></option>
+    <option value="ក្រោមបាក់ឌុប" label="ពិន្ទុ 0"></option>
+    <option value="គ្មាន" label="ពិន្ទុ 0"></option>
+  </datalist>
+
+  <datalist id="expPresets">
+    <option value="ការិយាល័យ២ដង" label="ពិន្ទុ 12"></option>
+    <option value="ការិយាល័យ១ដង" label="ពិន្ទុ 8"></option>
+    <option value="ស្ទង់មតិ" label="ពិន្ទុ 4"></option>
+    <option value="គ្មានបទពិសោធន៍" label="ពិន្ទុ 0"></option>
+    <option value="គ្មាន" label="ពិន្ទុ 0"></option>
+  </datalist>
+
+  <!-- SheetJS Library for Standalone Client-side Excel Import/Export -->
+  <script src="js/xlsx.full.min.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\\/script>');
+    }
+  </script>
   <script src="js/app.js"></script>
 </body>
 </html>
