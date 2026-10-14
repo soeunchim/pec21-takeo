@@ -58,10 +58,21 @@
       </div>
       <div class="header-actions">
         <!-- Cloud Sync Status Pill -->
-        <div id="cloudStatusBadge" class="cloud-status" title="Google Sheets Cloud Status">
+        <div id="cloudStatusBadge" class="cloud-status" title="ស្ថានភាពផ្ទុកទិន្នន័យ (Storage Status)" style="cursor: pointer;">
           <span id="pulseDot" class="pulse-dot"></span>
-          <span id="cloudStatusText">Google Sheets: Ready</span>
+          <span id="cloudStatusText">Storage: Online Database</span>
         </div>
+        <script>
+          (function() {
+            try {
+              var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port === '3027';
+              var txt = document.getElementById('cloudStatusText');
+              if (txt) {
+                txt.textContent = isLocal ? 'Storage: Local Database' : 'Storage: Online Database';
+              }
+            } catch(e) {}
+          })();
+        </script>
         <!-- User Profile Badge -->
         <div class="user-badge">
           <span id="userFullName" style="font-weight: 600; font-size: 13px;">...</span>
@@ -509,6 +520,10 @@
           </div>
 
           <div style="max-width: 700px;">
+            <div id="storageEnvironmentNotice" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-size: 13px; line-height: 1.6;">
+              🌐 <strong>របៀបដំណើរការ៖ Online Cloud</strong> — កំពុងប្រើប្រាស់ <strong>Storage: Online Database</strong>
+            </div>
+
             <div class="form-group">
               <label class="form-label">Google Apps Script Web App URL (Google Sheets Database Endpoint)</label>
               <input type="url" id="settingGoogleSheetUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">

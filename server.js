@@ -1188,7 +1188,14 @@ const server = http.createServer(async (req, res) => {
 
     // 19. GET & POST /api/settings
     if (pathname === '/api/settings' && req.method === 'GET') {
-      return sendJSON(res, 200, { success: true, settings: db.settings });
+      const host = (req.headers && req.headers.host) || '';
+      const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+      return sendJSON(res, 200, {
+        success: true,
+        settings: db.settings,
+        isLocalhost: isLocalhost,
+        environment: isLocalhost ? 'local' : 'online'
+      });
     }
 
     if (pathname === '/api/settings' && req.method === 'POST') {

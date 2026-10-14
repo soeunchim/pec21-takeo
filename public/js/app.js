@@ -126,6 +126,21 @@ function setupEventListeners() {
     }
   });
 
+  // Cloud / Storage Badge Info
+  const cloudBadge = document.getElementById('cloudStatusBadge');
+  if (cloudBadge) {
+    cloudBadge.addEventListener('click', () => {
+      const isLocal = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' || 
+                      window.location.port === '3027';
+      if (isLocal) {
+        alert('💻 ប្រព័ន្ធកំពុងដំណើរការលើម៉ាស៊ីនផ្ទាល់ (Localhost:3027)\n\n• ប្រភេទផ្ទុកទិន្នន័យ៖ Storage: Local Database (ផ្ទុកលើកុំព្យូទ័រនេះ)\n• ប្រសិនបើលោកអ្នកចង់ប្រើប្រាស់ Online សូមចូលទៅកាន់៖ https://pec21-takeo.onrender.com');
+      } else {
+        alert('🌐 ប្រព័ន្ធកំពុងដំណើរការលើ Online Cloud (Render)\n\n• ប្រភេទផ្ទុកទិន្នន័យ៖ Storage: Online Database\n• ដើម្បីប្រើប្រាស់ Storage: Local Database សូមបើកកម្មវិធីតាមរយៈ http://localhost:3027 នៅលើកុំព្យូទ័រផ្ទាល់។');
+      }
+    });
+  }
+
   // Tab Navigation
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -804,20 +819,60 @@ function setScoringStationById(stationId, source = '') {
 async function checkCloudStatus() {
   const badge = document.getElementById('cloudStatusText');
   const pulse = document.getElementById('pulseDot');
+  const badgeContainer = document.getElementById('cloudStatusBadge');
+  if (!badge) return;
+
+  const isLocal = window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' || 
+                  window.location.port === '3027';
+
   try {
     const res = await fetch('/api/settings');
     const data = await res.json();
     if (data.success && data.settings) {
       appSettings = data.settings;
       if (appSettings.googleSheetUrl) {
-        badge.textContent = 'Google Sheets: Synced';
-        pulse.classList.remove('syncing');
+        badge.textContent = isLocal ? 'Google Sheets: Synced' : 'Storage: Google Sheets';
+        if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud រួចរាល់';
+        if (pulse) {
+          pulse.className = 'pulse-dot';
+          pulse.style.backgroundColor = '#06b6d4';
+          pulse.style.boxShadow = '0 0 8px #06b6d4';
+        }
+      } else if (!isLocal) {
+        badge.textContent = 'Storage: Online Database';
+        if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើ Cloud Online (pec21-takeo.onrender.com)';
+        if (pulse) {
+          pulse.className = 'pulse-dot';
+          pulse.style.backgroundColor = '#10b981';
+          pulse.style.boxShadow = '0 0 8px #10b981';
+        }
       } else {
         badge.textContent = 'Storage: Local Database';
+        if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើម៉ាស៊ីនផ្ទាល់ (Localhost:3027)';
+        if (pulse) {
+          pulse.className = 'pulse-dot';
+          pulse.style.backgroundColor = '#22c55e';
+          pulse.style.boxShadow = '0 0 8px #22c55e';
+        }
       }
     }
   } catch (e) {
-    badge.textContent = 'Storage: Offline';
+    if (!isLocal) {
+      badge.textContent = 'Storage: Online Database';
+      if (pulse) {
+        pulse.className = 'pulse-dot';
+        pulse.style.backgroundColor = '#10b981';
+        pulse.style.boxShadow = '0 0 8px #10b981';
+      }
+    } else {
+      badge.textContent = 'Storage: Offline';
+      if (pulse) {
+        pulse.className = 'pulse-dot';
+        pulse.style.backgroundColor = '#ef4444';
+        pulse.style.boxShadow = '0 0 8px #ef4444';
+      }
+    }
   }
 }
 
@@ -3220,6 +3275,24 @@ window.resetUserPassword = async function(id, username) {
 
 async function loadSettingsForm() {
   try {
+    const isLocal = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' || 
+                    window.location.port === '3027';
+    const notice = document.getElementById('storageEnvironmentNotice');
+    if (notice) {
+      if (isLocal) {
+        notice.style.background = '#f0fdf4';
+        notice.style.borderColor = '#bbf7d0';
+        notice.style.color = '#166534';
+        notice.innerHTML = '💻 <strong>របៀបដំណើរការ៖ Localhost:3027</strong> — កំពុងប្រើប្រាស់ <strong>Storage: Local Database</strong> (ទិន្នន័យត្រូវបានរក្សាទុកនៅលើកុំព្យូទ័រនេះផ្ទាល់)';
+      } else {
+        notice.style.background = '#eff6ff';
+        notice.style.borderColor = '#bfdbfe';
+        notice.style.color = '#1e40af';
+        notice.innerHTML = '🌐 <strong>របៀបដំណើរការ៖ Online Cloud</strong> — កំពុងប្រើប្រាស់ <strong>Storage: Online Database</strong> (Render)។<br><span style="font-size:12px;opacity:0.9;">💡 ប្រសិនបើលោកអ្នកចង់ប្រើប្រាស់ <strong>Storage: Local Database</strong> សូមបើកកម្មវិធីតាមរយៈ <code>http://localhost:3027</code> នៅលើកុំព្យូទ័រផ្ទាល់។</span>';
+      }
+    }
+
     const res = await fetch('/api/settings');
     const data = await res.json();
     if (data.success && data.settings) {
