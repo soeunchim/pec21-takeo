@@ -1,0 +1,1582 @@
+// ==============================================================================
+// ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧ (PEC21 - ខេត្តតាកែវ)
+// Client-Side Application Engine
+// ==============================================================================
+
+let currentUser = null;
+let allDistricts = [];
+let allCommunes = [];
+let allPollingStations = [];
+let currentCandidates = [];
+let appSettings = {};
+let allLoadedUsers = [];
+let currentUserSubtab = 'admins';
+
+const ROLES_ORDER = ['ប្រធាន', 'អនុប្រធាន', 'លេខាធិការ', 'សមាជិកទី១', 'សមាជិកទី២', 'សមាជិកទី៣'];
+const ROLE_CODES = {
+  'ប្រធាន': 'a',
+  'អនុប្រធាន': 'b',
+  'លេខាធិការ': 'c',
+  'សមាជិកទី១': 'd',
+  'សមាជិកទី២': 'e',
+  'សមាជិកទី៣': 'f'
+};
+
+// ==============================================================================
+// INITIALIZATION & AUTHENTICATION
+// ==============================================================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  setupEventListeners();
+  await checkAuthStatus();
+});
+
+async function checkAuthStatus() {
+  try {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (data.success && data.user) {
+      currentUser = data.user;
+      showAppShell();
+      await loadInitialData();
+      if (currentUser.mustChangePassword) {
+        openChangePasswordModal(true);
+      }
+    } else {
+      showLoginScreen();
+    }
+  } catch (err) {
+    showLoginScreen();
+  }
+}
+
+function showLoginScreen() {
+  document.getElementById('loginSection').style.display = 'flex';
+  document.getElementById('appShell').style.display = 'none';
+}
+
+function showAppShell() {
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+
+  // Render header profile
+  document.getElementById('userFullName').textContent = currentUser.fullName || currentUser.username;
+  document.getElementById('userRoleTag').textContent = `${currentUser.role} ${currentUser.district !== 'all' ? '(' + currentUser.district + ')' : ''}`;
+
+  // Role permissions UI adjustments
+  const usersNav = document.getElementById('tabUsersNav');
+  const settingsNav = document.getElementById('tabSettingsNav');
+
+  if (currentUser.role === 'Commune') {
+    if (usersNav) usersNav.style.display = 'none';
+    if (settingsNav) settingsNav.style.display = 'none';
+    const filterBar = document.getElementById('stationFilterBar');
+    if (filterBar) filterBar.style.display = 'none';
+  } else if (currentUser.role === 'Trainer') {
+    if (usersNav) {
+      usersNav.style.display = 'inline-flex';
+      usersNav.innerHTML = `👥 គណនីឃុំក្នុង ${currentUser.district}`;
+    }
+    if (settingsNav) settingsNav.style.display = 'none';
+  } else {
+    if (usersNav) usersNav.style.display = 'inline-flex';
+    if (settingsNav) settingsNav.style.display = 'inline-flex';
+  }
+}
+
+function setupEventListeners() {
+  // Login Form
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    const errBox = document.getElementById('loginError');
+    errBox.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentUser = data.user;
+        showAppShell();
+        await loadInitialData();
+        if (currentUser.mustChangePassword) {
+          openChangePasswordModal(true);
+        }
+      } else {
+        errBox.textContent = data.message || 'Login failed';
+        errBox.style.display = 'block';
+      }
+    } catch (err) {
+      errBox.textContent = 'Network error: ' + err.message;
+      errBox.style.display = 'block';
+    }
+  });
+
+  // Logout
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    if (confirm('តើលោកអ្នកពិតជាចង់ចាកចេញពីប្រព័ន្ធមែនទេ?')) {
+      await fetch('/api/logout', { method: 'POST' });
+      currentUser = null;
+      showLoginScreen();
+    }
+  });
+
+  // Tab Navigation
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      const targetId = btn.getAttribute('data-tab');
+      document.getElementById(targetId).classList.add('active');
+
+      if (targetId === 'tabDashboard') loadDashboardStats();
+      if (targetId === 'tabPollingStations') renderPollingStationsTable();
+      if (targetId === 'tabScoring') renderScoringView();
+      if (targetId === 'tabReports') renderReportPreview();
+      if (targetId === 'tabUsers') loadUsersList();
+      if (targetId === 'tabSettings') loadSettingsForm();
+    });
+  });
+
+  // Station Change on Scoring Page
+  document.getElementById('scoringStationSelect').addEventListener('change', () => {
+    renderScoringTableForActiveStation();
+  });
+
+  // Station Change on Reports Page
+  document.getElementById('reportStationSelect').addEventListener('change', () => {
+    renderReportPreview();
+  });
+  document.getElementById('reportTypeSelect').addEventListener('change', () => {
+    renderReportPreview();
+  });
+
+  // Direct Print Button
+  document.getElementById('btnDirectPrint').addEventListener('click', () => {
+    window.print();
+  });
+
+  // Save Batch Scores
+  document.getElementById('btnSaveBatchScores').addEventListener('click', async () => {
+    await saveBatchScores();
+  });
+
+  // Modal Triggers
+  document.getElementById('btnOpenAddStationModal').addEventListener('click', () => {
+    openStationModal();
+  });
+  document.getElementById('btnOpenAddCandidateModal').addEventListener('click', () => {
+    openCandidateModal();
+  });
+  document.getElementById('btnProfileModal').addEventListener('click', () => {
+    openChangePasswordModal(false);
+  });
+
+  // Forms Submissions
+  document.getElementById('formStation').addEventListener('submit', handleStationSubmit);
+  document.getElementById('formCandidate').addEventListener('submit', handleCandidateSubmit);
+  document.getElementById('formChangePassword').addEventListener('submit', handleChangePasswordSubmit);
+
+  // Settings Save & Google Sync
+  const btnSaveSettings = document.getElementById('btnSaveSettings');
+  if (btnSaveSettings) btnSaveSettings.addEventListener('click', handleSaveSettings);
+
+  const btnManualSync = document.getElementById('btnManualGoogleSync');
+  if (btnManualSync) btnManualSync.addEventListener('click', handleManualGoogleSync);
+
+  // Score modal auto helpers
+  document.getElementById('candFormDegreeSelect').addEventListener('change', (e) => {
+    const val = parseFloat(e.target.value) || 0;
+    document.getElementById('candFormScoreDegree').value = val;
+  });
+  document.getElementById('candFormExpSelect').addEventListener('change', (e) => {
+    const val = parseFloat(e.target.value) || 0;
+    document.getElementById('candFormScoreExp').value = val;
+  });
+
+  // Auto-pad 4 digits for station code input
+  const codeInput = document.getElementById('stationFormCode');
+  if (codeInput) {
+    codeInput.addEventListener('blur', () => {
+      const v = codeInput.value.trim();
+      if (v) {
+        const num = parseInt(v);
+        const padded = !isNaN(num) ? String(num).padStart(4, '0') : v.padStart(4, '0');
+        codeInput.value = padded;
+        const nameInput = document.getElementById('stationFormName');
+        if (nameInput && (!nameInput.value || nameInput.value.startsWith('ការិយាល័យ'))) {
+          nameInput.value = `ការិយាល័យ ${padded}`;
+        }
+      }
+    });
+  }
+
+  // Filter Buttons
+  const btnFilterStations = document.getElementById('btnFilterStations');
+  if (btnFilterStations) {
+    btnFilterStations.addEventListener('click', () => {
+      renderPollingStationsTable();
+    });
+  }
+
+  // User Management Subtabs (Admins, Trainers, Communes)
+  document.querySelectorAll('.user-subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.user-subtab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentUserSubtab = btn.getAttribute('data-usertab');
+      renderUsersTable();
+    });
+  });
+
+  // User Search input
+  const searchUserInput = document.getElementById('searchUserText');
+  if (searchUserInput) {
+    searchUserInput.addEventListener('input', () => {
+      renderUsersTable();
+    });
+  }
+
+  // User District filter
+  const filterUserDist = document.getElementById('filterUserDistrict');
+  if (filterUserDist) {
+    filterUserDist.addEventListener('change', () => {
+      renderUsersTable();
+    });
+  }
+
+  // User Filter reset
+  const btnResetUserFilter = document.getElementById('btnResetUserFilter');
+  if (btnResetUserFilter) {
+    btnResetUserFilter.addEventListener('click', () => {
+      if (searchUserInput) searchUserInput.value = '';
+      if (filterUserDist) filterUserDist.value = '';
+      renderUsersTable();
+    });
+  }
+}
+
+// ==============================================================================
+// DATA LOADING
+// ==============================================================================
+
+async function loadInitialData() {
+  try {
+    // 1. Districts & Communes
+    const [distRes, comRes, psRes] = await Promise.all([
+      fetch('/api/districts').then(r => r.json()),
+      fetch('/api/communes').then(r => r.json()),
+      fetch('/api/polling-stations').then(r => r.json())
+    ]);
+
+    allDistricts = distRes.districts || [];
+    allCommunes = comRes.communes || [];
+    allPollingStations = psRes.pollingStations || [];
+
+    populateFilterDropdowns();
+    populateStationSelectors();
+    await loadDashboardStats();
+    await checkCloudStatus();
+  } catch (err) {
+    console.error('Error loading initial data:', err);
+  }
+}
+
+function populateFilterDropdowns() {
+  const distSelect = document.getElementById('filterStationDistrict');
+  const comSelect = document.getElementById('filterStationCommune');
+  const formComSelect = document.getElementById('stationFormCommune');
+
+  if (distSelect) {
+    distSelect.innerHTML = '<option value="">-- គ្រប់ក្រុង-ស្រុក --</option>';
+    allDistricts.forEach(d => {
+      distSelect.innerHTML += `<option value="${d.name}">${d.name}</option>`;
+    });
+  }
+
+  if (comSelect) {
+    comSelect.innerHTML = '<option value="">-- គ្រប់ឃុំ-សង្កាត់ --</option>';
+    allCommunes.forEach(c => {
+      comSelect.innerHTML += `<option value="${c.code}">${c.name} (${c.code})</option>`;
+    });
+  }
+
+  if (formComSelect) {
+    formComSelect.innerHTML = '';
+    allCommunes.forEach(c => {
+      formComSelect.innerHTML += `<option value="${c.code}">${c.fullName || c.name + ' (' + c.code + ')'}</option>`;
+    });
+  }
+}
+
+function populateStationSelectors() {
+  const scoringSelect = document.getElementById('scoringStationSelect');
+  const reportSelect = document.getElementById('reportStationSelect');
+
+  scoringSelect.innerHTML = '';
+  reportSelect.innerHTML = '';
+
+  if (!allPollingStations.length) {
+    scoringSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យបោះឆ្នោត --</option>';
+    reportSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យបោះឆ្នោត --</option>';
+    return;
+  }
+
+  allPollingStations.forEach(ps => {
+    const code4 = String(ps.code || '').padStart(4, '0');
+    const opt = `<option value="${ps.id}">ឃុំ${ps.communeName} ៖ ${ps.name} [កូដ: ${code4}]</option>`;
+    scoringSelect.innerHTML += opt;
+    reportSelect.innerHTML += opt;
+  });
+
+  renderScoringTableForActiveStation();
+  renderReportPreview();
+}
+
+async function checkCloudStatus() {
+  const badge = document.getElementById('cloudStatusText');
+  const pulse = document.getElementById('pulseDot');
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    if (data.success && data.settings) {
+      appSettings = data.settings;
+      if (appSettings.googleSheetUrl) {
+        badge.textContent = 'Google Sheets: Synced';
+        pulse.classList.remove('syncing');
+      } else {
+        badge.textContent = 'Storage: Local Database';
+      }
+    }
+  } catch (e) {
+    badge.textContent = 'Storage: Offline';
+  }
+}
+
+// ==============================================================================
+// TAB 1: DASHBOARD
+// ==============================================================================
+
+async function loadDashboardStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const s = data.stats;
+    document.getElementById('dashTotalCandidates').textContent = s.totalCandidates.toLocaleString();
+    document.getElementById('dashTotalStations').textContent = s.totalPollingStations.toLocaleString();
+    document.getElementById('dashTotalPassed').textContent = s.totalPassed.toLocaleString();
+    document.getElementById('dashTotalReserve').textContent = s.totalReserve.toLocaleString();
+    document.getElementById('dashTotalAbsent').textContent = s.totalAbsent.toLocaleString();
+
+    const tbody = document.getElementById('districtStatsTableBody');
+    tbody.innerHTML = '';
+
+    s.byDistrict.forEach((d, idx) => {
+      tbody.innerHTML += `
+        <tr>
+          <td style="text-align: center;">${idx + 1}</td>
+          <td style="font-weight: 600;">${d.district}</td>
+          <td style="text-align: center;">${d.pollingStationCount}</td>
+          <td style="text-align: center; font-weight: 700;">${d.candidateCount}</td>
+          <td style="text-align: center;"><span class="badge badge-passed">${d.passedCount}</span></td>
+          <td style="text-align: center;"><span class="badge badge-reserve">${d.reserveCount}</span></td>
+          <td style="text-align: center;"><span class="badge badge-absent">${d.absentCount}</span></td>
+        </tr>
+      `;
+    });
+  } catch (err) {
+    console.error('Error loading stats:', err);
+  }
+}
+
+// ==============================================================================
+// TAB 2: POLLING STATIONS (Commune Creates Multiple Stations Dynamically)
+// ==============================================================================
+
+function renderPollingStationsTable() {
+  const tbody = document.getElementById('pollingStationsTableBody');
+  tbody.innerHTML = '';
+
+  const filterDist = document.getElementById('filterStationDistrict')?.value;
+  const filterCom = document.getElementById('filterStationCommune')?.value;
+
+  let filtered = allPollingStations;
+  if (filterDist) filtered = filtered.filter(p => p.district === filterDist);
+  if (filterCom) filtered = filtered.filter(p => p.communeCode === filterCom);
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">មិនទាន់មានការិយាល័យបោះឆ្នោតឡើយ។ សូមចុចប៊ូតុង "➕ បង្កើតការិយាល័យថ្មី"</td></tr>';
+    return;
+  }
+
+  filtered.forEach(ps => {
+    tbody.innerHTML += `
+      <tr>
+        <td style="text-align: center; font-weight: 700;">${String(ps.code || '').padStart(4, '0')}</td>
+        <td style="font-weight: 600; color: var(--primary);">${ps.name}</td>
+        <td>ឃុំ${ps.communeName}</td>
+        <td>${ps.district}</td>
+        <td>${ps.location || '---'}</td>
+        <td style="text-align: center;">${ps.interviewDate || '09-07-2027'} (${ps.interviewTime || '07:00'})</td>
+        <td style="text-align: center;"><span class="badge badge-passed">${ps.candidateCount || 0} នាក់</span></td>
+        <td style="text-align: center;">
+          <button class="btn btn-secondary btn-sm" onclick="selectStationForScoring('${ps.id}')">📝 ពិន្ទុ</button>
+          <button class="btn btn-secondary btn-sm" onclick="editStation('${ps.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteStation('${ps.id}')">🗑️</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function openStationModal(station = null) {
+  const modal = document.getElementById('modalStation');
+  const title = document.getElementById('modalStationTitle');
+  const formId = document.getElementById('stationFormId');
+  const formCode = document.getElementById('stationFormCode');
+  const formName = document.getElementById('stationFormName');
+  const formLoc = document.getElementById('stationFormLocation');
+  const formDate = document.getElementById('stationFormDate');
+  const formTime = document.getElementById('stationFormTime');
+  const formPlace = document.getElementById('stationFormPlace');
+  const comGroup = document.getElementById('stationFormCommuneGroup');
+
+  if (currentUser.role === 'Commune') {
+    comGroup.style.display = 'none';
+  } else {
+    comGroup.style.display = 'block';
+  }
+
+  if (station) {
+    title.textContent = 'កែប្រែព័ត៌មានការិយាល័យ';
+    formId.value = station.id;
+    formCode.value = String(station.code || '').padStart(4, '0');
+    formName.value = station.name;
+    formLoc.value = station.location || '';
+    formDate.value = station.interviewDate || '09-07-2027';
+    formTime.value = station.interviewTime || '០៧:០០ ព្រឹក';
+    formPlace.value = station.interviewPlace || '';
+    document.getElementById('stationFormCommune').value = station.communeCode;
+  } else {
+    title.textContent = 'បង្កើតការិយាល័យបោះឆ្នោតថ្មី';
+    formId.value = '';
+    // Suggest next 4-digit code
+    const existingCount = allPollingStations.length + 1;
+    const formattedCode = String(existingCount).padStart(4, '0');
+    formCode.value = formattedCode;
+    formName.value = `ការិយាល័យ ${formattedCode}`;
+    formLoc.value = '';
+    formDate.value = '09-07-2027';
+    formTime.value = '០៧:០០ ព្រឹក';
+    formPlace.value = currentUser.communeName ? `សាលាឃុំ${currentUser.communeName}` : '';
+  }
+
+  modal.classList.add('active');
+}
+
+async function handleStationSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById('stationFormId').value;
+  const payload = {
+    code: document.getElementById('stationFormCode').value.trim(),
+    name: document.getElementById('stationFormName').value.trim(),
+    location: document.getElementById('stationFormLocation').value.trim(),
+    interviewDate: document.getElementById('stationFormDate').value.trim(),
+    interviewTime: document.getElementById('stationFormTime').value.trim(),
+    interviewPlace: document.getElementById('stationFormPlace').value.trim(),
+    communeCode: document.getElementById('stationFormCommune').value
+  };
+
+  const method = id ? 'PUT' : 'POST';
+  const endpoint = id ? `/api/polling-stations/${id}` : '/api/polling-stations';
+
+  try {
+    const res = await fetch(endpoint, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal('modalStation');
+      // Reload polling stations
+      const psRes = await fetch('/api/polling-stations').then(r => r.json());
+      allPollingStations = psRes.pollingStations || [];
+      populateStationSelectors();
+      renderPollingStationsTable();
+      alert(data.message || 'ជោគជ័យ!');
+    } else {
+      alert('កំហុស៖ ' + data.message);
+    }
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  }
+}
+
+window.editStation = function(id) {
+  const ps = allPollingStations.find(p => p.id === id);
+  if (ps) openStationModal(ps);
+};
+
+window.deleteStation = async function(id) {
+  const ps = allPollingStations.find(p => p.id === id);
+  if (!ps) return;
+  if (confirm(`តើលោកអ្នកពិតជាចង់លុប "${ps.name}" និងទិន្នន័យបេក្ខជនទាំងអស់មែនទេ?`)) {
+    try {
+      const res = await fetch(`/api/polling-stations/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        allPollingStations = allPollingStations.filter(p => p.id !== id);
+        populateStationSelectors();
+        renderPollingStationsTable();
+        alert('បានលុបការិយាល័យជោគជ័យ!');
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+};
+
+window.selectStationForScoring = function(stationId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelector('[data-tab="tabScoring"]').classList.add('active');
+  document.getElementById('tabScoring').classList.add('active');
+
+  document.getElementById('scoringStationSelect').value = stationId;
+  renderScoringTableForActiveStation();
+};
+
+// ==============================================================================
+// TAB 3: CANDIDATE SCORING & LIVE RANKING TABLE
+// ==============================================================================
+
+async function renderScoringTableForActiveStation() {
+  const stationId = document.getElementById('scoringStationSelect').value;
+  const tbody = document.getElementById('scoringTableBody');
+  const infoSpan = document.getElementById('activeStationInfo');
+
+  if (!stationId) {
+    tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px;">សូមជ្រើសរើសការិយាល័យបោះឆ្នោត</td></tr>';
+    infoSpan.textContent = '';
+    return;
+  }
+
+  const ps = allPollingStations.find(p => p.id === stationId);
+  if (ps) {
+    infoSpan.textContent = `📍 ${ps.district} / ឃុំ${ps.communeName} / ${ps.location || ''}`;
+  }
+
+  try {
+    const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
+    const data = await res.json();
+    currentCandidates = data.candidates || [];
+
+    tbody.innerHTML = '';
+
+    // Render grouped by the 6 roles
+    ROLES_ORDER.forEach(roleName => {
+      const roleCode = ROLE_CODES[roleName];
+      tbody.innerHTML += `
+        <tr class="role-header-row">
+          <td colspan="15">
+            📌 មុខតំណែង ៖ <strong>${roleName}</strong> (កូដ: ${roleCode})
+          </td>
+        </tr>
+      `;
+
+      // Up to 3 candidates per position slot
+      for (let order = 1; order <= 3; order++) {
+        const slotCode = `${roleCode}${order}`;
+        let cand = currentCandidates.find(c => c.role === roleName && c.orderInRole === order);
+
+        if (!cand) {
+          // Placeholder template slot
+          cand = {
+            id: `temp_${stationId}_${slotCode}`,
+            pollingStationId: stationId,
+            role: roleName,
+            roleCode: roleCode,
+            orderInRole: order,
+            name: '',
+            gender: 'ប',
+            dob: '',
+            phone: '',
+            degree: '',
+            scoreDegree: 0,
+            experience: '',
+            scoreExp: 0,
+            scoreShortlist: 0,
+            scoreInterview: '',
+            scoreTotal: '',
+            rank: order,
+            status: ''
+          };
+          currentCandidates.push(cand);
+        }
+
+        const isAbsent = cand.scoreInterview === 'អវត្តមាន' || cand.status === 'អវត្តមាន';
+        let badgeHtml = '<span class="badge badge-reserve">---</span>';
+        if (cand.status === 'A-ជាប់') badgeHtml = '<span class="badge badge-passed">A-ជាប់</span>';
+        else if (cand.status === 'B-បម្រុង') badgeHtml = '<span class="badge badge-reserve">B-បម្រុង</span>';
+        else if (cand.status === 'C-បម្រុងបន្ទាប់') badgeHtml = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
+        else if (cand.status === 'អវត្តមាន') badgeHtml = '<span class="badge badge-absent">អវត្តមាន</span>';
+
+        tbody.innerHTML += `
+          <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
+            <td style="text-align: center; font-weight: 600;">${slotCode}</td>
+            <td>
+              <input type="text" class="form-control form-control-sm cand-name" value="${cand.name || ''}" placeholder="ឈ្មោះបេក្ខជន" onchange="onCandidateRowChange(this)">
+            </td>
+            <td style="text-align: center;">
+              <select class="form-control form-control-sm cand-gender" onchange="onCandidateRowChange(this)">
+                <option value="ប" ${cand.gender === 'ប' ? 'selected' : ''}>ប</option>
+                <option value="ស" ${cand.gender === 'ស' ? 'selected' : ''}>ស</option>
+              </select>
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm cand-dob" value="${cand.dob || ''}" placeholder="DD-MM-YYYY" onchange="onCandidateRowChange(this)">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm cand-phone" value="${cand.phone || ''}" placeholder="012..." onchange="onCandidateRowChange(this)">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm cand-degree" value="${cand.degree || ''}" placeholder="កម្រិតសញ្ញាបត្រ" onchange="onCandidateRowChange(this)">
+            </td>
+            <td>
+              <input type="number" class="form-control form-control-sm cand-score-degree" value="${cand.scoreDegree || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm cand-exp" value="${cand.experience || ''}" placeholder="បទពិសោធន៍" onchange="onCandidateRowChange(this)">
+            </td>
+            <td>
+              <input type="number" class="form-control form-control-sm cand-score-exp" value="${cand.scoreExp || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
+            </td>
+            <td style="text-align: center; font-weight: 700; background: #f0f9ff;" class="cand-shortlist-display">
+              ${cand.scoreShortlist || 0}
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm cand-interview" value="${cand.scoreInterview !== undefined ? cand.scoreInterview : ''}" placeholder="0-20 ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" onchange="onCandidateRowChange(this)">
+            </td>
+            <td style="text-align: center; font-weight: 700; background: #ecfdf5;" class="cand-total-display">
+              ${cand.scoreTotal !== undefined && cand.scoreTotal !== null && cand.scoreTotal !== '' ? cand.scoreTotal : '---'}
+            </td>
+            <td style="text-align: center; font-weight: 600;" class="cand-rank-display">
+              ${cand.rank || order}
+            </td>
+            <td style="text-align: center;" class="cand-status-display">
+              ${badgeHtml}
+            </td>
+            <td style="text-align: center;">
+              <button class="btn btn-danger btn-sm" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក">❌</button>
+            </td>
+          </tr>
+        `;
+      }
+    });
+
+  } catch (err) {
+    console.error('Error rendering scoring table:', err);
+  }
+}
+
+window.onCandidateRowChange = function(inputElem) {
+  const tr = inputElem.closest('tr');
+  const candId = tr.getAttribute('data-cand-id');
+  const roleName = tr.getAttribute('data-role');
+  const order = parseInt(tr.getAttribute('data-order')) || 1;
+
+  const name = tr.querySelector('.cand-name').value.trim();
+  const gender = tr.querySelector('.cand-gender').value;
+  const dob = tr.querySelector('.cand-dob').value.trim();
+  const phone = tr.querySelector('.cand-phone').value.trim();
+  const degree = tr.querySelector('.cand-degree').value.trim();
+  const scoreDeg = parseFloat(tr.querySelector('.cand-score-degree').value) || 0;
+  const exp = tr.querySelector('.cand-exp').value.trim();
+  const scoreExp = parseFloat(tr.querySelector('.cand-score-exp').value) || 0;
+  const interviewRaw = tr.querySelector('.cand-interview').value.trim();
+
+  const shortlist = scoreDeg + scoreExp;
+  tr.querySelector('.cand-shortlist-display').textContent = shortlist;
+
+  let total = shortlist;
+  let isAbsent = false;
+  if (interviewRaw.includes('អវត្តមាន')) {
+    isAbsent = true;
+    total = 'អវត្តមាន';
+  } else {
+    const interviewNum = parseFloat(interviewRaw);
+    if (!isNaN(interviewNum)) {
+      total = shortlist + interviewNum;
+    }
+  }
+
+  tr.querySelector('.cand-total-display').textContent = total;
+
+  // Update in memory array
+  let cand = currentCandidates.find(c => c.id === candId);
+  if (cand) {
+    cand.name = name;
+    cand.gender = gender;
+    cand.dob = dob;
+    cand.phone = phone;
+    cand.degree = degree;
+    cand.scoreDegree = scoreDeg;
+    cand.experience = exp;
+    cand.scoreExp = scoreExp;
+    cand.scoreShortlist = shortlist;
+    cand.scoreInterview = isAbsent ? 'អវត្តមាន' : (interviewRaw || '');
+    cand.scoreTotal = total;
+  }
+
+  // Recalculate rank for this role in UI
+  recalculateUIRanksForRole(roleName);
+};
+
+function recalculateUIRanksForRole(roleName) {
+  const rows = Array.from(document.querySelectorAll(`tr[data-role="${roleName}"]`));
+  const rowData = rows.map(r => {
+    const name = r.querySelector('.cand-name').value.trim();
+    const totalText = r.querySelector('.cand-total-display').textContent.trim();
+    const isAbsent = totalText === 'អវត្តមាន';
+    const totalNum = parseFloat(totalText) || 0;
+    return { row: r, hasName: !!name, isAbsent, totalNum };
+  });
+
+  // Filter with name
+  const activeRows = rowData.filter(d => d.hasName);
+  activeRows.sort((a, b) => {
+    if (a.isAbsent && !b.isAbsent) return 1;
+    if (!a.isAbsent && b.isAbsent) return -1;
+    return b.totalNum - a.totalNum;
+  });
+
+  activeRows.forEach((d, idx) => {
+    const rankElem = d.row.querySelector('.cand-rank-display');
+    const statusElem = d.row.querySelector('.cand-status-display');
+    if (d.isAbsent) {
+      rankElem.textContent = activeRows.length;
+      statusElem.innerHTML = '<span class="badge badge-absent">អវត្តមាន</span>';
+    } else {
+      const r = idx + 1;
+      rankElem.textContent = r;
+      if (r === 1) statusElem.innerHTML = '<span class="badge badge-passed">A-ជាប់</span>';
+      else if (r === 2) statusElem.innerHTML = '<span class="badge badge-reserve">B-បម្រុង</span>';
+      else if (r === 3) statusElem.innerHTML = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
+      else statusElem.innerHTML = `<span class="badge badge-reserve">បម្រុង ${r-1}</span>`;
+    }
+  });
+}
+
+window.clearCandidateRow = function(btn) {
+  const tr = btn.closest('tr');
+  if (confirm('តើលោកអ្នកពិតជាចង់លុបទិន្នន័យបេក្ខជនក្នុងជួរនេះមែនទេ?')) {
+    tr.querySelector('.cand-name').value = '';
+    tr.querySelector('.cand-dob').value = '';
+    tr.querySelector('.cand-phone').value = '';
+    tr.querySelector('.cand-degree').value = '';
+    tr.querySelector('.cand-score-degree').value = 0;
+    tr.querySelector('.cand-exp').value = '';
+    tr.querySelector('.cand-score-exp').value = 0;
+    tr.querySelector('.cand-shortlist-display').textContent = 0;
+    tr.querySelector('.cand-interview').value = '';
+    tr.querySelector('.cand-total-display').textContent = '---';
+    tr.querySelector('.cand-status-display').innerHTML = '<span class="badge badge-reserve">---</span>';
+
+    onCandidateRowChange(tr.querySelector('.cand-name'));
+  }
+};
+
+async function saveBatchScores() {
+  const stationId = document.getElementById('scoringStationSelect').value;
+  if (!stationId) return alert('សូមជ្រើសរើសការិយាល័យ');
+
+  const rows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
+  const candidatesPayload = [];
+
+  rows.forEach(tr => {
+    const candId = tr.getAttribute('data-cand-id');
+    const roleName = tr.getAttribute('data-role');
+    const order = parseInt(tr.getAttribute('data-order')) || 1;
+    const name = tr.querySelector('.cand-name').value.trim();
+
+    // Only save rows that have candidate names or were existing
+    if (name) {
+      candidatesPayload.push({
+        id: candId.startsWith('temp_') ? undefined : candId,
+        pollingStationId: stationId,
+        role: roleName,
+        orderInRole: order,
+        name: name,
+        gender: tr.querySelector('.cand-gender').value,
+        dob: tr.querySelector('.cand-dob').value.trim(),
+        phone: tr.querySelector('.cand-phone').value.trim(),
+        degree: tr.querySelector('.cand-degree').value.trim(),
+        scoreDegree: parseFloat(tr.querySelector('.cand-score-degree').value) || 0,
+        experience: tr.querySelector('.cand-exp').value.trim(),
+        scoreExp: parseFloat(tr.querySelector('.cand-score-exp').value) || 0,
+        scoreInterview: tr.querySelector('.cand-interview').value.trim()
+      });
+    }
+  });
+
+  const saveBtn = document.getElementById('btnSaveBatchScores');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'កំពុងរក្សាទុក...';
+
+  try {
+    // Upsert each candidate
+    for (const cand of candidatesPayload) {
+      await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cand)
+      });
+    }
+
+    alert('បានរក្សាទុកពិន្ទុ និងគណនាចំណាត់ថ្នាក់ដោយជោគជ័យ!');
+    await renderScoringTableForActiveStation();
+    await checkCloudStatus();
+  } catch (err) {
+    alert('Error saving scores: ' + err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 រក្សាទុកពិន្ទុទាំងអស់ (Save All Scores)';
+  }
+}
+
+// ==============================================================================
+// TAB 4: OFFICIAL REPORTS & PRINT (The 5 Excel sheets matching layout)
+// ==============================================================================
+
+async function renderReportPreview() {
+  const stationId = document.getElementById('reportStationSelect').value;
+  const reportType = document.getElementById('reportTypeSelect').value;
+  const container = document.getElementById('printContainer');
+
+  if (!stationId) {
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">សូមជ្រើសរើសការិយាល័យបោះឆ្នោតដើម្បីពិនិត្យ និងបោះពុម្ពរបាយការណ៍</div>';
+    return;
+  }
+
+  const ps = allPollingStations.find(p => p.id === stationId);
+  if (!ps) return;
+
+  const psCodeFormatted = String(ps.code || '').padStart(4, '0');
+
+  // Fetch candidates for this station
+  const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
+  const data = await res.json();
+  const cList = data.candidates || [];
+
+  // Group candidates by role
+  const roleGroups = {};
+  ROLES_ORDER.forEach(r => roleGroups[r] = []);
+  cList.forEach(c => {
+    if (roleGroups[c.role]) roleGroups[c.role].push(c);
+  });
+
+  // Common Header Template
+  const headerHtml = `
+    <div class="letterhead">
+      <table class="letterhead-table">
+        <tr>
+          <td style="width: 48%;">
+            <div class="khmer-agency">គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
+            <div class="khmer-agency">${ps.province || 'គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ'}</div>
+            <div class="khmer-agency">${ps.committeeName || 'គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប'}</div>
+            <div style="font-weight: 700; margin-top: 4px;">ឃុំ${ps.communeName}(${ps.communeCode})</div>
+          </td>
+          <td style="width: 52%; text-align: center;">
+            <div class="khmer-national">ព្រះរាជាណាចក្រកម្ពុជា</div>
+            <div class="khmer-motto">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
+            <div style="font-size: 18px; margin-top: -4px;">***</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  let reportContentHtml = '';
+
+  // ----------------------------------------------------------------------------
+  // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជន)
+  // ----------------------------------------------------------------------------
+  if (reportType === 'sortlist') {
+    let rowsHtml = '';
+    ROLES_ORDER.forEach(role => {
+      rowsHtml += `<tr class="category-row"><td colspan="10"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      const items = roleGroups[role] || [];
+      for (let i = 1; i <= 3; i++) {
+        const c = items.find(x => x.orderInRole === i);
+        rowsHtml += `
+          <tr>
+            <td class="center">${i}</td>
+            <td style="font-weight: 600;">${c ? c.name : ''}</td>
+            <td class="center">${c ? c.gender : ''}</td>
+            <td class="center">${c ? c.dob : ''}</td>
+            <td>${c ? c.degree : ''}</td>
+            <td class="center">${c ? (c.scoreDegree || 0) : ''}</td>
+            <td>${c ? c.experience : ''}</td>
+            <td class="center">${c ? (c.scoreExp || 0) : ''}</td>
+            <td class="center" style="font-weight: 700;">${c ? (c.scoreShortlist || 0) : ''}</td>
+            <td>${c ? (c.notes || '') : ''}</td>
+          </tr>
+        `;
+      }
+    });
+
+    reportContentHtml = `
+      <div class="print-page">
+        ${headerHtml}
+        <div class="report-title-section">
+          <div class="report-main-title">តារាង​សម្រាំង​បេក្ខជន​សម្រាប់​ការ​សម្ភាសន៍​ជ្រើសរើស​​ គ.ក.ប</div>
+          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
+        </div>
+        <div class="report-info-row">
+          <span></span>
+          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+        </div>
+        <table class="official-print-table">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width: 40px;">ល.រ</th>
+              <th rowspan="2">គោត្តនាម-នាម</th>
+              <th rowspan="2" style="width: 45px;">ភេទ</th>
+              <th rowspan="2" style="width: 95px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th colspan="2">កម្រិតសញ្ញាបត្រ</th>
+              <th colspan="2">បទពិសោធន៍</th>
+              <th rowspan="2" style="width: 75px;">សរុបពិន្ទុ</th>
+              <th rowspan="2" style="width: 70px;">ផ្សេងៗ</th>
+            </tr>
+            <tr>
+              <th>សញ្ញាបត្រ</th>
+              <th style="width: 50px;">ពិន្ទុ</th>
+              <th>បទពិសោធ</th>
+              <th style="width: 50px;">ពិន្ទុ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        ${getSignatureSection(ps)}
+      </div>
+    `;
+  }
+
+  // ----------------------------------------------------------------------------
+  // SHEET 2: ជូនដំណឹង (សេចក្តីជូនដំណឹងបេក្ខជនសម្ភាសន៍)
+  // ----------------------------------------------------------------------------
+  else if (reportType === 'notice') {
+    let rowsHtml = '';
+    ROLES_ORDER.forEach(role => {
+      rowsHtml += `<tr class="category-row"><td colspan="6"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      const items = roleGroups[role] || [];
+      for (let i = 1; i <= 3; i++) {
+        const c = items.find(x => x.orderInRole === i);
+        rowsHtml += `
+          <tr>
+            <td class="center">${i}</td>
+            <td style="font-weight: 600;">${c ? c.name : ''}</td>
+            <td class="center">${c ? c.gender : ''}</td>
+            <td class="center">${c ? c.dob : ''}</td>
+            <td class="center">${c ? (c.phone || '') : ''}</td>
+            <td>${c ? (c.notes || '') : ''}</td>
+          </tr>
+        `;
+      }
+    });
+
+    reportContentHtml = `
+      <div class="print-page">
+        ${headerHtml}
+        <div class="report-title-section">
+          <div class="report-main-title">សេចក្ដីជូនដំណឹង</div>
+          <div style="font-size: 11pt; margin-top: 6px;">
+            បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍<br>
+            នៅ <strong>${ps.interviewPlace || 'សាលាឃុំ' + ps.communeName}</strong> នាថ្ងៃទី <strong>${ps.interviewDate || '09-07-2027'}</strong> វេលាម៉ោង <strong>${ps.interviewTime || '០៧:០០ ព្រឹក'}</strong> តទៅ។
+          </div>
+        </div>
+        <div class="report-info-row">
+          <span></span>
+          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+        </div>
+        <table class="official-print-table">
+          <thead>
+            <tr>
+              <th style="width: 45px;">ល.រ</th>
+              <th>គោត្តនាម-នាម</th>
+              <th style="width: 50px;">ភេទ</th>
+              <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th style="width: 120px;">លេខទូរសព្ទ</th>
+              <th style="width: 100px;">ផ្សេងៗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        ${getSignatureSection(ps)}
+      </div>
+    `;
+  }
+
+  // ----------------------------------------------------------------------------
+  // SHEET 3: បញ្ជីវត្តមាន (បញ្ជីវត្តមានសម្ភាសន៍)
+  // ----------------------------------------------------------------------------
+  else if (reportType === 'attendance') {
+    let rowsHtml = '';
+    ROLES_ORDER.forEach(role => {
+      rowsHtml += `<tr class="category-row"><td colspan="7"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      const items = roleGroups[role] || [];
+      for (let i = 1; i <= 3; i++) {
+        const c = items.find(x => x.orderInRole === i);
+        rowsHtml += `
+          <tr>
+            <td class="center">${i}</td>
+            <td style="font-weight: 600;">${c ? c.name : ''}</td>
+            <td class="center">${c ? c.gender : ''}</td>
+            <td class="center">${c ? c.dob : ''}</td>
+            <td style="height: 32px;"></td>
+            <td></td>
+            <td></td>
+          </tr>
+        `;
+      }
+    });
+
+    reportContentHtml = `
+      <div class="print-page">
+        ${headerHtml}
+        <div class="report-title-section">
+          <div class="report-main-title">បញ្ជីវត្តមានសម្ភាសន៍ ជ្រើសរើស គ.ក.ប</div>
+          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
+        </div>
+        <div class="report-info-row">
+          <span></span>
+          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+        </div>
+        <table class="official-print-table">
+          <thead>
+            <tr>
+              <th style="width: 45px;">ល.រ</th>
+              <th>គោត្តនាម-នាម</th>
+              <th style="width: 50px;">ភេទ</th>
+              <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th style="width: 130px;">ហត្ថលេខាចូល</th>
+              <th style="width: 130px;">ហត្ថលេខាចេញ</th>
+              <th style="width: 90px;">ផ្សេងៗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        ${getSignatureSection(ps)}
+      </div>
+    `;
+  }
+
+  // ----------------------------------------------------------------------------
+  // SHEET 4: បញ្ចូលពិន្ទុ (តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប)
+  // ----------------------------------------------------------------------------
+  else if (reportType === 'scoresheet') {
+    let rowsHtml = '';
+    ROLES_ORDER.forEach(role => {
+      rowsHtml += `<tr class="category-row"><td colspan="8"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      const items = roleGroups[role] || [];
+      for (let i = 1; i <= 3; i++) {
+        const c = items.find(x => x.orderInRole === i);
+        rowsHtml += `
+          <tr>
+            <td class="center">${i}</td>
+            <td style="font-weight: 600;">${c ? c.name : ''}</td>
+            <td class="center">${c ? c.gender : ''}</td>
+            <td class="center">${c ? c.dob : ''}</td>
+            <td class="center" style="font-weight: 600;">${c ? (c.scoreShortlist || 0) : ''}</td>
+            <td class="center" style="font-weight: 600;">${c ? (c.scoreInterview !== undefined ? c.scoreInterview : '') : ''}</td>
+            <td class="center" style="font-weight: 700;">${c ? (c.scoreTotal !== undefined ? c.scoreTotal : '') : ''}</td>
+            <td>${c ? (c.notes || '') : ''}</td>
+          </tr>
+        `;
+      }
+    });
+
+    reportContentHtml = `
+      <div class="print-page">
+        ${headerHtml}
+        <div class="report-title-section">
+          <div class="report-main-title">តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប</div>
+          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
+        </div>
+        <div class="report-info-row">
+          <span></span>
+          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+        </div>
+        <table class="official-print-table">
+          <thead>
+            <tr>
+              <th style="width: 45px;">ល.រ</th>
+              <th>គោត្តនាម-នាម</th>
+              <th style="width: 50px;">ភេទ</th>
+              <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th style="width: 95px;">ពិន្ទុសម្រាំង</th>
+              <th style="width: 110px;">ពិន្ទុសម្ភាសន៍</th>
+              <th style="width: 95px;">សរុបពិន្ទុ</th>
+              <th style="width: 100px;">ផ្សេងៗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        ${getSignatureSection(ps)}
+      </div>
+    `;
+  }
+
+  // ----------------------------------------------------------------------------
+  // SHEET 5: លទ្ធផលតាមលំដាប់ (Ranked official result notice for public posting)
+  // ----------------------------------------------------------------------------
+  else if (reportType === 'results') {
+    let rowsHtml = '';
+    ROLES_ORDER.forEach(role => {
+      rowsHtml += `<tr class="category-row"><td colspan="7"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      const items = roleGroups[role] || [];
+      // Sort strictly by rank: Rank 1 first, then 2, then 3, absent last
+      const sorted = [...items].sort((a, b) => {
+        const aAbs = a.scoreTotal === 'អវត្តមាន';
+        const bAbs = b.scoreTotal === 'អវត្តមាន';
+        if (aAbs && !bAbs) return 1;
+        if (!aAbs && bAbs) return -1;
+        return (a.rank || 0) - (b.rank || 0);
+      });
+
+      for (let i = 1; i <= 3; i++) {
+        const c = sorted[i - 1];
+        rowsHtml += `
+          <tr>
+            <td class="center">${i}</td>
+            <td style="font-weight: 600;">${c ? c.name : ''}</td>
+            <td class="center">${c ? c.gender : ''}</td>
+            <td class="center">${c ? c.dob : ''}</td>
+            <td class="center" style="font-weight: 700;">${c ? (c.scoreTotal !== undefined ? c.scoreTotal : '') : ''}</td>
+            <td class="center" style="font-weight: 700; color: ${c && c.status === 'A-ជាប់' ? '#15803d' : '#000'};">
+              ${c ? c.status : ''}
+            </td>
+            <td>${c ? (c.notes || '') : ''}</td>
+          </tr>
+        `;
+      }
+    });
+
+    reportContentHtml = `
+      <div class="print-page">
+        ${headerHtml}
+        <div class="report-title-section">
+          <div class="report-main-title">លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
+          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
+        </div>
+        <div class="report-info-row">
+          <span></span>
+          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+        </div>
+        <table class="official-print-table">
+          <thead>
+            <tr>
+              <th style="width: 45px;">ល.រ</th>
+              <th>គោត្តនាម-នាម</th>
+              <th style="width: 50px;">ភេទ</th>
+              <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th style="width: 95px;">សរុបពិន្ទុ</th>
+              <th style="width: 120px;">និទ្ទេស</th>
+              <th style="width: 100px;">ផ្សេងៗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        ${getSignatureSection(ps)}
+      </div>
+    `;
+  }
+
+  container.innerHTML = reportContentHtml;
+}
+
+function getSignatureSection(ps) {
+  return `
+    <div class="signature-section">
+      <div class="signature-box">
+        <div class="date-line">បានឃើញ និងឯកភាព</div>
+        <div class="role-line">ប្រធានគណៈកម្មការរៀបចំការបោះឆ្នោតខេត្តតាកែវ</div>
+      </div>
+      <div class="signature-box">
+        <div class="date-line">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៧</div>
+        <div class="role-line">គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
+      </div>
+    </div>
+  `;
+}
+
+// ==============================================================================
+// TAB 5: USER MANAGEMENT (Trainer Manages Communes within District)
+// ==============================================================================
+
+async function loadUsersList() {
+  const title = document.getElementById('usersTabHeaderTitle');
+  const scopeBadge = document.getElementById('userScopeNotice');
+  const btnSubtabAdmins = document.getElementById('btnSubtabAdmins');
+  const btnSubtabTrainers = document.getElementById('btnSubtabTrainers');
+  const btnSubtabCommunes = document.getElementById('btnSubtabCommunes');
+  const districtFilterGroup = document.getElementById('userDistrictFilterGroup');
+
+  // Populate district dropdown once
+  const filterDistSelect = document.getElementById('filterUserDistrict');
+  if (filterDistSelect && filterDistSelect.options.length <= 1 && allDistricts.length) {
+    allDistricts.forEach(d => {
+      filterDistSelect.innerHTML += `<option value="${d.name}">${d.name}</option>`;
+    });
+  }
+
+  if (currentUser.role === 'Trainer') {
+    title.textContent = `👥 គណនីឃុំ-សង្កាត់ក្នុង ${currentUser.district} (ចំនួន ${allCommunes.length} ឃុំ)`;
+    scopeBadge.textContent = `ដែនសមត្ថកិច្ច៖ ${currentUser.district}`;
+    if (btnSubtabAdmins) btnSubtabAdmins.style.display = 'none';
+    if (btnSubtabTrainers) btnSubtabTrainers.style.display = 'none';
+    if (districtFilterGroup) districtFilterGroup.style.display = 'none';
+    currentUserSubtab = 'communes';
+    document.querySelectorAll('.user-subtab-btn').forEach(b => b.classList.remove('active'));
+    if (btnSubtabCommunes) btnSubtabCommunes.classList.add('active');
+  } else {
+    title.textContent = '👥 គ្រប់គ្រងគណនីអ្នកប្រើប្រាស់';
+    scopeBadge.textContent = 'ដែនសមត្ថកិច្ច៖ ទូទាំងខេត្ត';
+    if (btnSubtabAdmins) btnSubtabAdmins.style.display = 'inline-flex';
+    if (btnSubtabTrainers) btnSubtabTrainers.style.display = 'inline-flex';
+    if (btnSubtabCommunes) btnSubtabCommunes.style.display = 'inline-flex';
+    if (districtFilterGroup) districtFilterGroup.style.display = 'block';
+  }
+
+  try {
+    const res = await fetch('/api/users');
+    const data = await res.json();
+    if (!data.success) return;
+
+    allLoadedUsers = data.users || [];
+
+    // Count badges
+    const adminCount = allLoadedUsers.filter(u => u.role === 'SuperAdmin' || u.role === 'Admin' || u.role === 'PEC21').length;
+    const trainerCount = allLoadedUsers.filter(u => u.role === 'Trainer').length;
+    const communeCount = allLoadedUsers.filter(u => u.role === 'Commune').length;
+
+    if (document.getElementById('badgeCountAdmins')) document.getElementById('badgeCountAdmins').textContent = adminCount;
+    if (document.getElementById('badgeCountTrainers')) document.getElementById('badgeCountTrainers').textContent = trainerCount;
+    if (document.getElementById('badgeCountCommunes')) document.getElementById('badgeCountCommunes').textContent = communeCount;
+
+    renderUsersTable();
+  } catch (err) {
+    console.error('Error loading users:', err);
+  }
+}
+
+function renderUsersTable() {
+  const tbody = document.getElementById('usersTableBody');
+  const searchText = (document.getElementById('searchUserText')?.value || '').trim().toLowerCase();
+  const filterDistrict = document.getElementById('filterUserDistrict')?.value || '';
+
+  // Filter by subtab
+  let list = [];
+  if (currentUserSubtab === 'admins') {
+    list = allLoadedUsers.filter(u => u.role === 'SuperAdmin' || u.role === 'Admin' || u.role === 'PEC21');
+  } else if (currentUserSubtab === 'trainers') {
+    list = allLoadedUsers.filter(u => u.role === 'Trainer');
+  } else if (currentUserSubtab === 'communes') {
+    list = allLoadedUsers.filter(u => u.role === 'Commune');
+  } else {
+    list = allLoadedUsers;
+  }
+
+  // Filter by District dropdown
+  if (filterDistrict) {
+    list = list.filter(u => u.district === filterDistrict);
+  }
+
+  // Filter by Search text
+  if (searchText) {
+    list = list.filter(u => {
+      const un = (u.username || '').toLowerCase();
+      const fn = (u.fullName || '').toLowerCase();
+      const cn = (u.communeName || '').toLowerCase();
+      const dt = (u.district || '').toLowerCase();
+      const cc = (u.communeCode || '').toLowerCase();
+      return un.includes(searchText) || fn.includes(searchText) || cn.includes(searchText) || dt.includes(searchText) || cc.includes(searchText);
+    });
+  }
+
+  tbody.innerHTML = '';
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">មិនមានគណនីត្រូវនឹងលក្ខខណ្ឌស្វែងរកឡើយ</td></tr>';
+    return;
+  }
+
+  list.forEach((u, idx) => {
+    let statusBadge = '<span class="badge badge-passed">ដំណើរការ</span>';
+    if (!u.active) statusBadge = '<span class="badge badge-absent">ផ្អាក</span>';
+    else if (u.mustChangePassword) statusBadge = '<span class="badge badge-reserve">រង់ចាំប្តូរលេខសម្ងាត់</span>';
+
+    tbody.innerHTML += `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td style="font-weight: 700; color: var(--primary);">${u.username}</td>
+        <td>${u.fullName || '---'}</td>
+        <td><span class="badge badge-reserve">${u.role}</span></td>
+        <td>${u.district || 'all'}</td>
+        <td>${u.communeName || (u.communeCode !== 'all' ? u.communeCode : 'all')}</td>
+        <td style="text-align: center;">${statusBadge}</td>
+        <td style="text-align: center;">
+          <button class="btn btn-secondary btn-sm" onclick="resetUserPassword('${u.id}', '${u.username}')">
+            🔄 Reset Password
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+window.resetUserPassword = async function(id, username) {
+  if (confirm(`តើលោកអ្នកពិតជាចង់ Reset លេខសម្ងាត់របស់គណនី "${username}" ទៅជា "pec21" មែនទេ?`)) {
+    try {
+      const res = await fetch(`/api/users/${id}/reset`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        loadUsersList();
+      } else {
+        alert('កំហុស៖ ' + data.message);
+      }
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+};
+
+// ==============================================================================
+// TAB 6: SETTINGS & GOOGLE SHEETS
+// ==============================================================================
+
+async function loadSettingsForm() {
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    if (data.success && data.settings) {
+      const s = data.settings;
+      document.getElementById('settingGoogleSheetUrl').value = s.googleSheetUrl || '';
+      document.getElementById('settingPecName').value = s.pecName || '';
+      document.getElementById('settingMandate').value = s.mandateTitle || '';
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function handleSaveSettings() {
+  const payload = {
+    googleSheetUrl: document.getElementById('settingGoogleSheetUrl').value.trim(),
+    pecName: document.getElementById('settingPecName').value.trim(),
+    mandateTitle: document.getElementById('settingMandate').value.trim()
+  };
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('បានរក្សាទុកការកំណត់ជោគជ័យ!');
+      await checkCloudStatus();
+    } else {
+      alert(data.message);
+    }
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function handleManualGoogleSync() {
+  const btn = document.getElementById('btnManualGoogleSync');
+  btn.disabled = true;
+  btn.textContent = 'កំពុង Sync...';
+
+  try {
+    const res = await fetch('/api/sync-google-sheet', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      alert('បានធ្វើសមកាលកម្មទិន្នន័យទៅកាន់ Google Sheets រួចរាល់ដោយជោគជ័យ!');
+      await checkCloudStatus();
+    } else {
+      alert('កំហុស៖ ' + data.message + (data.error ? '\n' + data.error : ''));
+    }
+  } catch (e) {
+    alert('Network error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ ធ្វើសមកាលកម្មភ្លាមៗ (Sync Google Sheets Now)';
+  }
+}
+
+// ==============================================================================
+// PASSWORD & PROFILE MODAL
+// ==============================================================================
+
+function openChangePasswordModal(isForced = false) {
+  const modal = document.getElementById('modalPassword');
+  const alertBox = document.getElementById('mustChangeAlert');
+  const closeBtn = document.getElementById('btnClosePasswordModal');
+  const oldPwGroup = document.getElementById('oldPasswordGroup');
+
+  if (isForced) {
+    alertBox.style.display = 'block';
+    closeBtn.style.display = 'none';
+    oldPwGroup.style.display = 'none'; // Initial activation does not require old password
+  } else {
+    alertBox.style.display = 'none';
+    closeBtn.style.display = 'block';
+    oldPwGroup.style.display = 'block';
+  }
+
+  document.getElementById('pwFullName').value = currentUser.fullName || '';
+  document.getElementById('pwPhone').value = currentUser.phone || '';
+  document.getElementById('pwEmail').value = currentUser.email || '';
+  document.getElementById('pwNew').value = '';
+  document.getElementById('pwConfirm').value = '';
+
+  modal.classList.add('active');
+}
+
+async function handleChangePasswordSubmit(e) {
+  e.preventDefault();
+  const oldPw = document.getElementById('pwOld').value;
+  const newPw = document.getElementById('pwNew').value;
+  const confirmPw = document.getElementById('pwConfirm').value;
+  const fullName = document.getElementById('pwFullName').value.trim();
+  const phone = document.getElementById('pwPhone').value.trim();
+  const email = document.getElementById('pwEmail').value.trim();
+  const errBox = document.getElementById('pwError');
+
+  errBox.style.display = 'none';
+
+  if (newPw !== confirmPw) {
+    errBox.textContent = 'លេខសម្ងាត់ថ្មី និងការបញ្ជាក់មិនដូចគ្នាឡើយ!';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        oldPassword: oldPw,
+        newPassword: newPw,
+        fullName: fullName,
+        phone: phone,
+        email: email
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('ផ្លាស់ប្តូរលេខសម្ងាត់ជោគជ័យ!');
+      closeModal('modalPassword');
+      currentUser.mustChangePassword = false;
+      currentUser.isActivated = true;
+      if (fullName) currentUser.fullName = fullName;
+      document.getElementById('userFullName').textContent = currentUser.fullName;
+    } else {
+      errBox.textContent = data.message;
+      errBox.style.display = 'block';
+    }
+  } catch (err) {
+    errBox.textContent = 'Error: ' + err.message;
+    errBox.style.display = 'block';
+  }
+}
+
+// ==============================================================================
+// CANDIDATE MODAL (Add Single Candidate)
+// ==============================================================================
+
+function openCandidateModal() {
+  const stationId = document.getElementById('scoringStationSelect').value;
+  if (!stationId) return alert('សូមជ្រើសរើសការិយាល័យជាមុនសិន');
+
+  document.getElementById('candFormStationId').value = stationId;
+  document.getElementById('candFormName').value = '';
+  document.getElementById('candFormDob').value = '';
+  document.getElementById('candFormPhone').value = '';
+  document.getElementById('candFormDegreeSelect').value = '0';
+  document.getElementById('candFormScoreDegree').value = '0';
+  document.getElementById('candFormExpSelect').value = '0';
+  document.getElementById('candFormScoreExp').value = '0';
+  document.getElementById('candFormScoreInterview').value = '';
+
+  document.getElementById('modalCandidate').classList.add('active');
+}
+
+async function handleCandidateSubmit(e) {
+  e.preventDefault();
+  const stationId = document.getElementById('candFormStationId').value;
+  const degreeOpt = document.getElementById('candFormDegreeSelect').selectedOptions[0];
+  const expOpt = document.getElementById('candFormExpSelect').selectedOptions[0];
+
+  const payload = {
+    pollingStationId: stationId,
+    role: document.getElementById('candFormRole').value,
+    orderInRole: parseInt(document.getElementById('candFormOrder').value) || 1,
+    name: document.getElementById('candFormName').value.trim(),
+    gender: document.getElementById('candFormGender').value,
+    dob: document.getElementById('candFormDob').value.trim(),
+    phone: document.getElementById('candFormPhone').value.trim(),
+    degree: degreeOpt.getAttribute('data-name') || '',
+    scoreDegree: parseFloat(document.getElementById('candFormScoreDegree').value) || 0,
+    experience: expOpt.getAttribute('data-name') || '',
+    scoreExp: parseFloat(document.getElementById('candFormScoreExp').value) || 0,
+    scoreInterview: document.getElementById('candFormScoreInterview').value.trim()
+  };
+
+  try {
+    const res = await fetch('/api/candidates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal('modalCandidate');
+      alert('បានបន្ថែមបេក្ខជនជោគជ័យ!');
+      await renderScoringTableForActiveStation();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// Modal Utility
+window.closeModal = function(modalId) {
+  document.getElementById(modalId).classList.remove('active');
+};

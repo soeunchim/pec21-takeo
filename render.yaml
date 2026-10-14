@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: pec21-kkb-2027
+    env: node
+    plan: free
+    buildCommand: ""
+    startCommand: "node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GOOGLE_SHEET_URL
+        sync: false

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧ (PEC21)</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗳️</text></svg>">
+</head>
+<body>
+
+  <!-- =========================================================================
+       LOGIN SCREEN
+       ========================================================================= -->
+  <div id="loginSection" class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1z"/></svg>
+        </div>
+        <h2>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ (គ.ខ.ប ២១)</h2>
+        <p>ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧</p>
+      </div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label">ឈ្មោះគណនី (Username)</label>
+          <input type="text" id="loginUsername" class="form-control" placeholder="ឧ. soeunchim, PEC2101T001, COM21001T001" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">លេខសម្ងាត់ (Password)</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="បញ្ចូលលេខសម្ងាត់" required>
+        </div>
+        <div id="loginError" style="color: var(--danger); font-size: 13px; margin-bottom: 12px; display: none;"></div>
+        <button type="submit" id="btnLoginSubmit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px;">
+          ចូលប្រព័ន្ធ (Sign In)
+        </button>
+      </form>
+      <div style="margin-top: 18px; font-size: 11px; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border); padding-top: 12px;">
+        💡 លេខសម្ងាត់ដំបូងសម្រាប់គ្រូ និងឃុំសង្កាត់គឺ <code>pec21</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MAIN APPLICATION SHELL
+       ========================================================================= -->
+  <div id="appShell" style="display: none;">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1z"/></svg>
+        </div>
+        <div class="brand-title">
+          <h1 id="headerSystemTitle">ប្រព័ន្ធបូកស្រង់ពិន្ទុប្រឡង គ.ក.ប ២០២៧</h1>
+          <p id="headerSubTitle">គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ (PEC21)</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- Cloud Sync Status Pill -->
+        <div id="cloudStatusBadge" class="cloud-status" title="Google Sheets Cloud Status">
+          <span id="pulseDot" class="pulse-dot"></span>
+          <span id="cloudStatusText">Google Sheets: Ready</span>
+        </div>
+        <!-- User Profile Badge -->
+        <div class="user-badge">
+          <span id="userFullName" style="font-weight: 600; font-size: 13px;">...</span>
+          <span id="userRoleTag" class="role-tag">Role</span>
+        </div>
+        <button id="btnProfileModal" class="btn btn-secondary btn-sm" title="ផ្លាស់ប្តូរលេខសម្ងាត់">🔑</button>
+        <button id="btnLogout" class="btn-logout">ចាកចេញ</button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tabDashboard">📊 ផ្ទាំងព័ត៌មាន (Dashboard)</button>
+      <button class="tab-btn" data-tab="tabPollingStations">🏛️ ការិយាល័យបោះឆ្នោត (Stations)</button>
+      <button class="tab-btn" data-tab="tabScoring">📝 បញ្ចូលពិន្ទុ & ស្រង់ពិន្ទុ (Scoring)</button>
+      <button class="tab-btn" data-tab="tabReports">🖨️ បោះពុម្ពរបាយការណ៍ (Print Forms)</button>
+      <button class="tab-btn" id="tabUsersNav" data-tab="tabUsers">👥 គ្រប់គ្រងគណនី (Users)</button>
+      <button class="tab-btn" id="tabSettingsNav" data-tab="tabSettings">⚙️ ការកំណត់ & Cloud (Settings)</button>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+
+      <!-- =====================================================================
+           TAB 1: DASHBOARD
+           ===================================================================== -->
+      <section id="tabDashboard" class="page-section active">
+        <div class="stats-grid">
+          <div class="stat-box green">
+            <span class="stat-label">បេក្ខជនសរុប (Total Candidates)</span>
+            <span class="stat-number" id="dashTotalCandidates">0</span>
+          </div>
+          <div class="stat-box amber">
+            <span class="stat-label">ការិយាល័យបោះឆ្នោត (Polling Stations)</span>
+            <span class="stat-number" id="dashTotalStations">0</span>
+          </div>
+          <div class="stat-box teal">
+            <span class="stat-label">ជាប់ជាស្ថាពរ (A-ជាប់)</span>
+            <span class="stat-number" id="dashTotalPassed">0</span>
+          </div>
+          <div class="stat-box amber">
+            <span class="stat-label">បេក្ខជនបម្រុង (B & C)</span>
+            <span class="stat-number" id="dashTotalReserve">0</span>
+          </div>
+          <div class="stat-box red">
+            <span class="stat-label">បេក្ខជនអវត្តមាន (Absent)</span>
+            <span class="stat-number" id="dashTotalAbsent">0</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📈 ស្ថិតិបេក្ខជនតាមក្រុង-ស្រុក (Statistics By District)</h3>
+            <button id="btnRefreshStats" class="btn btn-secondary btn-sm">🔄 Refresh</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th style="width: 50px; text-align: center;">ល.រ</th>
+                  <th>ក្រុង-ស្រុក</th>
+                  <th style="text-align: center;">ការិយាល័យ</th>
+                  <th style="text-align: center;">បេក្ខជនសរុប</th>
+                  <th style="text-align: center;">A-ជាប់</th>
+                  <th style="text-align: center;">B & C បម្រុង</th>
+                  <th style="text-align: center;">អវត្តមាន</th>
+                </tr>
+              </thead>
+              <tbody id="districtStatsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 2: POLLING STATIONS
+           ===================================================================== -->
+      <section id="tabPollingStations" class="page-section">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🏛️ បញ្ជីការិយាល័យបោះឆ្នោតក្នុងមូលដ្ឋាន</h3>
+            <button id="btnOpenAddStationModal" class="btn btn-primary">
+              ➕ បង្កើតការិយាល័យថ្មី (Add Station)
+            </button>
+          </div>
+
+          <!-- Filter for Trainers / Admin -->
+          <div class="filter-bar" id="stationFilterBar">
+            <div style="flex: 1; min-width: 200px;">
+              <label class="form-label">តម្រងតាមក្រុង-ស្រុក</label>
+              <select id="filterStationDistrict" class="form-control">
+                <option value="">-- គ្រប់ក្រុង-ស្រុក --</option>
+              </select>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <label class="form-label">តម្រងតាមឃុំ-សង្កាត់</label>
+              <select id="filterStationCommune" class="form-control">
+                <option value="">-- គ្រប់ឃុំ-សង្កាត់ --</option>
+              </select>
+            </div>
+            <div style="align-self: flex-end;">
+              <button id="btnFilterStations" class="btn btn-secondary">🔍 ស្វែងរក</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th style="width: 60px; text-align: center;">កូដ</th>
+                  <th>ឈ្មោះការិយាល័យ</th>
+                  <th>ឃុំ-សង្កាត់</th>
+                  <th>ក្រុង-ស្រុក</th>
+                  <th>ទីតាំងការិយាល័យ</th>
+                  <th style="text-align: center;">កាលបរិច្ឆេទសម្ភាសន៍</th>
+                  <th style="text-align: center;">ចំនួនបេក្ខជន</th>
+                  <th style="width: 140px; text-align: center;">សកម្មភាព</th>
+                </tr>
+              </thead>
+              <tbody id="pollingStationsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 3: SCORING & CANDIDATE MANAGEMENT
+           ===================================================================== -->
+      <section id="tabScoring" class="page-section">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📝 បញ្ចូលពិន្ទុ និងបូកស្រង់ចំណាត់ថ្នាក់ គ.ក.ប (Scoring Table)</h3>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnSaveBatchScores" class="btn btn-success">
+                💾 រក្សាទុកពិន្ទុទាំងអស់ (Save All Scores)
+              </button>
+              <button id="btnOpenAddCandidateModal" class="btn btn-primary btn-sm">
+                ➕ បន្ថែមបេក្ខជន
+              </button>
+            </div>
+          </div>
+
+          <!-- Station Selector Bar -->
+          <div class="filter-bar">
+            <div style="flex: 2; min-width: 260px;">
+              <label class="form-label">ជ្រើសរើសការិយាល័យបោះឆ្នោត (Select Polling Station)</label>
+              <select id="scoringStationSelect" class="form-control" style="font-weight: 600;">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+            <div style="align-self: flex-end;">
+              <span id="activeStationInfo" style="font-size: 13px; color: var(--text-muted); font-weight: 500;"></span>
+            </div>
+          </div>
+
+          <!-- Scoring Grid Matching Excel -->
+          <div class="table-responsive">
+            <table class="table-custom" id="scoringTable">
+              <thead>
+                <tr>
+                  <th style="width: 50px; text-align: center;">ល.រ</th>
+                  <th style="min-width: 160px;">គោត្តនាម-នាម</th>
+                  <th style="width: 60px; text-align: center;">ភេទ</th>
+                  <th style="width: 110px; text-align: center;">ថ្ងៃខែឆ្នាំកំណើត</th>
+                  <th style="width: 110px;">លេខទូរសព្ទ</th>
+                  <th style="min-width: 130px;">កម្រិតសញ្ញាបត្រ</th>
+                  <th style="width: 75px; text-align: center;">ពិន្ទុ</th>
+                  <th style="min-width: 130px;">បទពិសោធន៍</th>
+                  <th style="width: 75px; text-align: center;">ពិន្ទុ</th>
+                  <th style="width: 80px; text-align: center; background: #e0f2fe;">ពិន្ទុសម្រាំង</th>
+                  <th style="width: 110px; text-align: center; background: #fef3c7;">ពិន្ទុសម្ភាសន៍ (max 20)</th>
+                  <th style="width: 85px; text-align: center; background: #dcfce7;">សរុបពិន្ទុ</th>
+                  <th style="width: 70px; text-align: center;">ចំណាត់ថ្នាក់</th>
+                  <th style="width: 110px; text-align: center;">និទ្ទេស</th>
+                  <th style="width: 80px; text-align: center;">លុប</th>
+                </tr>
+              </thead>
+              <tbody id="scoringTableBody">
+                <!-- Dynamically grouped by 6 positions -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 4: OFFICIAL REPORTS & PRINT
+           ===================================================================== -->
+      <section id="tabReports" class="page-section">
+        <div class="card no-print">
+          <div class="card-header">
+            <h3 class="card-title">🖨️ បោះពុម្ពទម្រង់ និងរបាយការណ៍ផ្លូវការ (៥ សន្លឹកតាមគំរូ Excel)</h3>
+            <button id="btnDirectPrint" class="btn btn-primary">
+              🖨️ បោះពុម្ពឥឡូវនេះ (Print Document)
+            </button>
+          </div>
+
+          <div class="filter-bar">
+            <div style="flex: 1; min-width: 250px;">
+              <label class="form-label">ជ្រើសរើសការិយាល័យ</label>
+              <select id="reportStationSelect" class="form-control">
+                <!-- Populated -->
+              </select>
+            </div>
+            <div style="flex: 1; min-width: 250px;">
+              <label class="form-label">ជ្រើសរើសទម្រង់របាយការណ៍ដែលត្រូវបោះពុម្ព</label>
+              <select id="reportTypeSelect" class="form-control" style="font-weight: 600;">
+                <option value="sortlist">សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជន (SortList)</option>
+                <option value="notice">សន្លឹក ២ ៖ សេចក្តីជូនដំណឹងសម្ភាសន៍ (Notice)</option>
+                <option value="attendance">សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ (Attendance)</option>
+                <option value="scoresheet">សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុ (Score Sheet)</option>
+                <option value="results" selected>សន្លឹក ៥ ៖ លទ្ធផលតាមលំដាប់ពិន្ទុ (Ranked Results)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Printable Document Container Preview -->
+        <div id="printContainer" class="print-area">
+          <!-- Dynamically Rendered Report Document -->
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 5: USERS MANAGEMENT (Role specific: Trainer sees district communes)
+           ===================================================================== -->
+      <section id="tabUsers" class="page-section">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title" id="usersTabHeaderTitle">👥 គ្រប់គ្រងគណនីអ្នកប្រើប្រាស់</h3>
+            <span id="userScopeNotice" class="badge badge-reserve">ដែនសមត្ថកិច្ច៖ ទូទាំងខេត្ត</span>
+          </div>
+
+          <!-- 3 Sub-tabs requested by user -->
+          <div class="user-subtabs" id="userSubtabsContainer">
+            <button class="user-subtab-btn active" data-usertab="admins" id="btnSubtabAdmins">
+              👑 ១. អ្នកប្រើប្រាស់ (SuperAdmin, Admin, PEC21) <span class="badge" id="badgeCountAdmins">3</span>
+            </button>
+            <button class="user-subtab-btn" data-usertab="trainers" id="btnSubtabTrainers">
+              👨‍🏫 ២. គណនីគ្រូប្រចាំក្រុងស្រុក (២០ គណនី) <span class="badge" id="badgeCountTrainers">20</span>
+            </button>
+            <button class="user-subtab-btn" data-usertab="communes" id="btnSubtabCommunes">
+              🏛️ ៣. គណនីឃុំសង្កាត់ (១០០ ឃុំសង្កាត់) <span class="badge" id="badgeCountCommunes">100</span>
+            </button>
+          </div>
+
+          <!-- Search & Filter bar for users -->
+          <div class="filter-bar" id="userFilterBar" style="margin-top: 6px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px;">
+            <div style="flex: 2; min-width: 220px;">
+              <input type="text" id="searchUserText" class="form-control" placeholder="🔍 ស្វែងរកតាម Username, ឈ្មោះពេញ, ឬឈ្មោះឃុំ...">
+            </div>
+            <div style="flex: 1; min-width: 170px;" id="userDistrictFilterGroup">
+              <select id="filterUserDistrict" class="form-control">
+                <option value="">-- គ្រប់ក្រុង-ស្រុក --</option>
+              </select>
+            </div>
+            <div>
+              <button id="btnResetUserFilter" class="btn btn-secondary btn-sm" type="button">🔄 សម្អាតតម្រង</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table-custom">
+              <thead>
+                <tr>
+                  <th style="width: 50px; text-align: center;">ល.រ</th>
+                  <th>ឈ្មោះគណនី (Username)</th>
+                  <th>ឈ្មោះពេញ / តួនាទី</th>
+                  <th>កម្រិត (Role)</th>
+                  <th>ក្រុង-ស្រុក</th>
+                  <th>ឃុំ-សង្កាត់</th>
+                  <th style="text-align: center;">ស្ថានភាពគណនី</th>
+                  <th style="width: 140px; text-align: center;">កំណត់ឡើងវិញ</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 6: SETTINGS & GOOGLE SHEETS
+           ===================================================================== -->
+      <section id="tabSettings" class="page-section">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">⚙️ ការកំណត់ប្រព័ន្ធ & Google Sheets Cloud Sync</h3>
+            <button id="btnManualGoogleSync" class="btn btn-success">
+              ⚡ ធ្វើសមកាលកម្មភ្លាមៗ (Sync Google Sheets Now)
+            </button>
+          </div>
+
+          <div style="max-width: 700px;">
+            <div class="form-group">
+              <label class="form-label">Google Apps Script Web App URL (Google Sheets Database Endpoint)</label>
+              <input type="url" id="settingGoogleSheetUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+              <small style="color: var(--text-muted); display: block; margin-top: 4px;">
+                💡 យក URL ដែលបានពីការ Deploy ឯកសារ <code>google-apps-script.gs</code> ក្នុង Google Sheet របស់អ្នក។
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ចំណងជើងស្ថាប័នរៀបចំការបោះឆ្នោត</label>
+              <input type="text" id="settingPecName" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ចំណងជើងនីតិកាលបោះឆ្នោត</label>
+              <input type="text" id="settingMandate" class="form-control">
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+              <button id="btnSaveSettings" class="btn btn-primary">រក្សាទុកការកំណត់ (Save Settings)</button>
+              <a href="/api/backup" class="btn btn-secondary" download>📥 Backup Data (JSON)</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- =========================================================================
+       MODALS
+       ========================================================================= -->
+
+  <!-- Modal: Add / Edit Polling Station -->
+  <div id="modalStation" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalStationTitle">បង្កើតការិយាល័យបោះឆ្នោតថ្មី</h3>
+        <button class="btn-close" onclick="closeModal('modalStation')">&times;</button>
+      </div>
+      <form id="formStation">
+        <div class="modal-body">
+          <input type="hidden" id="stationFormId">
+          <div class="form-group" id="stationFormCommuneGroup">
+            <label class="form-label">ឃុំ-សង្កាត់</label>
+            <select id="stationFormCommune" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">លេខកូដការិយាល័យ (៤ ខ្ទង់ ឧ. 0001, 0002, 0003...)</label>
+            <input type="text" id="stationFormCode" class="form-control" placeholder="0001" required maxlength="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ឈ្មោះការិយាល័យ</label>
+            <input type="text" id="stationFormName" class="form-control" placeholder="ការិយាល័យ 0001" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ទីតាំងការិយាល័យ</label>
+            <input type="text" id="stationFormLocation" class="form-control" placeholder="សាលាបឋមសិក្សា...">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">កាលបរិច្ឆេទសម្ភាសន៍</label>
+              <input type="text" id="stationFormDate" class="form-control" value="09-07-2027">
+            </div>
+            <div class="form-group">
+              <label class="form-label">ម៉ោងសម្ភាសន៍</label>
+              <input type="text" id="stationFormTime" class="form-control" value="០៧:០០ ព្រឹក">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ទីកន្លែងសម្ភាសន៍</label>
+            <input type="text" id="stationFormPlace" class="form-control" placeholder="សាលាឃុំ...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalStation')">បោះបង់</button>
+          <button type="submit" class="btn btn-primary">រក្សាទុក</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Candidate -->
+  <div id="modalCandidate" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalCandidateTitle">បន្ថែមបេក្ខជន គ.ក.ប</h3>
+        <button class="btn-close" onclick="closeModal('modalCandidate')">&times;</button>
+      </div>
+      <form id="formCandidate">
+        <div class="modal-body">
+          <input type="hidden" id="candFormId">
+          <input type="hidden" id="candFormStationId">
+          
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">មុខតំណែង</label>
+              <select id="candFormRole" class="form-control" required>
+                <option value="ប្រធាន">ប្រធាន</option>
+                <option value="អនុប្រធាន">អនុប្រធាន</option>
+                <option value="លេខាធិការ">លេខាធិការ</option>
+                <option value="សមាជិកទី១">សមាជិកទី១</option>
+                <option value="សមាជិកទី២">សមាជិកទី២</option>
+                <option value="សមាជិកទី៣">សមាជិកទី៣</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">លំដាប់ (Slot)</label>
+              <select id="candFormOrder" class="form-control" required>
+                <option value="1">បេក្ខជនទី ១</option>
+                <option value="2">បេក្ខជនទី ២</option>
+                <option value="3">បេក្ខជនទី ៣</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">គោត្តនាម-នាម</label>
+            <input type="text" id="candFormName" class="form-control" placeholder="ឧ. សាក់ ប៉ូលី" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">ភេទ</label>
+              <select id="candFormGender" class="form-control">
+                <option value="ប">ប្រុស (ប)</option>
+                <option value="ស">ស្រី (ស)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ថ្ងៃខែឆ្នាំកំណើត (DD-MM-YYYY)</label>
+              <input type="text" id="candFormDob" class="form-control" placeholder="18-08-1988">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">លេខទូរសព្ទ</label>
+            <input type="text" id="candFormPhone" class="form-control" placeholder="015727486">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">កម្រិតសញ្ញាបត្រ</label>
+              <select id="candFormDegreeSelect" class="form-control">
+                <option value="0" data-name="">គ្មានសញ្ញាបត្រ (0 ពិន្ទុ)</option>
+                <option value="5" data-name="បរិញ្ញាបត្រ">បរិញ្ញាបត្រ (5 ពិន្ទុ)</option>
+                <option value="8" data-name="អនុបណ្ឌិត">អនុបណ្ឌិត (8 ពិន្ទុ)</option>
+                <option value="12" data-name="បណ្ឌិត">បណ្ឌិត (12 ពិន្ទុ)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ពិន្ទុសញ្ញាបត្រ</label>
+              <input type="number" id="candFormScoreDegree" class="form-control" value="0" min="0" max="20" step="0.5">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">បទពិសោធន៍ការងារ</label>
+              <select id="candFormExpSelect" class="form-control">
+                <option value="0" data-name="">គ្មានបទពិសោធន៍ (0 ពិន្ទុ)</option>
+                <option value="4" data-name="ការិយាល័យ២ដង">ធ្លាប់ធ្វើការិយាល័យ ២ដង (4 ពិន្ទុ)</option>
+                <option value="8" data-name="ធ្លាប់ធ្វើការិយាល័យ">ធ្លាប់ធ្វើការិយាល័យ (8 ពិន្ទុ)</option>
+                <option value="12" data-name="ធ្លាប់ជាប្រធាន">ធ្លាប់ជាប្រធាន/អនុប្រធាន (12 ពិន្ទុ)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ពិន្ទុបទពិសោធន៍</label>
+              <input type="number" id="candFormScoreExp" class="form-control" value="0" min="0" max="20" step="0.5">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ពិន្ទុសម្ភាសន៍ (0 ដល់ 20 ឬសរសេរ "អវត្តមាន")</label>
+            <input type="text" id="candFormScoreInterview" class="form-control" placeholder="18 ឬ អវត្តមាន">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalCandidate')">បោះបង់</button>
+          <button type="submit" class="btn btn-primary">រក្សាទុកបេក្ខជន</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Change Password & Profile Activation -->
+  <div id="modalPassword" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalPasswordTitle">🔑 ផ្លាស់ប្តូរលេខសម្ងាត់ផ្ទាល់ខ្លួន</h3>
+        <button class="btn-close" id="btnClosePasswordModal" onclick="closeModal('modalPassword')">&times;</button>
+      </div>
+      <form id="formChangePassword">
+        <div class="modal-body">
+          <div id="mustChangeAlert" style="display: none; background: #fef3c7; color: #b45309; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 14px;">
+            ⚠️ នេះជាការចូលប្រើប្រាស់លើកដំបូង! សូមផ្លាស់ប្តូរលេខសម្ងាត់ថ្មី និងបំពេញព័ត៌មានទំនាក់ទំនងដើម្បីសុវត្ថិភាព។
+          </div>
+          <div class="form-group" id="oldPasswordGroup">
+            <label class="form-label">លេខសម្ងាត់ចាស់</label>
+            <input type="password" id="pwOld" class="form-control" placeholder="លេខសម្ងាត់ចាស់">
+          </div>
+          <div class="form-group">
+            <label class="form-label">លេខសម្ងាត់ថ្មី (យ៉ាងតិច ៤ តួ)</label>
+            <input type="password" id="pwNew" class="form-control" required placeholder="លេខសម្ងាត់ថ្មី">
+          </div>
+          <div class="form-group">
+            <label class="form-label">បញ្ជាក់លេខសម្ងាត់ថ្មី</label>
+            <input type="password" id="pwConfirm" class="form-control" required placeholder="វាយលេខសម្ងាត់ថ្មីម្តងទៀត">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ឈ្មោះពេញរបស់អ្នកប្រើប្រាស់</label>
+            <input type="text" id="pwFullName" class="form-control" placeholder="ឈ្មោះអ្នកគ្រប់គ្រងគណនី">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">លេខទូរសព្ទ</label>
+              <input type="text" id="pwPhone" class="form-control" placeholder="012...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="pwEmail" class="form-control" placeholder="email@gmail.com">
+            </div>
+          </div>
+          <div id="pwError" style="color: var(--danger); font-size: 13px; margin-top: 8px; display: none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">យល់ព្រមផ្លាស់ប្តូរ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
