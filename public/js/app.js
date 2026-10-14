@@ -620,7 +620,7 @@ async function renderScoringTableForActiveStation() {
       tbody.innerHTML += `
         <tr class="excel-position-banner">
           <td colspan="15">
-            📋 មុខតំណែង ៖ <strong>${roleName}</strong> (កូដ: ${roleCode})
+            📋 មុខតំណែង ៖ <strong>${roleName}</strong>
           </td>
         </tr>
       `;
