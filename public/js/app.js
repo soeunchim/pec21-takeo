@@ -293,6 +293,39 @@ function setupEventListeners() {
     });
   }
 
+  const btnBatchCreateAll = document.getElementById('btnBatchCreateAllStations');
+  if (btnBatchCreateAll) {
+    btnBatchCreateAll.addEventListener('click', async () => {
+      if (!confirm('តើលោកអ្នកពិតជាចង់បង្កើត/ស្តារការិយាល័យបោះឆ្នោតទាំងអស់ទាំង ១,៦០៣ ការិយាល័យក្នុងខេត្តតាកែវមែនទេ?')) {
+        return;
+      }
+      try {
+        btnBatchCreateAll.disabled = true;
+        btnBatchCreateAll.textContent = 'កំពុងដំណើរការ...';
+        const res = await fetch('/api/polling-stations/batch-create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ all: true })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message);
+          const psRes = await fetch('/api/polling-stations').then(r => r.json());
+          allPollingStations = psRes.pollingStations || [];
+          populateStationSelectors();
+          renderPollingStationsTable();
+        } else {
+          alert('កំហុស៖ ' + data.message);
+        }
+      } catch (e) {
+        alert('Network error: ' + e.message);
+      } finally {
+        btnBatchCreateAll.disabled = false;
+        btnBatchCreateAll.textContent = '🌐 បង្កើតគ្រប់ការិយាល័យ (១,៦០៣)';
+      }
+    });
+  }
+
   // User Management Subtabs (Admins, Trainers, Communes)
   document.querySelectorAll('.user-subtab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
