@@ -326,33 +326,104 @@
       </section>
 
       <!-- =====================================================================
-           TAB 4: OFFICIAL REPORTS & PRINT
+           TAB 4: OFFICIAL REPORTS & PRINT (The 5 Excel sheets matching layout)
            ===================================================================== -->
       <section id="tabReports" class="page-section">
         <div class="card no-print">
-          <div class="card-header">
-            <h3 class="card-title">🖨️ បោះពុម្ពទម្រង់ និងរបាយការណ៍ផ្លូវការ (៥ សន្លឹកតាមគំរូ Excel)</h3>
-            <button id="btnDirectPrint" class="btn btn-primary">
-              🖨️ បោះពុម្ពឥឡូវនេះ (Print Document)
+          <!-- Excel-style 5 Sheets Navigation Tab Bar -->
+          <div class="excel-sheets-nav-bar" id="reportTabsBar">
+            <button type="button" class="excel-sheet-tab active" data-report="sortlist" id="reportTabBtn_sortlist">
+              📋 1. SortList (តារាងសម្រាំង)
+            </button>
+            <button type="button" class="excel-sheet-tab" data-report="notice" id="reportTabBtn_notice">
+              📢 2. ជូនដំណឹង (សេចក្តីជូនដំណឹង)
+            </button>
+            <button type="button" class="excel-sheet-tab" data-report="attendance" id="reportTabBtn_attendance">
+              ✍️ 3. បញ្ជីវត្តមានសម្ភាសន៍
+            </button>
+            <button type="button" class="excel-sheet-tab" data-report="scoresheet" id="reportTabBtn_scoresheet">
+              📝 4. បញ្ចូលពិន្ទុ (តារាងស្រង់ពិន្ទុ)
+            </button>
+            <button type="button" class="excel-sheet-tab" data-report="results" id="reportTabBtn_results">
+              🏆 5. លទ្ធផលតាមលំដាប់ (Ranked)
             </button>
           </div>
 
-          <div class="filter-bar">
-            <div style="flex: 1; min-width: 250px;">
-              <label class="form-label">ជ្រើសរើសការិយាល័យ</label>
-              <select id="reportStationSelect" class="form-control">
-                <!-- Populated -->
-              </select>
+          <!-- Sheet Header & Actions Toolbar -->
+          <div class="card-header" style="flex-wrap: wrap; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="activeReportSheetTitle" style="font-weight: 700; font-size: 15px; color: #1e3a8a;">
+                📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (SortList)
+              </span>
             </div>
-            <div style="flex: 1; min-width: 250px;">
-              <label class="form-label">ជ្រើសរើសទម្រង់របាយការណ៍ដែលត្រូវបោះពុម្ព</label>
-              <select id="reportTypeSelect" class="form-control" style="font-weight: 600;">
-                <option value="sortlist">សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជន (SortList)</option>
-                <option value="notice">សន្លឹក ២ ៖ សេចក្តីជូនដំណឹងសម្ភាសន៍ (Notice)</option>
-                <option value="attendance">សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ (Attendance)</option>
-                <option value="scoresheet">សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុ (Score Sheet)</option>
-                <option value="results" selected>សន្លឹក ៥ ៖ លទ្ធផលតាមលំដាប់ពិន្ទុ (Ranked Results)</option>
-              </select>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button id="btnToggleEmptyRows" class="btn btn-outline btn-sm" type="button" title="លាក់ ឬបង្ហាញជួរដេកទទេដូចក្នុង Excel">
+                👁️ <span id="toggleEmptyRowsText">លាក់ជួរដេកទទេ</span>
+              </button>
+              <button id="btnExportCurrentReportExcel" class="btn btn-excel btn-sm" type="button" title="ទាញយកសន្លឹករបាយការណ៍នេះជាឯកសារ Excel">
+                📥 ទាញយកជា Excel (.xlsx)
+              </button>
+              <button id="btnDirectPrint" class="btn btn-primary btn-sm" type="button">
+                🖨️ បោះពុម្ពឥឡូវនេះ (Print / PDF)
+              </button>
+            </div>
+          </div>
+
+          <!-- Station Selector Toolbar (4 parts identical to scoring page) -->
+          <div class="filter-bar" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-top: 8px;">
+            <div style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+              <!-- 1. ក្រុង/ស្រុក -->
+              <div style="flex: 1; min-width: 170px;">
+                <label id="reportDistrictLabel" class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  🏛️ ក្រុង/ស្រុក (District)
+                </label>
+                <select id="reportDistrictFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc;" title="ជ្រើសរើសក្រុង/ស្រុក">
+                  <option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>
+                </select>
+              </div>
+
+              <!-- 2. ឃុំ/សង្កាត់ -->
+              <div style="flex: 1.2; min-width: 190px;">
+                <label id="reportCommuneLabel" class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  🏘️ ឃុំ/សង្កាត់ (Commune)
+                </label>
+                <select id="reportCommuneFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc;" title="ជ្រើសរើសឃុំ/សង្កាត់">
+                  <option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>
+                </select>
+              </div>
+
+              <!-- 3. កូដការិយាល័យ -->
+              <div style="flex: 1.2; min-width: 220px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  🔢 កូដការិយាល័យ (Code)
+                </label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="text" id="reportCodeInput" list="reportCodeDatalist" class="form-control" placeholder="វាយកូដ..." style="width: 105px; font-weight: 800; font-size: 15px; text-align: center; color: #1e40af; border: 2px solid #2563eb; background: #eff6ff;" title="វាយលេខកូដការិយាល័យ" autocomplete="off">
+                  <datalist id="reportCodeDatalist"></datalist>
+                  <select id="reportCodeSelect" class="form-control" style="font-weight: 700; border-color: #93c5fd; flex: 1;" title="ជ្រើសរើសលេខកូដការិយាល័យ">
+                  </select>
+                </div>
+              </div>
+
+              <!-- 4. ឈ្មោះទីតាំងការិយាល័យ -->
+              <div style="flex: 2; min-width: 260px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+                  📍 ឈ្មោះទីតាំងការិយាល័យ (Location)
+                </label>
+                <select id="reportLocationSelect" class="form-control" style="font-weight: 600; border-color: #93c5fd; color: #0f172a;" title="ទីតាំងការិយាល័យ">
+                </select>
+              </div>
+            </div>
+
+            <!-- Hidden inputs for backward compatibility -->
+            <input type="hidden" id="reportStationSelect" value="">
+            <input type="hidden" id="reportTypeSelect" value="sortlist">
+
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed #e2e8f0; margin-top: 10px;">
+              <span id="reportActiveStationInfo" style="font-size: 13px; color: #1d4ed8; font-weight: 700;"></span>
+              <span id="reportStatusHint" style="font-size: 12px; color: #475569; font-weight: 500;">
+                💡 ចុចលើ Tab សន្លឹកនីមួយៗ (1 ដល់ 5) ខាងលើដើម្បីមើល ឬបោះពុម្ព
+              </span>
             </div>
           </div>
         </div>

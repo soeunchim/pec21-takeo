@@ -987,3 +987,134 @@ body {
   flex-wrap: wrap;
   align-items: center;
 }
+
+/* ==============================================================================
+   OFFICIAL REPORT 5 SHEETS TAB BAR & PREVIEW CONTAINER
+   ============================================================================== */
+.excel-sheets-nav-bar {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 8px 12px 0 12px;
+  border-radius: 8px 8px 0 0;
+  border-bottom: 2px solid #cbd5e1;
+  overflow-x: auto;
+}
+
+.excel-sheet-tab {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-bottom: none;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.excel-sheet-tab:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.excel-sheet-tab.active {
+  background: #ffffff;
+  color: #166534;
+  border-color: #94a3b8;
+  border-top: 3px solid #16a34a;
+  font-weight: 700;
+  margin-bottom: -2px;
+  padding-bottom: 11px;
+}
+
+/* Official Print Paper Sheet (A4 Screen Preview & Print) */
+.print-paper-sheet {
+  background: #ffffff;
+  max-width: 960px;
+  margin: 18px auto;
+  padding: 20mm 16mm;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #000000;
+  font-family: var(--font-body);
+  position: relative;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+/* Official Report Table Styles (Screen & Print) */
+.official-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 10pt;
+  background: #ffffff;
+}
+
+.official-print-table th,
+.official-print-table td {
+  border: 1px solid #000000 !important;
+  padding: 4px 6px;
+  color: #000000;
+  vertical-align: middle;
+}
+
+.official-print-table th {
+  background: #ffffff;
+  text-align: center;
+  font-weight: 700;
+  font-family: var(--font-body);
+}
+
+.official-print-table td.center {
+  text-align: center;
+}
+
+.official-print-table td.right {
+  text-align: right;
+}
+
+.official-print-table tr.category-row td {
+  font-weight: 700;
+  background: #ffffff;
+  text-align: left;
+  padding: 5px 8px;
+  font-size: 10.5pt;
+}
+
+.official-print-table tr.absent-row td {
+  background: #fff1f2;
+}
+
+.official-absent-cell {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  font-weight: 700 !important;
+  text-align: center;
+}
+
+/* Toggle Hide Empty Rows */
+.hide-empty-rows tr.empty-candidate-row {
+  display: none !important;
+}
+
+@media print {
+  .excel-sheets-nav-bar,
+  .no-print {
+    display: none !important;
+  }
+  .print-paper-sheet {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8mm 6mm !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}

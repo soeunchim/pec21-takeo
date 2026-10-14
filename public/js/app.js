@@ -138,7 +138,10 @@ function setupEventListeners() {
       if (targetId === 'tabDashboard') loadDashboardStats();
       if (targetId === 'tabPollingStations') renderPollingStationsTable();
       if (targetId === 'tabScoring') renderScoringView();
-      if (targetId === 'tabReports') renderReportPreview();
+      if (targetId === 'tabReports') {
+        syncScoringStationToReports();
+        renderReportPreview();
+      }
       if (targetId === 'tabUsers') loadUsersList();
       if (targetId === 'tabSettings') loadSettingsForm();
     });
@@ -389,7 +392,13 @@ async function loadInitialData() {
   }
 }
 
-// Universal helpers to distinguish ស្រុក vs ក្រុង and ឃុំ vs សង្កាត់
+// Universal helpers to convert numbers to Khmer digits & distinguish ស្រុក vs ក្រុង, ឃុំ vs សង្កាត់
+function toKhmerNum(num) {
+  if (num === null || num === undefined || num === '') return '';
+  const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+  return String(num).replace(/[0-9]/g, d => khmerDigits[parseInt(d, 10)]);
+}
+
 function getDistrictPrefix(districtName) {
   if (!districtName) return '';
   const clean = String(districtName).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
@@ -440,10 +449,8 @@ function populateFilterDropdowns() {
 }
 
 function populateStationSelectors() {
-  const reportSelect = document.getElementById('reportStationSelect');
-  if (reportSelect) reportSelect.innerHTML = '';
-
   if (!allPollingStations.length) {
+    const reportSelect = document.getElementById('reportStationSelect');
     if (reportSelect) reportSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យបោះឆ្នោត --</option>';
     return;
   }
@@ -451,27 +458,8 @@ function populateStationSelectors() {
   // 1. Initialize dedicated 4-Part Scoring Selector Bar (District, Commune, Code [Select/Type], Location)
   initScoringSelectorBar();
 
-  // 2. Populate Report Page Station Selector grouped by Commune
-  if (reportSelect) {
-    const grouped = {};
-    allPollingStations.forEach(ps => {
-      const key = `${getCommunePrefix(ps.communeName, ps.district)} (${getDistrictPrefix(ps.district)})`;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(ps);
-    });
-
-    let html = '';
-    for (const [groupName, stations] of Object.entries(grouped)) {
-      html += `<optgroup label="${groupName}">`;
-      stations.forEach(ps => {
-        const code4 = String(ps.code || '').padStart(4, '0');
-        const locStr = ps.location ? ` - ${ps.location}` : '';
-        html += `<option value="${ps.id}">${ps.name} [កូដ: ${code4}]${locStr}</option>`;
-      });
-      html += `</optgroup>`;
-    }
-    reportSelect.innerHTML = html;
-  }
+  // 2. Initialize dedicated 4-Part Report Selector Bar & 5 Sheets Tabs
+  initReportSelectorBar();
 
   renderReportPreview();
 }
@@ -2120,8 +2108,358 @@ async function confirmAndSaveExcelImport() {
 }
 
 // ==============================================================================
-// TAB 4: OFFICIAL REPORTS & PRINT (The 5 Excel sheets matching layout)
+// TAB 4: OFFICIAL REPORTS & PRINT (The 5 Excel sheets matching layout 100%)
 // ==============================================================================
+
+function initReportSelectorBar() {
+  const distSelect = document.getElementById('reportDistrictFilter');
+  const comSelect = document.getElementById('reportCommuneFilter');
+  const codeInput = document.getElementById('reportCodeInput');
+  const codeSelect = document.getElementById('reportCodeSelect');
+  const codeDatalist = document.getElementById('reportCodeDatalist');
+  const locSelect = document.getElementById('reportLocationSelect');
+
+  if (!distSelect || !comSelect) return;
+
+  // 1. Populate Districts
+  const rawDistNames = allDistricts.length 
+    ? allDistricts.map(d => d.name) 
+    : [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
+
+  const distNames = [...new Set(rawDistNames.map(n => String(n).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '')))];
+
+  distSelect.innerHTML = '<option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>';
+  distNames.forEach(name => {
+    const label = getDistrictPrefix(name);
+    distSelect.innerHTML += `<option value="${name}">${label}</option>`;
+  });
+
+  // Handle role restrictions for Trainer / Commune
+  if (currentUser) {
+    if (currentUser.role === 'Trainer' && currentUser.district && currentUser.district !== 'all') {
+      const cleanUserDist = String(currentUser.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      distSelect.value = cleanUserDist;
+      distSelect.disabled = true;
+    } else if (currentUser.role === 'Commune' && currentUser.district && currentUser.district !== 'all') {
+      const cleanUserDist = String(currentUser.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      distSelect.value = cleanUserDist;
+      distSelect.disabled = true;
+    }
+  }
+
+  // Populate datalist with ALL station codes in province
+  if (codeDatalist) {
+    codeDatalist.innerHTML = '';
+    allPollingStations.forEach(ps => {
+      const c4 = String(ps.code || '').padStart(4, '0');
+      const opt = document.createElement('option');
+      opt.value = c4;
+      opt.label = `${ps.name} - ${ps.location || ''} (${getCommunePrefix(ps.communeName, ps.district)})`;
+      codeDatalist.appendChild(opt);
+    });
+  }
+
+  // Event Listeners for Filters
+  distSelect.onchange = () => {
+    updateReportCommunes(true);
+  };
+
+  comSelect.onchange = () => {
+    updateReportStationsForCommune(true);
+  };
+
+  if (codeSelect) {
+    codeSelect.onchange = () => {
+      const stId = codeSelect.value;
+      if (stId) setReportStationById(stId, 'codeSelect');
+    };
+  }
+
+  if (locSelect) {
+    locSelect.onchange = () => {
+      const stId = locSelect.value;
+      if (stId) setReportStationById(stId, 'locSelect');
+    };
+  }
+
+  const handleReportCodeTyping = () => {
+    const rawVal = (codeInput.value || '').trim();
+    if (!rawVal) return;
+    const num = parseInt(rawVal, 10);
+    if (isNaN(num)) return;
+    const c4 = String(num).padStart(4, '0');
+
+    // 1. Try matching within current commune
+    const curComCode = comSelect.value;
+    const comStations = allPollingStations.filter(p => String(p.communeCode).padStart(3, '0') === String(curComCode).padStart(3, '0'));
+    let matched = comStations.find(p => String(p.code).padStart(4, '0') === c4 || String(p.displayCode).padStart(4, '0') === c4 || parseInt(p.code, 10) === num);
+
+    // 2. If not found in current commune, search whole province
+    if (!matched) {
+      matched = allPollingStations.find(p => String(p.code).padStart(4, '0') === c4 || String(p.displayCode).padStart(4, '0') === c4 || parseInt(p.code, 10) === num);
+      if (matched) {
+        if (currentUser && currentUser.role === 'Commune' && String(matched.communeCode).padStart(3, '0') !== String(currentUser.communeCode).padStart(3, '0')) {
+          alert(`ការិយាល័យកូដ ${c4} ស្ថិតនៅ${getCommunePrefix(matched.communeName, matched.district)}! គណនីរបស់អ្នកមានសិទ្ធិតែក្នុង${getCommunePrefix(currentUser.communeName, currentUser.district)} ប៉ុណ្ណោះ។`);
+          return;
+        }
+        if (currentUser && currentUser.role === 'Trainer' && matched.district !== currentUser.district) {
+          alert(`ការិយាល័យកូដ ${c4} ស្ថិតនៅ${getDistrictPrefix(matched.district)}!`);
+          return;
+        }
+        const cleanMatchedDist = String(matched.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        distSelect.value = cleanMatchedDist;
+        updateReportCommunes(false, matched.communeCode);
+      }
+    }
+
+    if (matched) {
+      setReportStationById(matched.id, 'codeInput');
+    } else {
+      alert(`រកមិនឃើញការិយាល័យបោះឆ្នោតដែលមានលេខកូដ ${rawVal} ឡើយ!`);
+    }
+  };
+
+  if (codeInput) {
+    codeInput.onchange = handleReportCodeTyping;
+    codeInput.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleReportCodeTyping();
+      }
+    };
+  }
+
+  // Setup 5 Sheet Tabs clicks
+  document.querySelectorAll('#reportTabsBar .excel-sheet-tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('#reportTabsBar .excel-sheet-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const repType = tab.getAttribute('data-report');
+      document.getElementById('reportTypeSelect').value = repType;
+      
+      const titleEl = document.getElementById('activeReportSheetTitle');
+      if (titleEl) {
+        const titles = {
+          'sortlist': '📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (SortList)',
+          'notice': '📢 សន្លឹក ២ ៖ សេចក្តីជូនដំណឹងបេក្ខជនសម្ភាសន៍ (Notice)',
+          'attendance': '✍️ សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ជ្រើសរើស គ.ក.ប (Attendance)',
+          'scoresheet': '📝 សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប (Score Sheet)',
+          'results': '🏆 សន្លឹក ៥ ៖ លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប តាមលំដាប់ពិន្ទុ (Ranked Results)'
+        };
+        titleEl.textContent = titles[repType] || '';
+      }
+
+      renderReportPreview();
+    };
+  });
+
+  // Setup toggle hide empty rows
+  const btnToggleEmpty = document.getElementById('btnToggleEmptyRows');
+  if (btnToggleEmpty) {
+    btnToggleEmpty.onclick = () => {
+      const container = document.getElementById('printContainer');
+      const isHidden = container.classList.toggle('hide-empty-rows');
+      const label = document.getElementById('toggleEmptyRowsText');
+      if (label) {
+        label.textContent = isHidden ? 'បង្ហាញគ្រប់ជួរដេក' : 'លាក់ជួរដេកទទេ';
+      }
+    };
+  }
+
+  // Setup Export Excel for Current Report
+  const btnExportReportExcel = document.getElementById('btnExportCurrentReportExcel');
+  if (btnExportReportExcel) {
+    btnExportReportExcel.onclick = exportCurrentReportToExcel;
+  }
+
+  // If no district selected, select first
+  if (!distSelect.value && distNames.length) {
+    const firstClean = String(distNames[0]).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    distSelect.value = firstClean;
+  }
+
+  updateReportCommunes(true);
+}
+
+function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) {
+  const distSelect = document.getElementById('reportDistrictFilter');
+  const comSelect = document.getElementById('reportCommuneFilter');
+  const distLabel = document.getElementById('reportDistrictLabel');
+  const comLabel = document.getElementById('reportCommuneLabel');
+  if (!distSelect || !comSelect) return;
+
+  const selDist = distSelect.value;
+  const isKrong = selDist === 'ដូនកែវ';
+
+  if (distLabel) {
+    distLabel.innerHTML = isKrong ? '🏛️ ក្រុង (City / District)' : '🏛️ ស្រុក (District)';
+  }
+  if (comLabel) {
+    comLabel.innerHTML = isKrong ? '🏘️ សង្កាត់ (Sangkat / Commune)' : '🏘️ ឃុំ (Commune)';
+  }
+
+  comSelect.innerHTML = '';
+
+  const matchedStations = allPollingStations.filter(p => {
+    const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    return cleanDist === selDist;
+  });
+
+  const communeMap = new Map();
+  matchedStations.forEach(p => {
+    const code = String(p.communeCode || '').padStart(3, '0');
+    if (!communeMap.has(code)) {
+      communeMap.set(code, {
+        code: code,
+        name: p.communeName,
+        district: p.district
+      });
+    }
+  });
+
+  let distCommunes = Array.from(communeMap.values());
+  if (!distCommunes.length) {
+    distCommunes = allCommunes.filter(c => {
+      const cleanDist = String(c.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      return cleanDist === selDist;
+    });
+  }
+
+  distCommunes.sort((a, b) => parseInt(a.code, 10) - parseInt(b.code, 10));
+
+  if (!distCommunes.length) {
+    comSelect.innerHTML = '<option value="">-- គ្មានឃុំ/សង្កាត់ --</option>';
+    updateReportStationsForCommune(false);
+    return;
+  }
+
+  distCommunes.forEach(c => {
+    const prefix = getCommunePrefix(c.name, c.district);
+    comSelect.innerHTML += `<option value="${c.code}">${prefix} (${c.code})</option>`;
+  });
+
+  if (currentUser && currentUser.role === 'Commune' && currentUser.communeCode) {
+    const cleanCode = String(currentUser.communeCode).padStart(3, '0');
+    comSelect.value = cleanCode;
+    comSelect.disabled = true;
+  } else if (targetCommuneCode) {
+    comSelect.value = String(targetCommuneCode).padStart(3, '0');
+  } else if (autoSelectFirst && distCommunes.length) {
+    comSelect.value = distCommunes[0].code;
+  }
+
+  updateReportStationsForCommune(autoSelectFirst);
+}
+
+function updateReportStationsForCommune(autoSelectFirst = true, targetStationId = null) {
+  const comSelect = document.getElementById('reportCommuneFilter');
+  const codeSelect = document.getElementById('reportCodeSelect');
+  const codeInput = document.getElementById('reportCodeInput');
+  const locSelect = document.getElementById('reportLocationSelect');
+  const hiddenStation = document.getElementById('reportStationSelect');
+
+  if (!comSelect || !codeSelect || !locSelect) return;
+
+  const selCommuneCode = comSelect.value;
+  codeSelect.innerHTML = '';
+  locSelect.innerHTML = '';
+
+  const stations = allPollingStations.filter(p => {
+    return String(p.communeCode).padStart(3, '0') === String(selCommuneCode).padStart(3, '0');
+  });
+
+  stations.sort((a, b) => {
+    const ca = parseInt(a.code, 10) || 0;
+    const cb = parseInt(b.code, 10) || 0;
+    return ca - cb;
+  });
+
+  if (!stations.length) {
+    codeSelect.innerHTML = '<option value="">-- គ្មាន --</option>';
+    locSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យក្នុងទីតាំងនេះ --</option>';
+    if (codeInput) codeInput.value = '';
+    if (hiddenStation) hiddenStation.value = '';
+    renderReportPreview();
+    return;
+  }
+
+  stations.forEach(ps => {
+    const c4 = String(ps.code || '').padStart(4, '0');
+    codeSelect.innerHTML += `<option value="${ps.id}">${c4}</option>`;
+    const locText = ps.location ? ` - ${ps.location}` : '';
+    locSelect.innerHTML += `<option value="${ps.id}">${ps.name} [${c4}]${locText}</option>`;
+  });
+
+  let selectedStation = null;
+  if (targetStationId) {
+    selectedStation = stations.find(p => p.id === targetStationId);
+  }
+  if (!selectedStation && autoSelectFirst) {
+    selectedStation = stations[0];
+  }
+
+  if (selectedStation) {
+    setReportStationById(selectedStation.id, 'init');
+  }
+}
+
+function setReportStationById(stationId, source = '') {
+  const ps = allPollingStations.find(p => p.id === stationId);
+  if (!ps) return;
+
+  const distSelect = document.getElementById('reportDistrictFilter');
+  const comSelect = document.getElementById('reportCommuneFilter');
+  const codeInput = document.getElementById('reportCodeInput');
+  const codeSelect = document.getElementById('reportCodeSelect');
+  const locSelect = document.getElementById('reportLocationSelect');
+  const hiddenStation = document.getElementById('reportStationSelect');
+  const infoSpan = document.getElementById('reportActiveStationInfo');
+
+  const c4 = String(ps.code || '').padStart(4, '0');
+  const cleanDist = String(ps.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+
+  if (distSelect && distSelect.value !== cleanDist) {
+    distSelect.value = cleanDist;
+  }
+  const comCode3 = String(ps.communeCode).padStart(3, '0');
+  if (comSelect && comSelect.value !== comCode3) {
+    comSelect.value = comCode3;
+  }
+  if (source !== 'codeInput' && codeInput) {
+    codeInput.value = c4;
+  }
+  if (source !== 'codeSelect' && codeSelect) {
+    codeSelect.value = ps.id;
+  }
+  if (source !== 'locSelect' && locSelect) {
+    locSelect.value = ps.id;
+  }
+  if (hiddenStation) {
+    hiddenStation.value = ps.id;
+  }
+
+  if (infoSpan) {
+    const distPrefix = getDistrictPrefix(ps.district);
+    const comPrefix = getCommunePrefix(ps.communeName, ps.district);
+    infoSpan.textContent = `📍 ${distPrefix} | ${comPrefix} | ${ps.name} [កូដ: ${c4}] | ទីតាំង: ${ps.location || 'គ្មាន'}`;
+  }
+
+  renderReportPreview();
+}
+
+function syncScoringStationToReports() {
+  const scoringStationId = document.getElementById('scoringStationSelect') ? document.getElementById('scoringStationSelect').value : null;
+  if (scoringStationId) {
+    const ps = allPollingStations.find(p => p.id === scoringStationId);
+    if (ps) {
+      const cleanDist = String(ps.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      const distSelect = document.getElementById('reportDistrictFilter');
+      if (distSelect) distSelect.value = cleanDist;
+      updateReportCommunes(false, ps.communeCode);
+      updateReportStationsForCommune(false, ps.id);
+    }
+  }
+}
 
 async function renderReportPreview() {
   const stationId = document.getElementById('reportStationSelect').value;
@@ -2137,11 +2475,22 @@ async function renderReportPreview() {
   if (!ps) return;
 
   const psCodeFormatted = String(ps.code || '').padStart(4, '0');
+  const psCodeKhmer = toKhmerNum(psCodeFormatted);
+  const communePrefix = getCommunePrefix(ps.communeName, ps.district);
+  const communeCodeKhmer = toKhmerNum(String(ps.communeCode || '').padStart(3, '0'));
+  const mandateText = appSettings.mandateTitle || 'សម្រាប់ការបោះឆ្នោតជ្រើសរើសក្រុមប្រឹក្សាឃុំ សង្កាត់ អណត្តិទី៧ ឆ្នាំ២០២៧';
+  const provinceTitle = ps.province || 'គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ';
+  const committeeTitle = ps.committeeName || 'គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប';
 
   // Fetch candidates for this station
-  const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
-  const data = await res.json();
-  const cList = data.candidates || [];
+  let cList = [];
+  try {
+    const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
+    const data = await res.json();
+    cList = data.candidates || [];
+  } catch (err) {
+    console.error('Error fetching candidates for report:', err);
+  }
 
   // Group candidates by role
   const roleGroups = {};
@@ -2150,21 +2499,26 @@ async function renderReportPreview() {
     if (roleGroups[c.role]) roleGroups[c.role].push(c);
   });
 
-  // Common Header Template
-  const headerHtml = `
-    <div class="letterhead">
-      <table class="letterhead-table">
+  // Common Official Khmer Top Letterhead
+  const letterheadHtml = `
+    <div class="letterhead" style="width: 100%; margin-bottom: 12px;">
+      <table style="width: 100%; border: none !important; border-collapse: collapse;">
         <tr>
-          <td style="width: 48%;">
-            <div class="khmer-agency">គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
-            <div class="khmer-agency">${ps.province || 'គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ'}</div>
-            <div class="khmer-agency">${ps.committeeName || 'គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប'}</div>
-            <div style="font-weight: 700; margin-top: 4px;">ឃុំ${ps.communeName}(${ps.communeCode})</div>
+          <td style="width: 50%; border: none !important; vertical-align: top; padding: 0;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <img src="img/nec_logo.jpg" alt="NEC" style="width: 72px; height: 72px; object-fit: contain; flex-shrink: 0; border-radius: 50%;">
+              <div style="line-height: 1.45;">
+                <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; color: #000;">គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
+                <div style="font-size: 10.5pt; font-weight: 700; color: #000;">${provinceTitle}</div>
+                <div style="font-size: 10.5pt; font-weight: 700; color: #000;">${committeeTitle}</div>
+                <div style="font-size: 10.5pt; font-weight: 700; color: #000;">${communePrefix}(${communeCodeKhmer})</div>
+              </div>
+            </div>
           </td>
-          <td style="width: 52%; text-align: center;">
-            <div class="khmer-national">ព្រះរាជាណាចក្រកម្ពុជា</div>
-            <div class="khmer-motto">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
-            <div style="font-size: 18px; margin-top: -4px;">***</div>
+          <td style="width: 50%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
+            <div style="font-family: var(--font-heading); font-size: 13pt; color: #000; line-height: 1.35;">ព្រះរាជាណាចក្រកម្ពុជា</div>
+            <div style="font-family: var(--font-heading); font-size: 11.5pt; color: #000; line-height: 1.35;">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
+            <div style="font-size: 12pt; letter-spacing: 2px; margin-top: 1px; color: #000;">៚--- ❖ ---៚</div>
           </td>
         </tr>
       </table>
@@ -2174,67 +2528,95 @@ async function renderReportPreview() {
   let reportContentHtml = '';
 
   // ----------------------------------------------------------------------------
-  // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជន)
+  // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប)
   // ----------------------------------------------------------------------------
   if (reportType === 'sortlist') {
     let rowsHtml = '';
     ROLES_ORDER.forEach(role => {
-      rowsHtml += `<tr class="category-row"><td colspan="10"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      rowsHtml += `
+        <tr class="category-row">
+          <td colspan="10" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+            - មុខតំណែង ៖ ${role}
+          </td>
+        </tr>
+      `;
       const items = roleGroups[role] || [];
       for (let i = 1; i <= 3; i++) {
         const c = items.find(x => x.orderInRole === i);
+        const isEmpty = !c || !c.name;
+        const khmerIdx = toKhmerNum(i);
+        const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
+        const scoreDeg = c && c.scoreDegree !== undefined && c.scoreDegree !== '' ? c.scoreDegree : '';
+        const scoreExp = c && c.scoreExp !== undefined && c.scoreExp !== '' ? c.scoreExp : '';
+        const scoreTot = c && c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? c.scoreShortlist : '';
+
         rowsHtml += `
-          <tr>
-            <td class="center">${i}</td>
-            <td style="font-weight: 600;">${c ? c.name : ''}</td>
-            <td class="center">${c ? c.gender : ''}</td>
-            <td class="center">${c ? c.dob : ''}</td>
-            <td>${c ? c.degree : ''}</td>
-            <td class="center">${c ? (c.scoreDegree || 0) : ''}</td>
-            <td>${c ? c.experience : ''}</td>
-            <td class="center">${c ? (c.scoreExp || 0) : ''}</td>
-            <td class="center" style="font-weight: 700;">${c ? (c.scoreShortlist || 0) : ''}</td>
-            <td>${c ? (c.notes || '') : ''}</td>
+          <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
+            <td class="center" style="width: 38px;">${khmerIdx}</td>
+            <td style="font-weight: 600; min-width: 160px;">${c ? (c.name || '') : ''}</td>
+            <td class="center" style="width: 42px;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 105px;">${dobKhmer}</td>
+            <td>${c ? (c.degree || '') : ''}</td>
+            <td class="center" style="width: 40px;">${scoreDeg}</td>
+            <td>${c ? (c.experience || '') : ''}</td>
+            <td class="center" style="width: 40px;">${scoreExp}</td>
+            <td class="center" style="font-weight: 700; width: 65px;">${scoreTot}</td>
+            <td style="width: 70px;">${c ? (c.notes || '') : ''}</td>
           </tr>
         `;
       }
     });
 
     reportContentHtml = `
-      <div class="print-page">
-        ${headerHtml}
-        <div class="report-title-section">
-          <div class="report-main-title">តារាង​សម្រាំង​បេក្ខជន​សម្រាប់​ការ​សម្ភាសន៍​ជ្រើសរើស​​ គ.ក.ប</div>
-          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
-        </div>
-        <div class="report-info-row">
-          <span></span>
-          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+      <div class="print-paper-sheet">
+        ${letterheadHtml}
+        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
+          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
+            តារាង​សម្រាំង​បេក្ខជន​សម្រាប់​ការ​សម្ភាសន៍​ជ្រើសរើស​​ គ.ក.ប
+          </div>
+          <div style="font-size: 11pt; font-weight: 600; color: #000;">
+            ${mandateText}
+          </div>
+          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
+            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
+          </div>
         </div>
         <table class="official-print-table">
           <thead>
             <tr>
-              <th rowspan="2" style="width: 40px;">ល.រ</th>
-              <th rowspan="2">គោត្តនាម-នាម</th>
-              <th rowspan="2" style="width: 45px;">ភេទ</th>
-              <th rowspan="2" style="width: 95px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
-              <th colspan="2">កម្រិតសញ្ញាបត្រ</th>
-              <th colspan="2">បទពិសោធន៍</th>
-              <th rowspan="2" style="width: 75px;">សរុបពិន្ទុ</th>
-              <th rowspan="2" style="width: 70px;">ផ្សេងៗ</th>
+              <th rowspan="2" style="width: 38px; vertical-align: middle;">ល.រ</th>
+              <th rowspan="2" style="min-width: 160px; vertical-align: middle;">គោត្តនាម-នាម</th>
+              <th rowspan="2" style="width: 42px; vertical-align: middle;">ភេទ</th>
+              <th rowspan="2" style="width: 105px; vertical-align: middle;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th colspan="2" style="text-align: center;">កម្រិតសញ្ញាបត្រ</th>
+              <th colspan="2" style="text-align: center;">បទពិសោធន៍</th>
+              <th rowspan="2" style="width: 65px; vertical-align: middle;">សរុបពិន្ទុ</th>
+              <th rowspan="2" style="width: 70px; vertical-align: middle;">ផ្សេងៗ</th>
             </tr>
             <tr>
-              <th>សញ្ញាបត្រ</th>
-              <th style="width: 50px;">ពិន្ទុ</th>
-              <th>បទពិសោធ</th>
-              <th style="width: 50px;">ពិន្ទុ</th>
+              <th style="font-size: 8.5pt; font-weight: normal; text-align: left; padding: 4px 6px; line-height: 1.35; width: 220px;">
+                -សញ្ញាបត្រទុតិយភូមិ ឬបទពិសោធន៍ស្រដៀងមុខតំណែង ចាប់ពី១ឆ្នាំឡើង ដល់២ឆ្នាំ/និង=៥ពិន្ទុ<br>
+                -សញ្ញាបត្រខ្ពស់ជាង ឬបទពិសោធន៍ស្រដៀងមុខតំណែង ចាប់ពី២ឆ្នាំឡើង ឡើង =៨ពិន្ទុ
+              </th>
+              <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
+              <th style="font-size: 8pt; font-weight: normal; text-align: left; padding: 4px 6px; line-height: 1.3; width: 240px;">
+                - បទពិសោធន៍ស្របមុខតំណែង និងមានសញ្ញាបត្រ<br>
+                - ១ឆ្នាំ/និង ដល់២ឆ្នាំ/និង = ៤ពិន្ទុ, ៣ឆ្នាំ/និង ដល់៤ឆ្នាំ/និង= ៨ពិន្ទុ<br>
+                ៥ឆ្នាំ/និងឡើង = ១២ពិន្ទុ<br>
+                + បទពិសោធន៍ស្របមុខតំណែង និងគ្មានសញ្ញាបត្រ<br>
+                - ២ឆ្នាំ/និង ដល់៣ឆ្នាំ/និង = ៤ពិន្ទុ, ៤ឆ្នាំ/និង ដល់៥ឆ្នាំ/និង= ៨ពិន្ទុ<br>
+                ៦ឆ្នាំ/និងឡើង = ១២ពិន្ទុ<br>
+                + សមាជិកទី១,សមាជិកទី២,សមាជិកទី៣<br>
+                - ២ឆ្នាំ=៥ពិន្ទុ ,ចាប់ពី៣ឆ្នាំឡើង=១២ពិន្ទុ
+              </th>
+              <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
             </tr>
           </thead>
           <tbody>
             ${rowsHtml}
           </tbody>
         </table>
-        ${getSignatureSection(ps)}
+        ${getOfficialSignatureBlock(ps)}
       </div>
     `;
   }
@@ -2245,53 +2627,68 @@ async function renderReportPreview() {
   else if (reportType === 'notice') {
     let rowsHtml = '';
     ROLES_ORDER.forEach(role => {
-      rowsHtml += `<tr class="category-row"><td colspan="6"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      rowsHtml += `
+        <tr class="category-row">
+          <td colspan="6" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+            - មុខតំណែង ៖ ${role}
+          </td>
+        </tr>
+      `;
       const items = roleGroups[role] || [];
       for (let i = 1; i <= 3; i++) {
         const c = items.find(x => x.orderInRole === i);
+        const isEmpty = !c || !c.name;
+        const khmerIdx = toKhmerNum(i);
+        const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
+
         rowsHtml += `
-          <tr>
-            <td class="center">${i}</td>
-            <td style="font-weight: 600;">${c ? c.name : ''}</td>
-            <td class="center">${c ? c.gender : ''}</td>
-            <td class="center">${c ? c.dob : ''}</td>
-            <td class="center">${c ? (c.phone || '') : ''}</td>
-            <td>${c ? (c.notes || '') : ''}</td>
+          <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
+            <td class="center" style="width: 45px;">${khmerIdx}</td>
+            <td style="font-weight: 600; min-width: 180px;">${c ? (c.name || '') : ''}</td>
+            <td class="center" style="width: 50px;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 120px;">${dobKhmer}</td>
+            <td class="center" style="width: 130px; font-weight: 600;">${c ? (c.phone || '') : ''}</td>
+            <td style="width: 90px;">${c ? (c.notes || '') : ''}</td>
           </tr>
         `;
       }
     });
 
+    const interviewPlace = ps.interviewPlace || `សាលា${communePrefix}`;
+    const interviewDate = ps.interviewDate || '០៩ ខែកក្កដា ឆ្នាំ២០២៧';
+    const interviewTime = ps.interviewTime || '០៧:០០ ព្រឹក';
+
     reportContentHtml = `
-      <div class="print-page">
-        ${headerHtml}
-        <div class="report-title-section">
-          <div class="report-main-title">សេចក្ដីជូនដំណឹង</div>
-          <div style="font-size: 11pt; margin-top: 6px;">
-            បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍<br>
-            នៅ <strong>${ps.interviewPlace || 'សាលាឃុំ' + ps.communeName}</strong> នាថ្ងៃទី <strong>${ps.interviewDate || '09-07-2027'}</strong> វេលាម៉ោង <strong>${ps.interviewTime || '០៧:០០ ព្រឹក'}</strong> តទៅ។
+      <div class="print-paper-sheet">
+        ${letterheadHtml}
+        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
+          <div style="font-family: var(--font-heading); font-size: 14pt; font-weight: 700; color: #000; margin-bottom: 6px;">
+            សេចក្ដីជូនដំណឹង
           </div>
-        </div>
-        <div class="report-info-row">
-          <span></span>
-          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+          <div style="font-size: 11pt; line-height: 1.75; color: #000;">
+            បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍<br>
+            នៅ<strong>${interviewPlace}</strong> នាថ្ងៃទី<strong>${interviewDate}</strong> វេលាម៉ោង <strong>${interviewTime}</strong> តទៅ។
+          </div>
+          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 8px; color: #000;">
+            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
+          </div>
         </div>
         <table class="official-print-table">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
-              <th>គោត្តនាម-នាម</th>
+              <th style="min-width: 180px;">គោត្តនាម-នាម</th>
               <th style="width: 50px;">ភេទ</th>
               <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
-              <th style="width: 120px;">លេខទូរសព្ទ</th>
-              <th style="width: 100px;">ផ្សេងៗ</th>
+              <th style="width: 130px;">លេខទូរសព្ទ</th>
+              <th style="width: 90px;">ផ្សេងៗ</th>
             </tr>
           </thead>
           <tbody>
             ${rowsHtml}
           </tbody>
         </table>
-        ${getSignatureSection(ps)}
+        ${getOfficialSignatureBlock(ps)}
       </div>
     `;
   }
@@ -2302,40 +2699,53 @@ async function renderReportPreview() {
   else if (reportType === 'attendance') {
     let rowsHtml = '';
     ROLES_ORDER.forEach(role => {
-      rowsHtml += `<tr class="category-row"><td colspan="7"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      rowsHtml += `
+        <tr class="category-row">
+          <td colspan="7" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+            - មុខតំណែង ៖ ${role}
+          </td>
+        </tr>
+      `;
       const items = roleGroups[role] || [];
       for (let i = 1; i <= 3; i++) {
         const c = items.find(x => x.orderInRole === i);
+        const isEmpty = !c || !c.name;
+        const khmerIdx = toKhmerNum(i);
+        const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
+
         rowsHtml += `
-          <tr>
-            <td class="center">${i}</td>
-            <td style="font-weight: 600;">${c ? c.name : ''}</td>
-            <td class="center">${c ? c.gender : ''}</td>
-            <td class="center">${c ? c.dob : ''}</td>
-            <td style="height: 32px;"></td>
-            <td></td>
-            <td></td>
+          <tr class="${isEmpty ? 'empty-candidate-row' : ''}" style="height: 36px;">
+            <td class="center" style="width: 45px;">${khmerIdx}</td>
+            <td style="font-weight: 600; min-width: 180px;">${c ? (c.name || '') : ''}</td>
+            <td class="center" style="width: 50px;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 120px;">${dobKhmer}</td>
+            <td style="width: 130px;"></td>
+            <td style="width: 130px;"></td>
+            <td style="width: 90px;">${c ? (c.notes || '') : ''}</td>
           </tr>
         `;
       }
     });
 
     reportContentHtml = `
-      <div class="print-page">
-        ${headerHtml}
-        <div class="report-title-section">
-          <div class="report-main-title">បញ្ជីវត្តមានសម្ភាសន៍ ជ្រើសរើស គ.ក.ប</div>
-          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
-        </div>
-        <div class="report-info-row">
-          <span></span>
-          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+      <div class="print-paper-sheet">
+        ${letterheadHtml}
+        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
+          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
+            បញ្ជីវត្តមានសម្ភាសន៍ ជ្រើសរើស គ.ក.ប
+          </div>
+          <div style="font-size: 11pt; font-weight: 600; color: #000;">
+            ${mandateText}
+          </div>
+          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
+            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
+          </div>
         </div>
         <table class="official-print-table">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
-              <th>គោត្តនាម-នាម</th>
+              <th style="min-width: 180px;">គោត្តនាម-នាម</th>
               <th style="width: 50px;">ភេទ</th>
               <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 130px;">ហត្ថលេខាចូល</th>
@@ -2347,7 +2757,7 @@ async function renderReportPreview() {
             ${rowsHtml}
           </tbody>
         </table>
-        ${getSignatureSection(ps)}
+        ${getOfficialSignatureBlock(ps)}
       </div>
     `;
   }
@@ -2358,54 +2768,91 @@ async function renderReportPreview() {
   else if (reportType === 'scoresheet') {
     let rowsHtml = '';
     ROLES_ORDER.forEach(role => {
-      rowsHtml += `<tr class="category-row"><td colspan="8"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      rowsHtml += `
+        <tr class="category-row">
+          <td colspan="8" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+            - មុខតំណែង ៖ ${role}
+          </td>
+        </tr>
+      `;
       const items = roleGroups[role] || [];
       for (let i = 1; i <= 3; i++) {
         const c = items.find(x => x.orderInRole === i);
+        const isEmpty = !c || !c.name;
+        const khmerIdx = toKhmerNum(i);
+        const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
+        const isAbsent = c && (c.scoreInterview === 'អវត្តមាន' || c.scoreTotal === 'អវត្តមាន');
+
+        let scoreShortlistHtml = '';
+        let scoreInterviewHtml = '';
+        let scoreTotalHtml = '';
+
+        if (c && c.name) {
+          if (isAbsent) {
+            scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: 600;">${c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? Number(c.scoreShortlist).toFixed(2) : '0.00'}</td>`;
+            scoreInterviewHtml = `<td class="center official-absent-cell" style="width: 110px;">អវត្តមាន</td>`;
+            scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px;">អវត្តមាន</td>`;
+          } else {
+            const sShort = c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? Number(c.scoreShortlist).toFixed(2) : '';
+            const sInt = c.scoreInterview !== undefined && c.scoreInterview !== '' ? Number(c.scoreInterview).toFixed(2) : '';
+            const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
+            scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: 600;">${sShort}</td>`;
+            scoreInterviewHtml = `<td class="center" style="width: 110px; font-weight: 600;">${sInt}</td>`;
+            scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: 700;">${sTot}</td>`;
+          }
+        } else {
+          scoreShortlistHtml = `<td class="center" style="width: 95px;"></td>`;
+          scoreInterviewHtml = `<td class="center" style="width: 110px;"></td>`;
+          scoreTotalHtml = `<td class="center" style="width: 95px;"></td>`;
+        }
+
         rowsHtml += `
-          <tr>
-            <td class="center">${i}</td>
-            <td style="font-weight: 600;">${c ? c.name : ''}</td>
-            <td class="center">${c ? c.gender : ''}</td>
-            <td class="center">${c ? c.dob : ''}</td>
-            <td class="center" style="font-weight: 600;">${c ? (c.scoreShortlist || 0) : ''}</td>
-            <td class="center" style="font-weight: 600;">${c ? (c.scoreInterview !== undefined ? c.scoreInterview : '') : ''}</td>
-            <td class="center" style="font-weight: 700;">${c ? (c.scoreTotal !== undefined ? c.scoreTotal : '') : ''}</td>
-            <td>${c ? (c.notes || '') : ''}</td>
+          <tr class="${isEmpty ? 'empty-candidate-row' : ''} ${isAbsent ? 'absent-row' : ''}">
+            <td class="center" style="width: 45px;">${khmerIdx}</td>
+            <td style="font-weight: 600; min-width: 180px;">${c ? (c.name || '') : ''}</td>
+            <td class="center" style="width: 50px;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 120px;">${dobKhmer}</td>
+            ${scoreShortlistHtml}
+            ${scoreInterviewHtml}
+            ${scoreTotalHtml}
+            <td style="width: 90px;">${c ? (c.notes || '') : ''}</td>
           </tr>
         `;
       }
     });
 
     reportContentHtml = `
-      <div class="print-page">
-        ${headerHtml}
-        <div class="report-title-section">
-          <div class="report-main-title">តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប</div>
-          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
-        </div>
-        <div class="report-info-row">
-          <span></span>
-          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+      <div class="print-paper-sheet">
+        ${letterheadHtml}
+        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
+          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
+            តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប
+          </div>
+          <div style="font-size: 11pt; font-weight: 600; color: #000;">
+            ${mandateText}
+          </div>
+          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
+            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
+          </div>
         </div>
         <table class="official-print-table">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
-              <th>គោត្តនាម-នាម</th>
+              <th style="min-width: 180px;">គោត្តនាម-នាម</th>
               <th style="width: 50px;">ភេទ</th>
               <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 95px;">ពិន្ទុសម្រាំង</th>
               <th style="width: 110px;">ពិន្ទុសម្ភាសន៍</th>
               <th style="width: 95px;">សរុបពិន្ទុ</th>
-              <th style="width: 100px;">ផ្សេងៗ</th>
+              <th style="width: 90px;">ផ្សេងៗ</th>
             </tr>
           </thead>
           <tbody>
             ${rowsHtml}
           </tbody>
         </table>
-        ${getSignatureSection(ps)}
+        ${getOfficialSignatureBlock(ps)}
       </div>
     `;
   }
@@ -2416,63 +2863,104 @@ async function renderReportPreview() {
   else if (reportType === 'results') {
     let rowsHtml = '';
     ROLES_ORDER.forEach(role => {
-      rowsHtml += `<tr class="category-row"><td colspan="7"> - មុខតំណែង ៖ ${role}</td></tr>`;
+      rowsHtml += `
+        <tr class="category-row">
+          <td colspan="7" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+            - មុខតំណែង ៖ ${role}
+          </td>
+        </tr>
+      `;
       const items = roleGroups[role] || [];
-      // Sort strictly by rank: Rank 1 first, then 2, then 3, absent last
-      const sorted = [...items].sort((a, b) => {
-        const aAbs = a.scoreTotal === 'អវត្តមាន';
-        const bAbs = b.scoreTotal === 'អវត្តមាន';
-        if (aAbs && !bAbs) return 1;
-        if (!aAbs && bAbs) return -1;
-        return (a.rank || 0) - (b.rank || 0);
+      // Strictly sort by rank / score, absent candidates placed last
+      const present = items.filter(c => c && c.name && c.scoreTotal !== 'អវត្តមាន' && c.scoreInterview !== 'អវត្តមាន');
+      const absent = items.filter(c => c && c.name && (c.scoreTotal === 'អវត្តមាន' || c.scoreInterview === 'អវត្តមាន'));
+
+      present.sort((a, b) => {
+        if (a.rank && b.rank) return a.rank - b.rank;
+        const at = parseFloat(a.scoreTotal) || 0;
+        const bt = parseFloat(b.scoreTotal) || 0;
+        return bt - at;
       });
 
+      const sortedCandidates = [...present, ...absent];
+
       for (let i = 1; i <= 3; i++) {
-        const c = sorted[i - 1];
+        const c = sortedCandidates[i - 1];
+        const isEmpty = !c || !c.name;
+        const khmerIdx = toKhmerNum(i);
+        const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
+        const isAbsent = c && (c.scoreInterview === 'អវត្តមាន' || c.scoreTotal === 'អវត្តមាន');
+
+        let scoreTotalHtml = '';
+        let statusHtml = '';
+
+        if (c && c.name) {
+          if (isAbsent) {
+            scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px;">អវត្តមាន</td>`;
+            statusHtml = `<td class="center official-absent-cell" style="width: 110px;">អវត្តមាន</td>`;
+          } else {
+            const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
+            scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: 700;">${sTot}</td>`;
+            if (c.status === 'A-ជាប់') {
+              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #15803d;">A-ជាប់</td>`;
+            } else if (c.status === 'B-បម្រុង') {
+              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #1e40af;">B-បម្រុង</td>`;
+            } else if (c.status === 'C-បម្រុង') {
+              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #6b21a8;">C-បម្រុង</td>`;
+            } else {
+              statusHtml = `<td class="center" style="width: 110px; font-weight: 600;">${c.status || ''}</td>`;
+            }
+          }
+        } else {
+          scoreTotalHtml = `<td class="center" style="width: 95px;"></td>`;
+          statusHtml = `<td class="center" style="width: 110px;"></td>`;
+        }
+
         rowsHtml += `
-          <tr>
-            <td class="center">${i}</td>
-            <td style="font-weight: 600;">${c ? c.name : ''}</td>
-            <td class="center">${c ? c.gender : ''}</td>
-            <td class="center">${c ? c.dob : ''}</td>
-            <td class="center" style="font-weight: 700;">${c ? (c.scoreTotal !== undefined ? c.scoreTotal : '') : ''}</td>
-            <td class="center" style="font-weight: 700; color: ${c && c.status === 'A-ជាប់' ? '#15803d' : '#000'};">
-              ${c ? c.status : ''}
-            </td>
-            <td>${c ? (c.notes || '') : ''}</td>
+          <tr class="${isEmpty ? 'empty-candidate-row' : ''} ${isAbsent ? 'absent-row' : ''}">
+            <td class="center" style="width: 45px;">${khmerIdx}</td>
+            <td style="font-weight: 600; min-width: 180px;">${c ? (c.name || '') : ''}</td>
+            <td class="center" style="width: 50px;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 120px;">${dobKhmer}</td>
+            ${scoreTotalHtml}
+            ${statusHtml}
+            <td style="width: 90px;">${c ? (c.notes || '') : ''}</td>
           </tr>
         `;
       }
     });
 
     reportContentHtml = `
-      <div class="print-page">
-        ${headerHtml}
-        <div class="report-title-section">
-          <div class="report-main-title">លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
-          <div class="report-sub-title">${ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧'}</div>
-        </div>
-        <div class="report-info-row">
-          <span></span>
-          <span style="font-weight: 700;">លេខ​កូដ​ការិយាល័យ ៖ ${psCodeFormatted}</span>
+      <div class="print-paper-sheet">
+        ${letterheadHtml}
+        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
+          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
+            លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប
+          </div>
+          <div style="font-size: 11pt; font-weight: 600; color: #000;">
+            ${mandateText}
+          </div>
+          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
+            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
+          </div>
         </div>
         <table class="official-print-table">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
-              <th>គោត្តនាម-នាម</th>
+              <th style="min-width: 180px;">គោត្តនាម-នាម</th>
               <th style="width: 50px;">ភេទ</th>
               <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 95px;">សរុបពិន្ទុ</th>
-              <th style="width: 120px;">និទ្ទេស</th>
-              <th style="width: 100px;">ផ្សេងៗ</th>
+              <th style="width: 110px;">និទ្ទេស</th>
+              <th style="width: 90px;">ផ្សេងៗ</th>
             </tr>
           </thead>
           <tbody>
             ${rowsHtml}
           </tbody>
         </table>
-        ${getSignatureSection(ps)}
+        ${getOfficialSignatureBlock(ps)}
       </div>
     `;
   }
@@ -2480,19 +2968,45 @@ async function renderReportPreview() {
   container.innerHTML = reportContentHtml;
 }
 
-function getSignatureSection(ps) {
+function getOfficialSignatureBlock(ps) {
   return `
-    <div class="signature-section">
-      <div class="signature-box">
-        <div class="date-line">បានឃើញ និងឯកភាព</div>
-        <div class="role-line">ប្រធានគណៈកម្មការរៀបចំការបោះឆ្នោតខេត្តតាកែវ</div>
+    <div class="signature-section" style="margin-top: 25px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid;">
+      <div class="signature-box" style="text-align: center; width: 45%;">
+        <div style="font-size: 11pt; margin-bottom: 6px; color: #000;">បានឃើញ និងឯកភាព</div>
+        <div style="font-weight: 700; font-size: 11pt; margin-bottom: 65px; color: #000;">ប្រធានគណៈកម្មការរៀបចំការបោះឆ្នោតខេត្តតាកែវ</div>
       </div>
-      <div class="signature-box">
-        <div class="date-line">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៧</div>
-        <div class="role-line">គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
+      <div class="signature-box" style="text-align: center; width: 45%;">
+        <div style="font-size: 11pt; margin-bottom: 6px; color: #000;">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៧</div>
+        <div style="font-weight: 700; font-size: 11pt; margin-bottom: 65px; color: #000;">គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
       </div>
     </div>
   `;
+}
+
+function exportCurrentReportToExcel() {
+  const table = document.querySelector('#printContainer table.official-print-table');
+  if (!table) {
+    alert('មិនទាន់មានទិន្នន័យតារាងសម្រាប់ Export ឡើយ!');
+    return;
+  }
+  const stationId = document.getElementById('reportStationSelect').value;
+  const ps = allPollingStations.find(p => p.id === stationId);
+  const code4 = ps ? String(ps.code || '').padStart(4, '0') : '0000';
+  const reportType = document.getElementById('reportTypeSelect').value;
+
+  const sheetNamesMap = {
+    'sortlist': 'SortList',
+    'notice': 'ជូនដំណឹង',
+    'attendance': 'បញ្ជីវត្តមាន',
+    'scoresheet': 'បញ្ចូលពិន្ទុ',
+    'results': 'លទ្ធផលតាមលំដាប់'
+  };
+  const sheetName = sheetNamesMap[reportType] || 'Report';
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(table, { raw: true });
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, `គ.ក.ប_2027_${sheetName}_កូដ_${code4}.xlsx`);
 }
 
 // ==============================================================================
