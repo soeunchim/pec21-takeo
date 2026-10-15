@@ -2640,11 +2640,11 @@ function buildReportLetterheadHtml(ps) {
     <div class="letterhead" style="width: 100%; margin-bottom: 12px;">
       <table style="width: 100%; border: none !important; border-collapse: collapse;">
         <tr>
-          <!-- Column 1 (35%): Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo -->
-          <td style="width: 35%; border: none !important; vertical-align: top; padding: 0; text-align: center;">
-            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%;">
+          <!-- Column 1 (35%): Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo, Left-Aligned -->
+          <td style="width: 35%; border: none !important; vertical-align: top; padding: 0; text-align: left;">
+            <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%;">
               <!-- Logo Container with Toolbar -->
-              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 6px;">
+              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 6px;">
                 <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចដើម្បីប្តូរ Logo ឬអូសរំកិលទីតាំង">
                   <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="width: ${logoCfg.size}px; height: ${logoCfg.size}px; object-fit: contain; border-radius: 50%; display: block;">
                   <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
@@ -2663,21 +2663,21 @@ function buildReportLetterheadHtml(ps) {
                   <button type="button" id="btnResetReportLogo" class="btn btn-secondary btn-xs" style="padding: 0 4px; font-size: 10px; border-radius: 3px;" title="កំណត់ឡើងវិញ (Reset)">↺</button>
                 </div>
               </div>
-              <!-- Box 1 (Left Institution Header): Situated Underneath Logo, full width, non-wrapping lines -->
+              <!-- Box 1 (Left Institution Header): Left-aligned, Font Khmer OS Muol Light, Size: 10pt -->
               <div class="report-inst-header-box" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
                 <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
-                <div>${provinceTitle}</div>
+                <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
                 <div>${committeeTitle}</div>
-                <div>គប.ឃស ${communePrefix}(${communeCodeKhmer})</div>
+                <div>${communePrefix}(${communeCodeKhmer})</div>
               </div>
             </div>
           </td>
-          <!-- Column 2 (30%): Box 2 (Kingdom Header: Khmer OS Muol Light Size 12pt, Tacteing Size 18pt - Centered on A4 Paper) -->
+          <!-- Column 2 (30%): Box 2 (Kingdom Header: Khmer OS Muol Light Size 12pt, Tacteing Single Symbol - Centered on A4 Paper) -->
           <td style="width: 30%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
             <div class="report-kingdom-header-box" style="padding-top: 6px; white-space: nowrap;">
               <div class="report-kingdom-title">ព្រះរាជាណាចក្រកម្ពុជា</div>
               <div class="report-kingdom-title">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
-              <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">3 5 3</div>
+              <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">5</div>
             </div>
           </td>
           <!-- Column 3 (35%): Right Spacer to balance Box 2 in the exact center of A4 paper -->
