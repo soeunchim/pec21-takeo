@@ -2386,7 +2386,7 @@ function initReportSelectorBar() {
       const titleEl = document.getElementById('activeReportSheetTitle');
       if (titleEl) {
         const titles = {
-          'sortlist': '📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (SortList)',
+          'sortlist': '📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (SortList) [📄 ក្រដាសផ្តេក - Landscape]',
           'notice': '📢 សន្លឹក ២ ៖ សេចក្តីជូនដំណឹងបេក្ខជនសម្ភាសន៍ (Notice)',
           'attendance': '✍️ សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ជ្រើសរើស គ.ក.ប (Attendance)',
           'scoresheet': '📝 សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប (Score Sheet)',
@@ -2859,8 +2859,26 @@ async function renderReportPreview() {
 
   let reportContentHtml = '';
 
+  const isLandscape = (reportType === 'sortlist');
+  if (isLandscape) {
+    document.body.classList.add('report-landscape-active');
+  } else {
+    document.body.classList.remove('report-landscape-active');
+  }
+
+  // Dynamically set browser print dialog page orientation (Landscape for Report 1, Portrait for Reports 2-5)
+  let orientStyle = document.getElementById('printOrientationStyle');
+  if (!orientStyle) {
+    orientStyle = document.createElement('style');
+    orientStyle.id = 'printOrientationStyle';
+    document.head.appendChild(orientStyle);
+  }
+  orientStyle.textContent = isLandscape
+    ? '@page { size: A4 landscape; margin: 8mm 6mm; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 4mm 6mm !important; } }'
+    : '@page { size: A4 portrait; margin: 12mm 10mm; }';
+
   // ----------------------------------------------------------------------------
-  // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប)
+  // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប - ក្រដាសផ្តេក Landscape)
   // ----------------------------------------------------------------------------
   if (reportType === 'sortlist') {
     let rowsHtml = '';
@@ -2900,7 +2918,7 @@ async function renderReportPreview() {
     });
 
     reportContentHtml = `
-      <div class="print-paper-sheet">
+      <div class="print-paper-sheet landscape">
         ${buildReportLetterheadHtml(ps)}
         ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
         <table class="official-print-table">

@@ -1219,6 +1219,34 @@ textarea,
   overflow-x: auto;
 }
 
+/* Official Print Paper Sheet (Landscape Mode for Report 1 - SortList) */
+.print-paper-sheet.landscape {
+  max-width: 1180px;
+  padding: 14mm 16mm;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 12mm 10mm;
+}
+
+@page landscape-sheet {
+  size: A4 landscape;
+  margin: 10mm 8mm;
+}
+
+.print-paper-sheet.landscape {
+  page: landscape-sheet;
+}
+
+@media print {
+  .print-paper-sheet.landscape {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 6mm 6mm !important;
+  }
+}
+
 /* Official Report Table Styles (Screen & Print) */
 .official-print-table {
   width: 100%;
