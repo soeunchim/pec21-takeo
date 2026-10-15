@@ -2683,7 +2683,7 @@ function buildReportLetterheadHtml(ps) {
           </td>
           <!-- Column 2 (30%): Box 2 (Kingdom Header: Khmer OS Muol Light Size 12pt, Tacteing Single Symbol - Centered on A4 Paper) -->
           <td style="width: 30%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
-            <div class="report-kingdom-header-box" style="padding-top: 4px; white-space: nowrap;">
+            <div class="report-kingdom-header-box" style="padding-top: 0; white-space: nowrap;">
               <div class="report-kingdom-title">ព្រះរាជាណាចក្រកម្ពុជា</div>
               <div class="report-kingdom-title">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
               <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">5</div>
@@ -2884,7 +2884,7 @@ async function renderReportPreview() {
   }
   orientStyle.textContent = isLandscape
     ? '@page { size: landscape !important; margin: 4mm 6mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; } }'
-    : '@page { size: portrait !important; margin: 8mm 8mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; } }';
+    : '@page { size: portrait !important; margin: 4mm 6mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; } }';
 
   // ----------------------------------------------------------------------------
   // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប - ក្រដាសផ្តេក Landscape)
@@ -3021,7 +3021,7 @@ async function renderReportPreview() {
     ROLES_ORDER.forEach(role => {
       rowsHtml += `
         <tr class="category-row">
-          <td colspan="6" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+          <td colspan="6" style="font-weight: 700; background: #fff; padding: 2px 6px; border: 1px solid #000;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -3051,7 +3051,7 @@ async function renderReportPreview() {
     const interviewTime = ps.interviewTime || '០៧:០០ ព្រឹក';
 
     const noticeSubHtml = `
-      <div style="font-size: 11pt; line-height: 1.75; color: #000; font-family: var(--font-body) !important; text-align: center;">
+      <div style="font-size: 9.5pt; line-height: 1.45; color: #000; font-family: var(--font-body) !important; text-align: center; margin-top: 2px;">
         បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍<br>
         នៅ<strong>${interviewPlace}</strong> នាថ្ងៃទី<strong>${interviewDate}</strong> វេលាម៉ោង <strong>${interviewTime}</strong> តទៅ។
       </div>
@@ -3061,7 +3061,7 @@ async function renderReportPreview() {
       <div class="print-paper-sheet">
         ${buildReportLetterheadHtml(ps)}
         ${buildReportTitleBoxHtml(ps, 'សេចក្ដីជូនដំណឹង', noticeSubHtml)}
-        <table class="official-print-table">
+        <table class="official-print-table" style="margin-top: 4px;">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
@@ -3089,7 +3089,7 @@ async function renderReportPreview() {
     ROLES_ORDER.forEach(role => {
       rowsHtml += `
         <tr class="category-row">
-          <td colspan="7" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+          <td colspan="7" style="font-weight: 700; background: #fff; padding: 2px 6px; border: 1px solid #000;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -3102,7 +3102,7 @@ async function renderReportPreview() {
         const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
 
         rowsHtml += `
-          <tr class="${isEmpty ? 'empty-candidate-row' : ''}" style="height: 36px;">
+          <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
             <td class="center" style="width: 45px;">${khmerIdx}</td>
             <td style="font-weight: 600; min-width: 180px;">${c ? (c.name || '') : ''}</td>
             <td class="center" style="width: 50px;">${c ? (c.gender || '') : ''}</td>
@@ -3119,7 +3119,7 @@ async function renderReportPreview() {
       <div class="print-paper-sheet">
         ${buildReportLetterheadHtml(ps)}
         ${buildReportTitleBoxHtml(ps, 'បញ្ជីវត្តមានសម្ភាសន៍ ជ្រើសរើស គ.ក.ប')}
-        <table class="official-print-table">
+        <table class="official-print-table" style="margin-top: 4px;">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
@@ -3148,7 +3148,7 @@ async function renderReportPreview() {
     ROLES_ORDER.forEach(role => {
       rowsHtml += `
         <tr class="category-row">
-          <td colspan="8" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+          <td colspan="8" style="font-weight: 700; background: #fff; padding: 2px 6px; border: 1px solid #000;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -3203,7 +3203,7 @@ async function renderReportPreview() {
       <div class="print-paper-sheet">
         ${buildReportLetterheadHtml(ps)}
         ${buildReportTitleBoxHtml(ps, 'តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប')}
-        <table class="official-print-table">
+        <table class="official-print-table" style="margin-top: 4px;">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
@@ -3233,7 +3233,7 @@ async function renderReportPreview() {
     ROLES_ORDER.forEach(role => {
       rowsHtml += `
         <tr class="category-row">
-          <td colspan="7" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
+          <td colspan="7" style="font-weight: 700; background: #fff; padding: 2px 6px; border: 1px solid #000;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -3302,7 +3302,7 @@ async function renderReportPreview() {
       <div class="print-paper-sheet">
         ${buildReportLetterheadHtml(ps)}
         ${buildReportTitleBoxHtml(ps, 'លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
-        <table class="official-print-table">
+        <table class="official-print-table" style="margin-top: 4px;">
           <thead>
             <tr>
               <th style="width: 45px;">ល.រ</th>
@@ -3465,14 +3465,14 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 4px; color: #000; text-align: center;">
           ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប
         </div>
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 60px; color: #000; text-align: center;">
+        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 35px; color: #000; text-align: center;">
           ប្រធាន
         </div>
     `;
   }
 
   return `
-    <div class="signature-section" style="margin-top: 14px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid; break-inside: avoid;">
+    <div class="signature-section" style="margin-top: 8px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid; break-inside: avoid;">
       <!-- Box 1 (Left Box): Cleared as requested -->
       <div class="signature-box signature-box-left" style="width: 35%; text-align: left;">
       </div>

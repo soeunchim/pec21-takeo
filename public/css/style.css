@@ -1217,8 +1217,8 @@ textarea,
 .print-paper-sheet {
   background: #ffffff;
   max-width: 960px;
-  margin: 18px auto;
-  padding: 20mm 16mm;
+  margin: 10px auto;
+  padding: 5mm 14mm 10mm 14mm;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #cbd5e1;
   border-radius: 4px;
@@ -1461,10 +1461,60 @@ textarea,
   }
   .print-paper-sheet {
     max-width: 100% !important;
+    width: 100% !important;
     margin: 0 !important;
-    padding: 8mm 6mm !important;
+    padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
+  }
+
+  /* Portrait reports (Reports 2-5): Strict 1-page fit */
+  body:not(.report-landscape-active) .print-paper-sheet {
+    max-height: 288mm !important;
+    overflow: hidden !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  body:not(.report-landscape-active) .official-print-table {
+    margin-top: 3px !important;
+  }
+
+  body:not(.report-landscape-active) .official-print-table th,
+  body:not(.report-landscape-active) .official-print-table td {
+    padding: 2.2px 4px !important;
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
+  }
+
+  body:not(.report-landscape-active) .official-print-table tr.category-row td {
+    padding: 2px 6px !important;
+    font-size: 8.5pt !important;
+  }
+
+  body:not(.report-landscape-active) .official-print-table tr {
+    height: auto !important;
+  }
+
+  body:not(.report-landscape-active) .letterhead {
+    margin-bottom: 2px !important;
+  }
+
+  body:not(.report-landscape-active) .report-title-section {
+    margin: 2px 0 4px 0 !important;
+  }
+
+  body:not(.report-landscape-active) .signature-section {
+    margin-top: 6px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body:not(.report-landscape-active) .editable-sig-date {
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
   }
   .report-inst-header-box,
   .report-tacteing-emblem,
