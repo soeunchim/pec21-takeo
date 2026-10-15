@@ -345,9 +345,12 @@ async function initCloudSync() {
     console.log('[GoogleSheet] Attempting to connect to Google Sheets on startup...');
     const cloudData = await fetchFromGoogleSheet();
     if (cloudData) {
-      // តាមការណែនាំរបស់អ្នកប្រើប្រាស់៖ មិនត្រូវទាញយកទិន្នន័យបេក្ខជនមកដោយស្វ័យប្រវត្តិឡើយ
-      // ប្រសិនបើមានទិន្នន័យបេក្ខជន គឺត្រូវលុបចោលទាំងអស់ឱ្យនៅសល់ ០ ទាំងស្រុង
-      db.candidates = [];
+      if (cloudData.candidates && Array.isArray(cloudData.candidates) && cloudData.candidates.length > 0) {
+        db.candidates = cloudData.candidates;
+        console.log(`[GoogleSheet] Restored ${cloudData.candidates.length} candidates from cloud.`);
+      } else if (db.candidates && db.candidates.length > 0) {
+        syncToGoogleSheet('sync_all');
+      }
 
       if (cloudData.pollingStations && cloudData.pollingStations.length > 0) {
         db.pollingStations = cloudData.pollingStations;
@@ -368,9 +371,7 @@ async function initCloudSync() {
       }
       db.users = (db.users || []).map(canonicalizeUser);
       saveLocalDatabase();
-      // Sync candidates = [] to Google Sheet to wipe any old candidates in Google Sheet as well
-      syncToGoogleSheet('sync_all');
-      console.log('[GoogleSheet] Cloud connected. All candidate data cleared to 0!');
+      console.log('[GoogleSheet] Cloud connected successfully. Data synchronized.');
     }
   }
 }
