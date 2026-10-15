@@ -1268,6 +1268,11 @@ textarea,
   box-shadow: 0 0 0 1px #93c5fd;
 }
 
+/* Screen mode: Hide all print-only footers and page breaks */
+.print-only {
+  display: none !important;
+}
+
 @media print {
   .print-paper-sheet.landscape {
     max-width: 100% !important;
@@ -1275,18 +1280,45 @@ textarea,
     padding: 3mm 5mm !important;
   }
 
-  .print-page-break {
-    page-break-before: always !important;
-    break-before: page !important;
+  .print-only {
+    display: table-row !important;
+  }
+
+  div.print-only {
+    display: block !important;
+  }
+
+  .print-page1-break-row,
+  .print-page1-break-row td {
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-page1-break-row td {
     border: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    height: 0 !important;
+    text-align: center !important;
+    padding-top: 16px !important;
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+  }
+
+  .print-page2-footer {
+    display: block !important;
+    text-align: center !important;
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    margin-top: 18px !important;
+    width: 100% !important;
   }
 
   .committee-signatures {
+    display: inline-block !important;
+    text-align: left !important;
     font-size: 9.5pt !important;
-    line-height: 2 !important;
+    line-height: 2.1 !important;
+    margin: 0 auto !important;
   }
 
   [class*="deployment"], [id*="deployment"], [class*="paused"], [id*="paused"] {
