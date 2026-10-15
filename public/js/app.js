@@ -3311,13 +3311,12 @@ function sanitizeCandidateText(text) {
 }
 
 function getReportDateConfig() {
-  const defLunar = 'ថ្ងៃ...................................ខែបឋមាសាឍ ឆ្នាំថោះ បញ្ចស័ក ព.ស.២៥៦៧';
-  const defSolar = '.................ថ្ងៃទី.........ខែកក្កដា ឆ្នាំ២០២៣';
+  const auto = computeAutoDates(new Date());
   let lunar = localStorage.getItem('report_lunar_date');
   let solar = localStorage.getItem('report_solar_date');
   return {
-    lunar: (lunar !== null && lunar !== '') ? lunar : defLunar,
-    solar: (solar !== null && solar !== '') ? solar : defSolar
+    lunar: (lunar !== null && lunar !== '' && !lunar.includes('.....')) ? lunar : auto.lunar,
+    solar: (solar !== null && solar !== '' && !solar.includes('.....')) ? solar : auto.solar
   };
 }
 
@@ -3350,19 +3349,43 @@ function computeAutoDates(targetDate) {
   const year = dateObj.getFullYear();
 
   const khmerSolarMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
-  const khmerAnimals = ['ជូត', 'ឆ្លូវ', 'ខាល', 'ថោះ', 'រោង', 'ម្សាញ់', 'មមី', 'មមែ', 'វក', 'រកា', 'ច', 'កុរ'];
-  const khmerSaks = ['សំរឹទ្ធិស័ក', 'ឯកស័ក', 'ទោស័ក', 'ត្រីស័ក', 'ចត្វាស័ក', 'បញ្ចស័ក', 'ឆស័ក', 'សប្តស័ក', 'អដ្ឋស័ក', 'នព្វស័ក'];
-  const khmerLunarMonths = ['បុស្ស', 'មាឃ', 'ផល្គុន', 'ចេត្រ', 'ពិសាខ', 'ជេស្ឋ', 'បឋមាសាឍ', 'ស្រាពណ៍', 'ភទ្របទ', 'អស្សុជ', 'កត្តិក', 'មិគសិរ'];
-
-  const beYear = year + (month >= 4 ? 544 : 543);
-  const animal = khmerAnimals[((year - 4) % 12 + 12) % 12];
-  const sak = khmerSaks[((year - 2018) % 10 + 10) % 10];
-  const lunarMonth = khmerLunarMonths[month];
   const solarMonth = khmerSolarMonths[month];
-
   const solar = `ថ្ងៃទី${toKhmerNum(day)} ខែ${solarMonth} ឆ្នាំ${toKhmerNum(year)}`;
-  const lunar = `ថ្ងៃ...................................ខែ${lunarMonth} ឆ្នាំ${animal} ${sak} ព.ស.${toKhmerNum(beYear)}`;
   const isoDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+  let lunar = '';
+
+  // Use momentkh library for exact traditional Khmer lunar date calculation (completely no dots!)
+  if (typeof momentkh !== 'undefined' && typeof momentkh.fromGregorian === 'function') {
+    try {
+      const mDate = momentkh.fromGregorian(year, month + 1, day);
+      if (mDate && mDate.khmer) {
+        const k = mDate.khmer;
+        const khDayNum = toKhmerNum(k.day);
+        const dayPrefix = k.dayOfWeekName ? `ថ្ងៃ${k.dayOfWeekName} ` : 'ថ្ងៃ';
+        // E.g.: ថ្ងៃពុធ ៣កើត ខែអស្សុជ ឆ្នាំមមី អដ្ឋស័ក ព.ស.២៥៧០
+        lunar = `${dayPrefix}${khDayNum}${k.moonPhaseName} ខែ${k.monthName} ឆ្នាំ${k.animalYearName} ${k.sakName} ព.ស.${toKhmerNum(k.beYear)}`;
+      }
+    } catch (err) {
+      console.warn('Error in momentkh conversion:', err);
+    }
+  }
+
+  // Fallback if momentkh is unavailable (still no dots!)
+  if (!lunar) {
+    const khmerAnimals = ['ជូត', 'ឆ្លូវ', 'ខាល', 'ថោះ', 'រោង', 'ម្សាញ់', 'មមី', 'មមែ', 'វក', 'រកា', 'ច', 'កុរ'];
+    const khmerSaks = ['សំរឹទ្ធិស័ក', 'ឯកស័ក', 'ទោស័ក', 'ត្រីស័ក', 'ចត្វាស័ក', 'បញ្ចស័ក', 'ឆស័ក', 'សប្តស័ក', 'អដ្ឋស័ក', 'នព្វស័ក'];
+    const khmerLunarMonths = ['បុស្ស', 'មាឃ', 'ផល្គុន', 'ចេត្រ', 'ពិសាខ', 'ជេស្ឋ', 'បឋមាសាឍ', 'ស្រាពណ៍', 'ភទ្របទ', 'អស្សុជ', 'កត្តិក', 'មិគសិរ'];
+    const khmerDaysOfWeek = ['អាទិត្យ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'];
+
+    const beYear = year + (month >= 4 ? 544 : 543);
+    const animal = khmerAnimals[((year - 4) % 12 + 12) % 12];
+    const sak = khmerSaks[((year - 2018) % 10 + 10) % 10];
+    const lunarMonth = khmerLunarMonths[month];
+    const dayOfWeek = khmerDaysOfWeek[dateObj.getDay()];
+
+    lunar = `ថ្ងៃ${dayOfWeek} ខែ${lunarMonth} ឆ្នាំ${animal} ${sak} ព.ស.${toKhmerNum(beYear)}`;
+  }
 
   return { solar, lunar, isoDate };
 }
@@ -3428,7 +3451,6 @@ function setupReportDateInteractions() {
   const lunarInput = document.getElementById('reportLunarDateInput');
   const solarInput = document.getElementById('reportSolarDateInput');
   const btnAuto = document.getElementById('btnAutoFillDate');
-  const btnReset = document.getElementById('btnResetOfficialDate');
   const sigLunar = document.getElementById('sigLunarDate');
   const sigSolar = document.getElementById('sigSolarDate');
 
@@ -3447,6 +3469,10 @@ function setupReportDateInteractions() {
   };
 
   if (solarPicker) {
+    if (!solarPicker.value) {
+      const todayIso = new Date().toISOString().split('T')[0];
+      solarPicker.value = todayIso;
+    }
     solarPicker.onchange = solarPicker.oninput = (e) => {
       if (e.target.value) {
         updateDatesFromTarget(e.target.value);
@@ -3471,19 +3497,6 @@ function setupReportDateInteractions() {
   if (btnAuto) {
     btnAuto.onclick = () => {
       updateDatesFromTarget(new Date());
-    };
-  }
-
-  if (btnReset) {
-    btnReset.onclick = () => {
-      const defLunar = 'ថ្ងៃ...................................ខែបឋមាសាឍ ឆ្នាំថោះ បញ្ចស័ក ព.ស.២៥៦៧';
-      const defSolar = '.................ថ្ងៃទី.........ខែកក្កដា ឆ្នាំ២០២៣';
-      if (lunarInput) lunarInput.value = defLunar;
-      if (solarInput) solarInput.value = defSolar;
-      setReportDateConfig(defLunar, defSolar);
-      if (sigLunar) sigLunar.textContent = defLunar;
-      if (sigSolar) sigSolar.textContent = defSolar;
-      if (solarPicker) solarPicker.value = '';
     };
   }
 
