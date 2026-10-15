@@ -54,9 +54,9 @@ function loadLocalDatabase() {
     } else {
       console.error('[DB] db.json not found, initializing structure.');
       db = {
-        appName: 'ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧',
+        appName: 'ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប',
         settings: {
-          systemTitle: 'ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧',
+          systemTitle: 'ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប',
           provinceName: 'ខេត្តតាកែវ',
           pecName: 'គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ (គ.ខ.ប ២១)',
           googleSheetUrl: process.env.GOOGLE_SHEET_URL || '',

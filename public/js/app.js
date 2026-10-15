@@ -238,6 +238,32 @@ function setupEventListeners() {
   const btnManualSync = document.getElementById('btnManualGoogleSync');
   if (btnManualSync) btnManualSync.addEventListener('click', handleManualGoogleSync);
 
+  // Logo Upload & Reset Listeners
+  const headerBrandLogo = document.getElementById('headerBrandLogo');
+  const quickLogoInput = document.getElementById('quickLogoUploadInput');
+  if (headerBrandLogo && quickLogoInput) {
+    headerBrandLogo.addEventListener('click', () => quickLogoInput.click());
+    quickLogoInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleLogoUpload(e.target.files[0]);
+      }
+    });
+  }
+
+  const settingLogoFileInput = document.getElementById('settingLogoFileInput');
+  if (settingLogoFileInput) {
+    settingLogoFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleLogoUpload(e.target.files[0]);
+      }
+    });
+  }
+
+  const btnResetLogoDefault = document.getElementById('btnResetLogoDefault');
+  if (btnResetLogoDefault) {
+    btnResetLogoDefault.addEventListener('click', handleResetLogoDefault);
+  }
+
   // Delete All Stations Button
   const btnDeleteAllStations = document.getElementById('btnDeleteAllStations');
   if (btnDeleteAllStations) {
@@ -831,6 +857,7 @@ async function checkCloudStatus() {
     const data = await res.json();
     if (data.success && data.settings) {
       appSettings = data.settings;
+      updateAppLogos(appSettings.logoUrl);
       if (appSettings.googleSheetUrl) {
         badge.textContent = isLocal ? 'Google Sheets: Synced' : 'Storage: Google Sheets';
         if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud រួចរាល់';
@@ -3312,8 +3339,88 @@ window.resetUserPassword = async function(id, username) {
 };
 
 // ==============================================================================
-// TAB 6: SETTINGS & GOOGLE SHEETS
+// TAB 6: SETTINGS & GOOGLE SHEETS & LOGO MANAGEMENT
 // ==============================================================================
+
+function updateAppLogos(url) {
+  const logoSrc = url || 'img/nec_logo.jpg';
+  const headerImg = document.getElementById('headerLogoImg');
+  const loginImg = document.getElementById('loginLogoImg');
+  const previewImg = document.getElementById('settingLogoPreview');
+  const logoHidden = document.getElementById('settingLogoUrl');
+  if (headerImg) headerImg.src = logoSrc;
+  if (loginImg) loginImg.src = logoSrc;
+  if (previewImg) previewImg.src = logoSrc;
+  if (logoHidden) logoHidden.value = url || '';
+}
+
+async function handleLogoUpload(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    alert('សូមជ្រើសរើសឯកសាររូបភាព (PNG, JPG, SVG)!');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const rawDataUrl = e.target.result;
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const maxDim = 256;
+      let w = img.width;
+      let h = img.height;
+      if (w > h) {
+        if (w > maxDim) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        }
+      } else {
+        if (h > maxDim) {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const optimizedDataUrl = canvas.toDataURL('image/png', 0.9);
+
+      updateAppLogos(optimizedDataUrl);
+      appSettings.logoUrl = optimizedDataUrl;
+
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...appSettings, logoUrl: optimizedDataUrl })
+        });
+        alert('✅ បានផ្លាស់ប្តូររូបសញ្ញា Logo ជោគជ័យ!');
+      } catch (err) {
+        console.error('Failed to auto-save logo:', err);
+      }
+    };
+    img.src = rawDataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function handleResetLogoDefault() {
+  if (confirm('តើលោកអ្នកពិតជាចង់កំណត់ប្រើប្រាស់ Logo គ.ជ.ប ដើមវិញមែនទេ?')) {
+    updateAppLogos('img/nec_logo.jpg');
+    appSettings.logoUrl = '';
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...appSettings, logoUrl: '' })
+      });
+      alert('✅ បានកំណត់ប្រើប្រាស់ Logo គ.ជ.ប ដើមជោគជ័យ!');
+    } catch (err) {
+      console.error(err);
+    }
+  }
+}
 
 async function loadSettingsForm() {
   try {
@@ -3342,6 +3449,7 @@ async function loadSettingsForm() {
       document.getElementById('settingGoogleSheetUrl').value = s.googleSheetUrl || '';
       document.getElementById('settingPecName').value = s.pecName || '';
       document.getElementById('settingMandate').value = s.mandateTitle || '';
+      updateAppLogos(s.logoUrl);
     }
   } catch (e) {
     console.error(e);
@@ -3360,7 +3468,8 @@ async function handleSaveSettings() {
   const payload = {
     googleSheetUrl: rawUrl,
     pecName: document.getElementById('settingPecName').value.trim(),
-    mandateTitle: document.getElementById('settingMandate').value.trim()
+    mandateTitle: document.getElementById('settingMandate').value.trim(),
+    logoUrl: document.getElementById('settingLogoUrl')?.value || ''
   };
 
   try {

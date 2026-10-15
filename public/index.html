@@ -18,10 +18,10 @@
     <div class="login-card">
       <div class="login-header">
         <div class="login-logo">
-          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1z"/></svg>
+          <img id="loginLogoImg" src="img/nec_logo.jpg" alt="Logo">
         </div>
         <h2>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ (គ.ខ.ប ២១)</h2>
-        <p>ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧</p>
+        <p>ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប</p>
       </div>
       <form id="loginForm">
         <div class="form-group">
@@ -50,11 +50,12 @@
     <!-- Top Header -->
     <header class="app-header">
       <div class="brand-section">
-        <div class="brand-logo">
-          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1z"/></svg>
+        <div class="brand-logo" id="headerBrandLogo" title="រូបសញ្ញាស្ថាប័ន (Logo) - ចុចដើម្បីផ្លាស់ប្តូរ">
+          <img id="headerLogoImg" src="img/nec_logo.jpg" alt="Logo">
+          <input type="file" id="quickLogoUploadInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
         </div>
         <div class="brand-title">
-          <h1 id="headerSystemTitle">ប្រព័ន្ធបូកស្រង់ពិន្ទុប្រឡង គ.ក.ប ២០២៧</h1>
+          <h1 id="headerSystemTitle">ប្រព័ន្ធបូកស្រង់ពិន្ទុប្រឡង គ.ក.ប</h1>
           <p id="headerSubTitle">គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ (PEC21)</p>
         </div>
       </div>
@@ -524,6 +525,33 @@
           <div style="max-width: 700px;">
             <div id="storageEnvironmentNotice" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-size: 13px; line-height: 1.6;">
               🌐 <strong>របៀបដំណើរការ៖ Online Cloud</strong> — កំពុងប្រើប្រាស់ <strong>Storage: Online Database</strong>
+            </div>
+
+            <!-- Logo Configuration Section -->
+            <div class="form-group" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;">
+              <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                🖼️ រូបសញ្ញាស្ថាប័ន (Institution Logo)
+              </label>
+              <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+                <div style="width: 68px; height: 68px; border-radius: 50%; border: 2px solid #3b82f6; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); flex-shrink: 0;">
+                  <img id="settingLogoPreview" src="img/nec_logo.jpg" alt="Logo Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 220px;">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-outline" style="border: 1px solid #2563eb; color: #2563eb; background: white; font-weight: 600;" onclick="document.getElementById('settingLogoFileInput').click()">
+                      📤 ជ្រើសរើស Logo ថ្មី (Upload Logo)
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnResetLogoDefault" title="ប្រើប្រាស់ Logo គ.ជ.ប ដើម">
+                      🔄 ប្រើ Logo គ.ជ.ប ដើម
+                    </button>
+                  </div>
+                  <input type="file" id="settingLogoFileInput" accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp" style="display: none;">
+                  <input type="hidden" id="settingLogoUrl" value="">
+                  <small style="color: var(--text-muted);">
+                    💡 គាំទ្ររូបភាពប្រភេទ PNG, JPG, ឬ SVG (ទំហំរង្វង់មូល ឬការ៉េ)។
+                  </small>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
