@@ -56,6 +56,16 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Tacteing';
+  src: local('Tacteing'),
+       local('tacteing'),
+       url('/fonts/Tacteing.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --primary: #1e3a8a;
   --primary-dark: #0f172a;
@@ -1267,7 +1277,8 @@ textarea,
 
 @media print {
   .excel-sheets-nav-bar,
-  .no-print {
+  .no-print,
+  .report-logo-toolbar {
     display: none !important;
   }
   .print-paper-sheet {
@@ -1277,4 +1288,102 @@ textarea,
     box-shadow: none !important;
     border: none !important;
   }
+  .report-inst-header-box,
+  .report-tacteing-emblem,
+  .report-title-box {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+/* ==============================================================================
+   Report Template Formatting (Box 1, Box 2, Box 3 & Movable/Resizable Logo)
+   ============================================================================== */
+
+/* Box 1: Left Institution Header (Khmer OS Muol Light, Size: 10pt, Editable) */
+.report-inst-header-box {
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 10pt !important;
+  font-weight: normal !important;
+  line-height: 1.5;
+  color: #000;
+  outline: none;
+  border-radius: 4px;
+  padding: 2px 4px;
+  transition: all 0.2s ease;
+}
+
+.report-inst-header-box:hover,
+.report-inst-header-box:focus {
+  background-color: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 1px #93c5fd;
+}
+
+/* Box 2: Right Kingdom Header (Khmer OS Muol Light, Size: 12pt, Center; Tacteing: 18pt) */
+.report-kingdom-header-box {
+  text-align: center;
+}
+
+.report-kingdom-title {
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 12pt !important;
+  font-weight: normal !important;
+  color: #000;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.report-tacteing-emblem {
+  font-family: 'Tacteing', serif !important;
+  font-size: 18pt !important;
+  text-align: center !important;
+  line-height: 1.2;
+  margin-top: 1px;
+  color: #000;
+  outline: none;
+  cursor: text;
+  transition: all 0.2s ease;
+}
+
+.report-tacteing-emblem:hover,
+.report-tacteing-emblem:focus {
+  background-color: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 1px #93c5fd;
+  border-radius: 4px;
+}
+
+/* Box 3: Center Title Section (Khmer OS Muol Light, Size: 12pt, Center, Not Bold, Editable) */
+.report-title-box {
+  text-align: center !important;
+  outline: none;
+  border-radius: 4px;
+  padding: 4px;
+  transition: all 0.2s ease;
+}
+
+.report-title-box:hover,
+.report-title-box:focus {
+  background-color: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 1px #93c5fd;
+}
+
+.report-title-box div {
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 12pt !important;
+  font-weight: normal !important;
+  text-align: center !important;
+  color: #000;
+  line-height: 1.4;
+}
+
+/* Item 4: Interactive Logo Container (Move, Resize, Upload) */
+.report-logo-wrapper {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+.report-logo-toolbar {
+  transition: opacity 0.2s ease;
 }

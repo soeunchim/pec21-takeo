@@ -2607,6 +2607,213 @@ function syncScoringStationToReports() {
   }
 }
 
+// ==============================================================================
+// TAB 4: REPORT HEADER HELPERS & LOGO CONTROLS (Box 1, Box 2, Box 3 & Logo)
+// ==============================================================================
+
+function getReportLogoConfig() {
+  let cfg = { size: 72, x: 0, y: 0 };
+  try {
+    const saved = localStorage.getItem('report_logo_config');
+    if (saved) cfg = Object.assign(cfg, JSON.parse(saved));
+  } catch (e) {}
+  return cfg;
+}
+
+function saveReportLogoConfig(cfg) {
+  try {
+    localStorage.setItem('report_logo_config', JSON.stringify(cfg));
+  } catch (e) {}
+}
+
+function buildReportLetterheadHtml(ps) {
+  const psCodeFormatted = String(ps.code || '').padStart(4, '0');
+  const psCodeKhmer = toKhmerNum(psCodeFormatted);
+  const communePrefix = getCommunePrefix(ps.communeName, ps.district);
+  const communeCodeKhmer = toKhmerNum(String(ps.communeCode || '').padStart(3, '0'));
+  const provinceTitle = ps.province || 'គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ';
+  const committeeTitle = ps.committeeName || 'គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប';
+  const logoCfg = getReportLogoConfig();
+  const currentLogoUrl = appSettings.logoUrl || 'img/nec_logo.jpg';
+
+  return `
+    <div class="letterhead" style="width: 100%; margin-bottom: 12px;">
+      <table style="width: 100%; border: none !important; border-collapse: collapse;">
+        <tr>
+          <!-- Item 1 & 4: Box 1 (Left Institution Header) & Movable/Resizable/Uploadable Logo -->
+          <td style="width: 52%; border: none !important; vertical-align: top; padding: 0;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <div class="report-logo-wrapper" style="position: relative; flex-shrink: 0;">
+                <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចដើម្បីប្តូរ Logo ឬអូសរំកិលទីតាំង">
+                  <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="width: ${logoCfg.size}px; height: ${logoCfg.size}px; object-fit: contain; border-radius: 50%; display: block;">
+                  <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
+                </div>
+                <div class="report-logo-toolbar no-print" style="margin-top: 5px; display: flex; align-items: center; gap: 4px; font-size: 11px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); width: fit-content;">
+                  <button type="button" id="btnUploadReportLogo" class="btn btn-secondary btn-xs" style="padding: 1px 5px; font-size: 10px; border-radius: 4px;" title="បញ្ចូល Logo ថ្មី">📷 ប្តូរ</button>
+                  <span style="color: #cbd5e1;">|</span>
+                  <span title="ពង្រីក/បង្រួម Logo">🔍</span>
+                  <input type="range" id="reportLogoSizeSlider" min="40" max="130" value="${logoCfg.size}" style="width: 50px; height: 12px; cursor: pointer;" title="ទំហំ Logo: ${logoCfg.size}px">
+                  <span style="color: #cbd5e1;">|</span>
+                  <span title="រំកិល ឆ្វេង-ស្តាំ">↔️</span>
+                  <input type="range" id="reportLogoXSlider" min="-50" max="80" value="${logoCfg.x}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល ឆ្វេង/ស្តាំ">
+                  <span title="រំកិល លើ-ក្រោម">↕️</span>
+                  <input type="range" id="reportLogoYSlider" min="-30" max="50" value="${logoCfg.y}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល លើ/ក្រោម">
+                  <button type="button" id="btnResetReportLogo" class="btn btn-secondary btn-xs" style="padding: 0 4px; font-size: 10px; border-radius: 3px;" title="កំណត់ឡើងវិញ (Reset)">↺</button>
+                </div>
+              </div>
+              <div class="report-inst-header-box" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
+                <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
+                <div>${provinceTitle}</div>
+                <div>${committeeTitle}</div>
+                <div>គប.ឃស ${communePrefix}(${communeCodeKhmer})</div>
+              </div>
+            </div>
+          </td>
+          <!-- Item 2: Box 2 (Right Kingdom Header: Khmer OS Muol Light Size 12pt, Tacteing Size 18pt, Centered) -->
+          <td style="width: 48%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
+            <div class="report-kingdom-header-box">
+              <div class="report-kingdom-title">ព្រះរាជាណាចក្រកម្ពុជា</div>
+              <div class="report-kingdom-title">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
+              <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">3 5 3</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+function buildReportTitleBoxHtml(ps, titleText, customSubHtml) {
+  const psCodeFormatted = String(ps.code || '').padStart(4, '0');
+  const psCodeKhmer = toKhmerNum(psCodeFormatted);
+  const mandateText = appSettings.mandateTitle || 'សម្រាប់ការបោះឆ្នោតជ្រើសរើសក្រុមប្រឹក្សាឃុំ សង្កាត់ អណត្តិទី៧ ឆ្នាំ២០២៧';
+
+  const subHtml = customSubHtml || `<div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>`;
+
+  return `
+    <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 10px 0 12px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+      <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">${titleText}</div>
+      ${subHtml}
+      <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 6px; color: #000; text-align: center;">លេខកូដការិយាល័យ ៖ ${psCodeKhmer}</div>
+    </div>
+  `;
+}
+
+function setupReportLogoInteractions() {
+  const logoContainer = document.getElementById('reportLogoContainer');
+  const logoImg = document.getElementById('reportLogoImg');
+  const fileInput = document.getElementById('reportLogoFileInput');
+  const btnUpload = document.getElementById('btnUploadReportLogo');
+  const sizeSlider = document.getElementById('reportLogoSizeSlider');
+  const xSlider = document.getElementById('reportLogoXSlider');
+  const ySlider = document.getElementById('reportLogoYSlider');
+  const btnReset = document.getElementById('btnResetReportLogo');
+
+  if (!logoContainer || !logoImg) return;
+
+  const cfg = getReportLogoConfig();
+
+  const applyConfig = () => {
+    logoImg.style.width = `${cfg.size}px`;
+    logoImg.style.height = `${cfg.size}px`;
+    logoContainer.style.transform = `translate(${cfg.x}px, ${cfg.y}px)`;
+    if (sizeSlider) sizeSlider.value = cfg.size;
+    if (xSlider) xSlider.value = cfg.x;
+    if (ySlider) ySlider.value = cfg.y;
+    saveReportLogoConfig(cfg);
+  };
+
+  if (btnUpload && fileInput) {
+    btnUpload.onclick = (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    };
+  }
+
+  logoImg.onclick = () => {
+    if (!logoContainer.dataset.wasDragged && fileInput) {
+      fileInput.click();
+    }
+    delete logoContainer.dataset.wasDragged;
+  };
+
+  if (fileInput) {
+    fileInput.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        handleLogoUpload(file);
+      }
+    };
+  }
+
+  if (sizeSlider) {
+    sizeSlider.oninput = (e) => {
+      cfg.size = parseInt(e.target.value, 10) || 72;
+      applyConfig();
+    };
+  }
+
+  if (xSlider) {
+    xSlider.oninput = (e) => {
+      cfg.x = parseInt(e.target.value, 10) || 0;
+      applyConfig();
+    };
+  }
+
+  if (ySlider) {
+    ySlider.oninput = (e) => {
+      cfg.y = parseInt(e.target.value, 10) || 0;
+      applyConfig();
+    };
+  }
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let initialCfgX = 0;
+  let initialCfgY = 0;
+
+  logoContainer.onmousedown = (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    initialCfgX = cfg.x;
+    initialCfgY = cfg.y;
+    logoContainer.style.cursor = 'grabbing';
+    e.preventDefault();
+  };
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      logoContainer.dataset.wasDragged = 'true';
+    }
+    cfg.x = Math.max(-60, Math.min(100, initialCfgX + dx));
+    cfg.y = Math.max(-40, Math.min(80, initialCfgY + dy));
+    applyConfig();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      logoContainer.style.cursor = 'grab';
+    }
+  });
+
+  if (btnReset) {
+    btnReset.onclick = (e) => {
+      e.stopPropagation();
+      cfg.size = 72;
+      cfg.x = 0;
+      cfg.y = 0;
+      applyConfig();
+    };
+  }
+}
+
 async function renderReportPreview() {
   const stationId = document.getElementById('reportStationSelect').value;
   const reportType = document.getElementById('reportTypeSelect').value;
@@ -2644,32 +2851,6 @@ async function renderReportPreview() {
   cList.forEach(c => {
     if (roleGroups[c.role]) roleGroups[c.role].push(c);
   });
-
-  // Common Official Khmer Top Letterhead
-  const letterheadHtml = `
-    <div class="letterhead" style="width: 100%; margin-bottom: 12px;">
-      <table style="width: 100%; border: none !important; border-collapse: collapse;">
-        <tr>
-          <td style="width: 50%; border: none !important; vertical-align: top; padding: 0;">
-            <div style="display: flex; align-items: flex-start; gap: 10px;">
-              <img src="img/nec_logo.jpg" alt="NEC" style="width: 72px; height: 72px; object-fit: contain; flex-shrink: 0; border-radius: 50%;">
-              <div style="line-height: 1.45;">
-                <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; color: #000;">គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
-                <div style="font-size: 10.5pt; font-weight: 700; color: #000;">${provinceTitle}</div>
-                <div style="font-size: 10.5pt; font-weight: 700; color: #000;">${committeeTitle}</div>
-                <div style="font-size: 10.5pt; font-weight: 700; color: #000;">${communePrefix}(${communeCodeKhmer})</div>
-              </div>
-            </div>
-          </td>
-          <td style="width: 50%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
-            <div style="font-family: var(--font-heading); font-size: 13pt; color: #000; line-height: 1.35;">ព្រះរាជាណាចក្រកម្ពុជា</div>
-            <div style="font-family: var(--font-heading); font-size: 11.5pt; color: #000; line-height: 1.35;">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
-            <div style="font-size: 12pt; letter-spacing: 2px; margin-top: 1px; color: #000;">៚--- ❖ ---៚</div>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `;
 
   let reportContentHtml = '';
 
@@ -2715,18 +2896,8 @@ async function renderReportPreview() {
 
     reportContentHtml = `
       <div class="print-paper-sheet">
-        ${letterheadHtml}
-        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
-          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
-            តារាង​សម្រាំង​បេក្ខជន​សម្រាប់​ការ​សម្ភាសន៍​ជ្រើសរើស​​ គ.ក.ប
-          </div>
-          <div style="font-size: 11pt; font-weight: 600; color: #000;">
-            ${mandateText}
-          </div>
-          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
-            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
-          </div>
-        </div>
+        ${buildReportLetterheadHtml(ps)}
+        ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
         <table class="official-print-table">
           <thead>
             <tr>
@@ -2804,21 +2975,17 @@ async function renderReportPreview() {
     const interviewDate = ps.interviewDate || '០៩ ខែកក្កដា ឆ្នាំ២០២៧';
     const interviewTime = ps.interviewTime || '០៧:០០ ព្រឹក';
 
+    const noticeSubHtml = `
+      <div style="font-size: 11pt; line-height: 1.75; color: #000; font-family: var(--font-body) !important; text-align: center;">
+        បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍<br>
+        នៅ<strong>${interviewPlace}</strong> នាថ្ងៃទី<strong>${interviewDate}</strong> វេលាម៉ោង <strong>${interviewTime}</strong> តទៅ។
+      </div>
+    `;
+
     reportContentHtml = `
       <div class="print-paper-sheet">
-        ${letterheadHtml}
-        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
-          <div style="font-family: var(--font-heading); font-size: 14pt; font-weight: 700; color: #000; margin-bottom: 6px;">
-            សេចក្ដីជូនដំណឹង
-          </div>
-          <div style="font-size: 11pt; line-height: 1.75; color: #000;">
-            បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍<br>
-            នៅ<strong>${interviewPlace}</strong> នាថ្ងៃទី<strong>${interviewDate}</strong> វេលាម៉ោង <strong>${interviewTime}</strong> តទៅ។
-          </div>
-          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 8px; color: #000;">
-            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
-          </div>
-        </div>
+        ${buildReportLetterheadHtml(ps)}
+        ${buildReportTitleBoxHtml(ps, 'សេចក្ដីជូនដំណឹង', noticeSubHtml)}
         <table class="official-print-table">
           <thead>
             <tr>
@@ -2875,18 +3042,8 @@ async function renderReportPreview() {
 
     reportContentHtml = `
       <div class="print-paper-sheet">
-        ${letterheadHtml}
-        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
-          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
-            បញ្ជីវត្តមានសម្ភាសន៍ ជ្រើសរើស គ.ក.ប
-          </div>
-          <div style="font-size: 11pt; font-weight: 600; color: #000;">
-            ${mandateText}
-          </div>
-          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
-            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
-          </div>
-        </div>
+        ${buildReportLetterheadHtml(ps)}
+        ${buildReportTitleBoxHtml(ps, 'បញ្ជីវត្តមានសម្ភាសន៍ ជ្រើសរើស គ.ក.ប')}
         <table class="official-print-table">
           <thead>
             <tr>
@@ -2969,18 +3126,8 @@ async function renderReportPreview() {
 
     reportContentHtml = `
       <div class="print-paper-sheet">
-        ${letterheadHtml}
-        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
-          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
-            តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប
-          </div>
-          <div style="font-size: 11pt; font-weight: 600; color: #000;">
-            ${mandateText}
-          </div>
-          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
-            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
-          </div>
-        </div>
+        ${buildReportLetterheadHtml(ps)}
+        ${buildReportTitleBoxHtml(ps, 'តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប')}
         <table class="official-print-table">
           <thead>
             <tr>
@@ -3078,18 +3225,8 @@ async function renderReportPreview() {
 
     reportContentHtml = `
       <div class="print-paper-sheet">
-        ${letterheadHtml}
-        <div class="report-title-section" style="text-align: center; margin: 10px 0 12px 0;">
-          <div style="font-family: var(--font-heading); font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 4px;">
-            លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប
-          </div>
-          <div style="font-size: 11pt; font-weight: 600; color: #000;">
-            ${mandateText}
-          </div>
-          <div style="font-family: var(--font-heading); font-size: 11.5pt; font-weight: 700; margin-top: 6px; color: #000;">
-            លេខកូដការិយាល័យ ៖ ${psCodeKhmer}
-          </div>
-        </div>
+        ${buildReportLetterheadHtml(ps)}
+        ${buildReportTitleBoxHtml(ps, 'លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
         <table class="official-print-table">
           <thead>
             <tr>
@@ -3112,6 +3249,7 @@ async function renderReportPreview() {
   }
 
   container.innerHTML = reportContentHtml;
+  setupReportLogoInteractions();
 }
 
 function getOfficialSignatureBlock(ps) {
@@ -3348,9 +3486,11 @@ function updateAppLogos(url) {
   const loginImg = document.getElementById('loginLogoImg');
   const previewImg = document.getElementById('settingLogoPreview');
   const logoHidden = document.getElementById('settingLogoUrl');
+  const reportLogoImg = document.getElementById('reportLogoImg');
   if (headerImg) headerImg.src = logoSrc;
   if (loginImg) loginImg.src = logoSrc;
   if (previewImg) previewImg.src = logoSrc;
+  if (reportLogoImg) reportLogoImg.src = logoSrc;
   if (logoHidden) logoHidden.value = url || '';
 }
 
