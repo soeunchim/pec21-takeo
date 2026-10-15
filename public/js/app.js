@@ -2640,11 +2640,11 @@ function buildReportLetterheadHtml(ps) {
     <div class="letterhead" style="width: 100%; margin-bottom: 12px;">
       <table style="width: 100%; border: none !important; border-collapse: collapse;">
         <tr>
-          <!-- Item 1 & 4: Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo -->
-          <td style="width: 50%; border: none !important; vertical-align: top; padding: 0; text-align: center;">
-            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%;">
+          <!-- Item 1 & 4: Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo (Left-aligned) -->
+          <td style="width: 50%; border: none !important; vertical-align: top; padding: 0; text-align: left;">
+            <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%;">
               <!-- Logo Container with Toolbar -->
-              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 6px;">
+              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 6px;">
                 <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចដើម្បីប្តូរ Logo ឬអូសរំកិលទីតាំង">
                   <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="width: ${logoCfg.size}px; height: ${logoCfg.size}px; object-fit: contain; border-radius: 50%; display: block;">
                   <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
@@ -2663,8 +2663,8 @@ function buildReportLetterheadHtml(ps) {
                   <button type="button" id="btnResetReportLogo" class="btn btn-secondary btn-xs" style="padding: 0 4px; font-size: 10px; border-radius: 3px;" title="កំណត់ឡើងវិញ (Reset)">↺</button>
                 </div>
               </div>
-              <!-- Box 1 (Left Institution Header): Situated Underneath Logo, full width, non-wrapping lines -->
-              <div class="report-inst-header-box" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
+              <!-- Box 1 (Left Institution Header): Situated Underneath Logo, full width, left-aligned, non-wrapping lines -->
+              <div class="report-inst-header-box" contenteditable="true" spellcheck="false" style="text-align: left;" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
                 <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
                 <div>${provinceTitle}</div>
                 <div>${committeeTitle}</div>
