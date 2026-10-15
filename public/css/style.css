@@ -924,8 +924,18 @@ textarea,
 
   .official-print-table th {
     background: #f1f5f9 !important;
-    text-align: center !important;
+    text-align: center;
     font-weight: 700 !important;
+  }
+
+  .official-print-table th.th-criteria,
+  .official-print-table th.text-left,
+  .official-print-table th.left,
+  .official-print-table th[style*="text-align: left"],
+  .official-print-table th[style*="text-align:left"],
+  .official-print-table th div[style*="text-align: left"],
+  .official-print-table th div[style*="text-align:left"] {
+    text-align: left !important;
   }
 
   .official-print-table td.center {
@@ -1269,6 +1279,16 @@ textarea,
   text-align: center;
   font-weight: 700;
   font-family: var(--font-body);
+}
+
+.official-print-table th.th-criteria,
+.official-print-table th.text-left,
+.official-print-table th.left,
+.official-print-table th[style*="text-align: left"],
+.official-print-table th[style*="text-align:left"],
+.official-print-table th div[style*="text-align: left"],
+.official-print-table th div[style*="text-align:left"] {
+  text-align: left !important;
 }
 
 .official-print-table td.center {
