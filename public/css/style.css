@@ -1232,7 +1232,7 @@ textarea,
 /* Official Print Paper Sheet (Landscape Mode for Report 1 - SortList) */
 .print-paper-sheet.landscape {
   max-width: 1180px;
-  padding: 14mm 16mm;
+  padding: 6mm 14mm 8mm 14mm;
 }
 
 @page {
@@ -1242,18 +1242,55 @@ textarea,
 
 @page landscape-sheet {
   size: A4 landscape;
-  margin: 10mm 8mm;
+  margin: 8mm 6mm;
 }
 
 .print-paper-sheet.landscape {
   page: landscape-sheet;
 }
 
+.committee-signatures {
+  font-family: var(--font-body);
+  font-size: 10pt;
+  line-height: 2.1;
+  color: #000;
+}
+
+.editable-sig-date {
+  outline: none;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.editable-sig-date:hover,
+.editable-sig-date:focus {
+  background-color: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 1px #93c5fd;
+}
+
 @media print {
   .print-paper-sheet.landscape {
     max-width: 100% !important;
     width: 100% !important;
-    padding: 6mm 6mm !important;
+    padding: 3mm 5mm !important;
+  }
+
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+  }
+
+  .committee-signatures {
+    font-size: 9.5pt !important;
+    line-height: 2 !important;
+  }
+
+  [class*="deployment"], [id*="deployment"], [class*="paused"], [id*="paused"] {
+    display: none !important;
   }
 }
 

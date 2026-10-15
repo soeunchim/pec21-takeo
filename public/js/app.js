@@ -2637,20 +2637,20 @@ function buildReportLetterheadHtml(ps) {
   const currentLogoUrl = appSettings.logoUrl || 'img/nec_logo.jpg';
 
   return `
-    <div class="letterhead" style="width: 100%; margin-bottom: 12px;">
+    <div class="letterhead" style="width: 100%; margin-bottom: 4px;">
       <table style="width: 100%; border: none !important; border-collapse: collapse;">
         <tr>
           <!-- Column 1 (35%): Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo, Left-Aligned -->
           <td style="width: 35%; border: none !important; vertical-align: top; padding: 0; text-align: left;">
             <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%;">
               <!-- Logo Container with Toolbar -->
-              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 6px;">
+              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 4px;">
                 <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចដើម្បីប្តូរ Logo ឬអូសរំកិលទីតាំង">
                   <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="width: ${logoCfg.size}px; height: ${logoCfg.size}px; object-fit: contain; border-radius: 50%; display: block;">
                   <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
                 </div>
                 <!-- Interactive Controls (Hidden in Print) -->
-                <div class="report-logo-toolbar no-print" style="margin-top: 5px; display: flex; align-items: center; gap: 4px; font-size: 11px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); width: fit-content;">
+                <div class="report-logo-toolbar no-print" style="margin-top: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); width: fit-content;">
                   <button type="button" id="btnUploadReportLogo" class="btn btn-secondary btn-xs" style="padding: 1px 5px; font-size: 10px; border-radius: 4px;" title="បញ្ចូល Logo ថ្មី">📷 ប្តូរ</button>
                   <span style="color: #cbd5e1;">|</span>
                   <span title="ពង្រីក/បង្រួម Logo">🔍</span>
@@ -2674,7 +2674,7 @@ function buildReportLetterheadHtml(ps) {
           </td>
           <!-- Column 2 (30%): Box 2 (Kingdom Header: Khmer OS Muol Light Size 12pt, Tacteing Single Symbol - Centered on A4 Paper) -->
           <td style="width: 30%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
-            <div class="report-kingdom-header-box" style="padding-top: 6px; white-space: nowrap;">
+            <div class="report-kingdom-header-box" style="padding-top: 4px; white-space: nowrap;">
               <div class="report-kingdom-title">ព្រះរាជាណាចក្រកម្ពុជា</div>
               <div class="report-kingdom-title">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
               <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">5</div>
@@ -2696,10 +2696,10 @@ function buildReportTitleBoxHtml(ps, titleText, customSubHtml) {
   const subHtml = customSubHtml || `<div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>`;
 
   return `
-    <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 10px 0 12px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
-      <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">${titleText}</div>
+    <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 4px 0 6px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+      <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">${titleText}</div>
       ${subHtml}
-      <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 6px; color: #000; text-align: center;">លេខកូដការិយាល័យ ៖ ${psCodeKhmer}</div>
+      <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">លេខកូដការិយាល័យ ៖ ${psCodeKhmer}</div>
     </div>
   `;
 }
@@ -2881,48 +2881,57 @@ async function renderReportPreview() {
   // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប - ក្រដាសផ្តេក Landscape)
   // ----------------------------------------------------------------------------
   if (reportType === 'sortlist') {
-    let rowsHtml = '';
-    ROLES_ORDER.forEach(role => {
-      rowsHtml += `
-        <tr class="category-row">
-          <td colspan="10" style="font-weight: 700; background: #fff; padding: 5px 8px; border: 1px solid #000;">
-            - មុខតំណែង ៖ ${role}
-          </td>
-        </tr>
-      `;
-      const items = roleGroups[role] || [];
-      for (let i = 1; i <= 3; i++) {
-        const c = items.find(x => x.orderInRole === i);
-        const isEmpty = !c || !c.name;
-        const khmerIdx = toKhmerNum(i);
-        const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
-        const scoreDeg = c && c.scoreDegree !== undefined && c.scoreDegree !== '' ? c.scoreDegree : '';
-        const scoreExp = c && c.scoreExp !== undefined && c.scoreExp !== '' ? c.scoreExp : '';
-        const scoreTot = c && c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? c.scoreShortlist : '';
-
-        rowsHtml += `
-          <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
-            <td class="center" style="width: 38px;">${khmerIdx}</td>
-            <td style="font-weight: 600; min-width: 160px;">${c ? (c.name || '') : ''}</td>
-            <td class="center" style="width: 42px;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 105px;">${dobKhmer}</td>
-            <td>${c ? (c.degree || '') : ''}</td>
-            <td class="center" style="width: 40px;">${scoreDeg}</td>
-            <td>${c ? (c.experience || '') : ''}</td>
-            <td class="center" style="width: 40px;">${scoreExp}</td>
-            <td class="center" style="font-weight: 700; width: 65px;">${scoreTot}</td>
-            <td style="width: 70px;">${c ? (c.notes || '') : ''}</td>
+    const buildRoleRowsHtml = (rolesList) => {
+      let html = '';
+      rolesList.forEach(role => {
+        html += `
+          <tr class="category-row">
+            <td colspan="10" style="font-weight: 700; background: #fff; padding: 4px 8px; border: 1px solid #000;">
+              - មុខតំណែង ៖ ${role}
+            </td>
           </tr>
         `;
-      }
-    });
+        const items = roleGroups[role] || [];
+        for (let i = 1; i <= 3; i++) {
+          const c = items.find(x => x.orderInRole === i);
+          const isEmpty = !c || !c.name;
+          const khmerIdx = toKhmerNum(i);
+          const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
+          const scoreDeg = c && c.scoreDegree !== undefined && c.scoreDegree !== '' ? c.scoreDegree : '';
+          const scoreExp = c && c.scoreExp !== undefined && c.scoreExp !== '' ? c.scoreExp : '';
+          const scoreTot = c && c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? c.scoreShortlist : '';
 
-    reportContentHtml = `
-      <div class="print-paper-sheet landscape">
-        ${buildReportLetterheadHtml(ps)}
-        ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
-        <table class="official-print-table">
-          <thead>
+          const cName = sanitizeCandidateText(c ? (c.name || '') : '');
+          const cDegree = sanitizeCandidateText(c ? (c.degree || '') : '');
+          const cExp = sanitizeCandidateText(c ? (c.experience || '') : '');
+          const cNotes = sanitizeCandidateText(c ? (c.notes || '') : '');
+
+          html += `
+            <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
+              <td class="center" style="width: 38px;">${khmerIdx}</td>
+              <td style="font-weight: 600; min-width: 160px;">${cName}</td>
+              <td class="center" style="width: 42px;">${c ? (c.gender || '') : ''}</td>
+              <td class="center" style="width: 105px;">${dobKhmer}</td>
+              <td>${cDegree}</td>
+              <td class="center" style="width: 40px;">${scoreDeg}</td>
+              <td>${cExp}</td>
+              <td class="center" style="width: 40px;">${scoreExp}</td>
+              <td class="center" style="font-weight: 700; width: 65px;">${scoreTot}</td>
+              <td style="width: 70px;">${cNotes}</td>
+            </tr>
+          `;
+        }
+      });
+      return html;
+    };
+
+    const PAGE1_ROLES = ['ប្រធាន', 'អនុប្រធាន', 'លេខាធិការ'];
+    const PAGE2_ROLES = ['សមាជិកទី១', 'សមាជិកទី២', 'សមាជិកទី៣'];
+
+    const rowsPage1Html = buildRoleRowsHtml(PAGE1_ROLES);
+    const rowsPage2Html = buildRoleRowsHtml(PAGE2_ROLES);
+
+    const tableHeaderHtml = `
             <tr>
               <th rowspan="2" style="width: 38px; vertical-align: middle;">ល.រ</th>
               <th rowspan="2" style="min-width: 160px; vertical-align: middle;">គោត្តនាម-នាម</th>
@@ -2953,9 +2962,38 @@ async function renderReportPreview() {
               </th>
               <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
             </tr>
+    `;
+
+    reportContentHtml = `
+      <div class="print-paper-sheet landscape">
+        <!-- PAGE 1: Header - ១ -, Letterhead, Title, and Table 1 (Roles 1-3) -->
+        <div class="report-page-header" style="display: flex; justify-content: flex-end; width: 100%; margin-bottom: 2px;">
+          <span style="font-family: var(--font-body); font-size: 11pt; font-weight: 700; color: #000;">- ១ -</span>
+        </div>
+        ${buildReportLetterheadHtml(ps)}
+        ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
+        <table class="official-print-table" style="margin-top: 4px;">
+          <thead>
+            ${tableHeaderHtml}
           </thead>
           <tbody>
-            ${rowsHtml}
+            ${rowsPage1Html}
+          </tbody>
+        </table>
+
+        <!-- Page Break for Clean 2-Page Print & Screen Separation -->
+        <div class="print-page-break" style="page-break-before: always; break-before: page; margin-top: 24px; padding-top: 14px; border-top: 1px dashed #cbd5e1;"></div>
+
+        <!-- PAGE 2: Header - ២ -, Table 2 (Roles 4-6), and Committee Signature Block -->
+        <div class="report-page-header" style="display: flex; justify-content: flex-end; width: 100%; margin-bottom: 4px;">
+          <span style="font-family: var(--font-body); font-size: 11pt; font-weight: 700; color: #000;">- ២ -</span>
+        </div>
+        <table class="official-print-table" style="margin-top: 4px;">
+          <thead>
+            ${tableHeaderHtml}
+          </thead>
+          <tbody>
+            ${rowsPage2Html}
           </tbody>
         </table>
         ${getOfficialSignatureBlock(ps)}
@@ -3275,21 +3313,147 @@ async function renderReportPreview() {
 
   container.innerHTML = reportContentHtml;
   setupReportLogoInteractions();
+  setupReportDateInteractions();
+}
+
+function sanitizeCandidateText(text) {
+  if (!text || typeof text !== 'string') return '';
+  if (/deployment|temporarily\s*paused|cognito|amazonaws/i.test(text)) {
+    return '';
+  }
+  return text;
+}
+
+function getReportDateConfig() {
+  const defLunar = 'ថ្ងៃ...................................ខែបឋមាសាឍ ឆ្នាំថោះ បញ្ចស័ក ព.ស.២៥៦៧';
+  const defSolar = '.................ថ្ងៃទី.........ខែកក្កដា ឆ្នាំ២០២៣';
+  let lunar = localStorage.getItem('report_lunar_date');
+  let solar = localStorage.getItem('report_solar_date');
+  return {
+    lunar: (lunar !== null && lunar !== '') ? lunar : defLunar,
+    solar: (solar !== null && solar !== '') ? solar : defSolar
+  };
+}
+
+function setReportDateConfig(lunar, solar) {
+  if (lunar !== undefined) localStorage.setItem('report_lunar_date', lunar);
+  if (solar !== undefined) localStorage.setItem('report_solar_date', solar);
+}
+
+function computeAutoDates() {
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+
+  const khmerMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+  const khmerAnimals = ['ជូត', 'ឆ្លូវ', 'ខាល', 'ថោះ', 'រោង', 'ម្សាញ់', 'មមី', 'មមែ', 'វក', 'រកា', 'ច', 'កុរ'];
+  const khmerSaks = ['ឯកស័ក', 'ទោស័ក', 'ត្រីស័ក', 'ចត្វាស័ក', 'បញ្ចស័ក', 'ឆស័ក', 'សប្តស័ក', 'អដ្ឋស័ក', 'នព្វស័ក', 'សំរឹទ្ធិស័ក'];
+
+  const beYear = year + 544;
+  const animal = khmerAnimals[((year - 4) % 12 + 12) % 12];
+  const sak = khmerSaks[((year - 3) % 10 + 10) % 10];
+
+  const solar = `ថ្ងៃទី${toKhmerNum(day)} ខែ${khmerMonths[month]} ឆ្នាំ${toKhmerNum(year)}`;
+  const lunar = `ថ្ងៃ...................................ខែ${khmerMonths[month]} ឆ្នាំ${animal} ${sak} ព.ស.${toKhmerNum(beYear)}`;
+  return { solar, lunar };
 }
 
 function getOfficialSignatureBlock(ps) {
+  const dateCfg = getReportDateConfig();
   return `
-    <div class="signature-section" style="margin-top: 25px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid;">
-      <div class="signature-box" style="text-align: center; width: 45%;">
-        <div style="font-size: 11pt; margin-bottom: 6px; color: #000;">បានឃើញ និងឯកភាព</div>
-        <div style="font-weight: 700; font-size: 11pt; margin-bottom: 65px; color: #000;">ប្រធានគណៈកម្មការរៀបចំការបោះឆ្នោតខេត្តតាកែវ</div>
+    <div class="signature-section" style="margin-top: 14px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid;">
+      <!-- Box 1 (Left Box): Cleared as requested -->
+      <div class="signature-box signature-box-left" style="width: 35%; text-align: left;">
       </div>
-      <div class="signature-box" style="text-align: center; width: 45%;">
-        <div style="font-size: 11pt; margin-bottom: 6px; color: #000;">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៧</div>
-        <div style="font-weight: 700; font-size: 11pt; margin-bottom: 65px; color: #000;">គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
+
+      <!-- Box 2 (Right Box): 5-Member Committee Signatures -->
+      <div class="signature-box signature-box-right" style="width: 62%; text-align: center; color: #000; font-family: var(--font-body);">
+        <div id="sigLunarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px;">
+          ${dateCfg.lunar}
+        </div>
+        <div id="sigSolarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px;">
+          ${dateCfg.solar}
+        </div>
+        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000;">
+          គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប
+        </div>
+        <div class="committee-signatures" style="text-align: left; font-size: 9.5pt; line-height: 2; padding-left: 10px;">
+          <div>១- .........................................ប្រធាន.................................</div>
+          <div>២- .........................................អនុប្រធាន............................</div>
+          <div>៣- .........................................សមាជិក..............................</div>
+          <div>៤- .........................................សមាជិក...............................</div>
+          <div>៥- .........................................សមាជិក...............................</div>
+        </div>
       </div>
     </div>
   `;
+}
+
+function setupReportDateInteractions() {
+  const lunarInput = document.getElementById('reportLunarDateInput');
+  const solarInput = document.getElementById('reportSolarDateInput');
+  const btnAuto = document.getElementById('btnAutoFillDate');
+  const btnReset = document.getElementById('btnResetOfficialDate');
+  const sigLunar = document.getElementById('sigLunarDate');
+  const sigSolar = document.getElementById('sigSolarDate');
+
+  const dateCfg = getReportDateConfig();
+  if (lunarInput) lunarInput.value = dateCfg.lunar;
+  if (solarInput) solarInput.value = dateCfg.solar;
+
+  if (lunarInput) {
+    lunarInput.oninput = (e) => {
+      setReportDateConfig(e.target.value, undefined);
+      if (sigLunar) sigLunar.textContent = e.target.value;
+    };
+  }
+
+  if (solarInput) {
+    solarInput.oninput = (e) => {
+      setReportDateConfig(undefined, e.target.value);
+      if (sigSolar) sigSolar.textContent = e.target.value;
+    };
+  }
+
+  if (btnAuto) {
+    btnAuto.onclick = () => {
+      const auto = computeAutoDates();
+      if (lunarInput) lunarInput.value = auto.lunar;
+      if (solarInput) solarInput.value = auto.solar;
+      setReportDateConfig(auto.lunar, auto.solar);
+      if (sigLunar) sigLunar.textContent = auto.lunar;
+      if (sigSolar) sigSolar.textContent = auto.solar;
+    };
+  }
+
+  if (btnReset) {
+    btnReset.onclick = () => {
+      const defLunar = 'ថ្ងៃ...................................ខែបឋមាសាឍ ឆ្នាំថោះ បញ្ចស័ក ព.ស.២៥៦៧';
+      const defSolar = '.................ថ្ងៃទី.........ខែកក្កដា ឆ្នាំ២០២៣';
+      if (lunarInput) lunarInput.value = defLunar;
+      if (solarInput) solarInput.value = defSolar;
+      setReportDateConfig(defLunar, defSolar);
+      if (sigLunar) sigLunar.textContent = defLunar;
+      if (sigSolar) sigSolar.textContent = defSolar;
+    };
+  }
+
+  if (sigLunar) {
+    sigLunar.onblur = () => {
+      const val = sigLunar.textContent.trim();
+      setReportDateConfig(val, undefined);
+      if (lunarInput) lunarInput.value = val;
+    };
+  }
+
+  if (sigSolar) {
+    sigSolar.onblur = () => {
+      const val = sigSolar.textContent.trim();
+      setReportDateConfig(undefined, val);
+      if (solarInput) solarInput.value = val;
+    };
+  }
 }
 
 function exportCurrentReportToExcel() {

@@ -444,6 +444,26 @@
           </div>
         </div>
 
+        <!-- Toolbar for Automatic Lunar & Solar Dates (Hidden in Print) -->
+        <div class="card no-print" id="reportDateToolbarCard" style="margin-bottom: 12px; padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1.2; min-width: 290px;">
+              <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">🌙 កាលបរិច្ឆេទចន្ទគតិ ៖</span>
+              <input type="text" id="reportLunarDateInput" class="form-control form-control-sm" style="font-size: 12px; padding: 4px 8px;" placeholder="ថ្ងៃ...................................ខែបឋមាសាឍ ឆ្នាំថោះ បញ្ចស័ក ព.ស.២៥៦៧">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 280px;">
+              <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">☀️ កាលបរិច្ឆេទសុរិយគតិ ៖</span>
+              <input type="text" id="reportSolarDateInput" class="form-control form-control-sm" style="font-size: 12px; padding: 4px 8px;" placeholder=".................ថ្ងៃទី.........ខែកក្កដា ឆ្នាំ២០២៣">
+              <button type="button" id="btnAutoFillDate" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;" title="បំពេញកាលបរិច្ឆេទថ្ងៃនេះស្វ័យប្រវត្តិ">
+                📅 យកថ្ងៃនេះ
+              </button>
+              <button type="button" id="btnResetOfficialDate" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;" title="កំណត់តាមគំរូដើម (ព.ស.២៥៦៧ / ឆ្នាំ២០២៣)">
+                🔄 គំរូដើម
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Printable Document Container Preview -->
         <div id="printContainer" class="print-area">
           <!-- Dynamically Rendered Report Document -->
