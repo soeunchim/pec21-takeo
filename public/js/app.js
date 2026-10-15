@@ -2934,20 +2934,22 @@ async function renderReportPreview() {
               <th rowspan="2" style="width: 70px; vertical-align: middle;">ផ្សេងៗ</th>
             </tr>
             <tr>
-              <th style="font-size: 8.5pt; font-weight: normal; text-align: left; padding: 4px 6px; line-height: 1.35; width: 220px;">
-                -សញ្ញាបត្រទុតិយភូមិ ឬបទពិសោធន៍ស្រដៀងមុខតំណែង ចាប់ពី១ឆ្នាំឡើង ដល់២ឆ្នាំ/និង=៥ពិន្ទុ<br>
-                -សញ្ញាបត្រខ្ពស់ជាង ឬបទពិសោធន៍ស្រដៀងមុខតំណែង ចាប់ពី២ឆ្នាំឡើង ឡើង =៨ពិន្ទុ
+              <th style="font-size: 8pt; font-weight: normal; text-align: left; padding: 4px 6px; line-height: 1.35; width: 230px;">
+                -សញ្ញាបត្រទុតិយភូមិ ឬបទពិសោធន៍ស្របនឹងមុខតំណែង<br>
+                &nbsp;ចាប់ពី១ឆ្នាំ/ដង ដល់២ឆ្នាំ/ដង=៥ពិន្ទុ<br>
+                -សញ្ញាបត្រខ្ពស់ជាង ឬបទពិសោធន៍ស្របនឹងមុខតំណែង<br>
+                &nbsp;ចាប់ពី៣ឆ្នាំ/ដង ឡើង =៨ពិន្ទុ
               </th>
               <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
-              <th style="font-size: 8pt; font-weight: normal; text-align: left; padding: 4px 6px; line-height: 1.3; width: 240px;">
-                - បទពិសោធន៍ស្របមុខតំណែង និងមានសញ្ញាបត្រ<br>
-                - ១ឆ្នាំ/និង ដល់២ឆ្នាំ/និង = ៤ពិន្ទុ, ៣ឆ្នាំ/និង ដល់៤ឆ្នាំ/និង= ៨ពិន្ទុ<br>
-                ៥ឆ្នាំ/និងឡើង = ១២ពិន្ទុ<br>
+              <th style="font-size: 7.5pt; font-weight: normal; text-align: left; padding: 4px 6px; line-height: 1.3; width: 310px;">
+                + បទពិសោធន៍ស្របមុខតំណែង និងមានសញ្ញាបត្រ<br>
+                &nbsp;-១ឆ្នាំ/ដង ដល់២ឆ្នាំ/ដង =៤ពិន្ទុ, ៣ឆ្នាំ/ដង ដល់៤ឆ្នាំ/ដង=៨ពិន្ទុ<br>
+                &nbsp;&nbsp;៥ឆ្នាំ/ដងឡើង =១២ពិន្ទុ<br>
                 + បទពិសោធន៍ស្របមុខតំណែង និងគ្មានសញ្ញាបត្រ<br>
-                - ២ឆ្នាំ/និង ដល់៣ឆ្នាំ/និង = ៤ពិន្ទុ, ៤ឆ្នាំ/និង ដល់៥ឆ្នាំ/និង= ៨ពិន្ទុ<br>
-                ៦ឆ្នាំ/និងឡើង = ១២ពិន្ទុ<br>
+                &nbsp;-២ឆ្នាំ/ដង ដល់៣ឆ្នាំ/ដង =៤ពិន្ទុ, ៤ឆ្នាំ/ដង ដល់៥ឆ្នាំ/ដង=៨ពិន្ទុ<br>
+                &nbsp;&nbsp;៦ឆ្នាំ/ដងឡើង =១២ពិន្ទុ<br>
                 + សមាជិកទី១,សមាជិកទី២,សមាជិកទី៣<br>
-                - ២ឆ្នាំ=៥ពិន្ទុ ,ចាប់ពី៣ឆ្នាំឡើង=១២ពិន្ទុ
+                &nbsp;-២ឆ្នាំ=៨ពិន្ទុ ,ចាប់ពី៣ឆ្នាំឡើង=១២ពិន្ទុ
               </th>
               <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
             </tr>
