@@ -1236,17 +1236,7 @@ textarea,
 }
 
 @page {
-  size: A4 portrait;
-  margin: 12mm 10mm;
-}
-
-@page landscape-sheet {
-  size: A4 landscape;
-  margin: 8mm 6mm;
-}
-
-.print-paper-sheet.landscape {
-  page: landscape-sheet;
+  margin: 5mm 6mm;
 }
 
 .committee-signatures {
@@ -1268,56 +1258,122 @@ textarea,
   box-shadow: 0 0 0 1px #93c5fd;
 }
 
-/* Screen mode: Hide all print-only footers and page breaks */
+/* Screen mode: seamless continuous document without artificial breaks */
+.report-print-page {
+  width: 100%;
+}
+.report-print-page-1 {
+  margin-bottom: 0;
+}
+.report-print-page-2 {
+  margin-top: 0;
+}
+.report-print-page-2 thead {
+  display: none;
+}
+.report-page-footer,
 .print-only {
   display: none !important;
 }
 
+/* Print mode: Exactly 2 pages with footers pinned at bottom */
 @media print {
+  @page {
+    margin: 4mm 6mm;
+  }
+
   .print-paper-sheet.landscape {
     max-width: 100% !important;
     width: 100% !important;
-    padding: 3mm 5mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
   .print-only {
-    display: table-row !important;
-  }
-
-  div.print-only {
     display: block !important;
   }
+  thead.print-only,
+  .report-print-page-2 thead {
+    display: table-header-group !important;
+  }
 
-  .print-page1-break-row,
-  .print-page1-break-row td {
+  /* Two distinct pages guaranteed to fit on exactly 2 sheets */
+  .report-print-page {
+    box-sizing: border-box !important;
+    height: 198mm !important;
+    max-height: 198mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    overflow: hidden !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .report-print-page-1 {
     page-break-after: always !important;
     break-after: page !important;
-    page-break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
 
-  .print-page1-break-row td {
-    border: none !important;
-    text-align: center !important;
-    padding-top: 16px !important;
-    font-size: 11pt !important;
-    font-weight: 700 !important;
-    background: transparent !important;
+  .report-print-page-2 {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 
-  .print-page2-footer {
+  .report-page-body {
+    flex: 1 1 auto !important;
+  }
+
+  .report-page-footer {
     display: block !important;
     text-align: center !important;
     font-size: 11pt !important;
     font-weight: 700 !important;
-    margin-top: 18px !important;
+    line-height: 1 !important;
+    padding-top: 2px !important;
+    padding-bottom: 2mm !important;
+    margin-top: auto !important;
     width: 100% !important;
+    color: #000 !important;
+  }
+
+  /* Compact table styling for print to guarantee fitting */
+  .print-paper-sheet.landscape .official-print-table th,
+  .print-paper-sheet.landscape .official-print-table td {
+    padding: 2px 4px !important;
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
+  }
+  .print-paper-sheet.landscape .official-print-table tr.category-row td {
+    padding: 2px 6px !important;
+    font-size: 9pt !important;
+  }
+  .print-paper-sheet.landscape .th-criteria {
+    font-size: 7.2pt !important;
+    line-height: 1.15 !important;
+    padding: 2px 4px !important;
+  }
+  .print-paper-sheet.landscape .letterhead {
+    margin-bottom: 2px !important;
+  }
+  .print-paper-sheet.landscape .report-title-section {
+    margin: 2px 0 4px 0 !important;
+  }
+  .print-paper-sheet.landscape .signature-section {
+    margin-top: 6px !important;
   }
 
   .committee-signatures {
     display: inline-block !important;
     text-align: left !important;
     font-size: 9.5pt !important;
-    line-height: 2.1 !important;
+    line-height: 2 !important;
     margin: 0 auto !important;
   }
 

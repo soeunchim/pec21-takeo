@@ -183,6 +183,12 @@ function setupEventListeners() {
     window.print();
   });
 
+  window.addEventListener('beforeprint', () => {
+    if (typeof removePausedBannersBeforePrint === 'function') {
+      removePausedBannersBeforePrint();
+    }
+  });
+
   // Save Batch Scores
   document.getElementById('btnSaveBatchScores').addEventListener('click', async () => {
     await saveBatchScores();
@@ -2877,18 +2883,19 @@ async function renderReportPreview() {
     document.head.appendChild(orientStyle);
   }
   orientStyle.textContent = isLandscape
-    ? '@page { size: A4 landscape; margin: 8mm 6mm; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 4mm 6mm !important; } }'
-    : '@page { size: A4 portrait; margin: 12mm 10mm; }';
+    ? '@page { size: landscape !important; margin: 4mm 6mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; } }'
+    : '@page { size: portrait !important; margin: 8mm 8mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; } }';
 
   // ----------------------------------------------------------------------------
   // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប - ក្រដាសផ្តេក Landscape)
   // ----------------------------------------------------------------------------
   if (reportType === 'sortlist') {
-    let rowsHtml = '';
+    let rowsPage1Html = '';
+    let rowsPage2Html = '';
     ROLES_ORDER.forEach((role, rIdx) => {
-      rowsHtml += `
+      let roleHtml = `
         <tr class="category-row">
-          <td colspan="10" style="font-weight: 700; background: #fff; padding: 4px 8px; border: 1px solid #000;">
+          <td colspan="10" style="font-weight: 700; background: #fff; padding: 3px 8px; border: 1px solid #000;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -2908,7 +2915,7 @@ async function renderReportPreview() {
         const cExp = sanitizeCandidateText(c ? (c.experience || '') : '');
         const cNotes = sanitizeCandidateText(c ? (c.notes || '') : '');
 
-        rowsHtml += `
+        roleHtml += `
           <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
             <td class="center" style="width: 38px;">${khmerIdx}</td>
             <td style="font-weight: 600; min-width: 160px;">${cName}</td>
@@ -2924,15 +2931,10 @@ async function renderReportPreview() {
         `;
       }
 
-      // If we just finished Role 3 (លេខាធិការ - index 2), insert print-only page 1 bottom-center footer & page break!
-      if (rIdx === 2) {
-        rowsHtml += `
-          <tr class="print-page1-break-row print-only">
-            <td colspan="10" style="border: none !important; text-align: center !important; font-size: 11pt !important; font-weight: 700 !important; padding: 16px 0 0 0 !important; background: transparent !important;">
-              - ១ -
-            </td>
-          </tr>
-        `;
+      if (rIdx < 3) {
+        rowsPage1Html += roleHtml;
+      } else {
+        rowsPage2Html += roleHtml;
       }
     });
 
@@ -2948,14 +2950,14 @@ async function renderReportPreview() {
               <th rowspan="2" style="width: 70px; vertical-align: middle;">ផ្សេងៗ</th>
             </tr>
             <tr>
-              <th class="th-criteria text-left" style="font-size: 8pt; font-weight: normal; text-align: left !important; padding: 4px 6px; line-height: 1.35; width: 230px;">
+              <th class="th-criteria text-left" style="font-size: 8pt; font-weight: normal; text-align: left !important; padding: 3px 5px; line-height: 1.3; width: 230px;">
                 <div style="text-align: left !important;">-សញ្ញាបត្រទុតិយភូមិ ឬបទពិសោធន៍ស្របនឹងមុខតំណែង<br>
                 ចាប់ពី១ឆ្នាំ/ដង ដល់២ឆ្នាំ/ដង=៥ពិន្ទុ<br>
                 -សញ្ញាបត្រខ្ពស់ជាង ឬបទពិសោធន៍ស្របនឹងមុខតំណែង<br>
                 ចាប់ពី៣ឆ្នាំ/ដង ឡើង =៨ពិន្ទុ</div>
               </th>
               <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
-              <th class="th-criteria text-left" style="font-size: 7.5pt; font-weight: normal; text-align: left !important; padding: 4px 6px; line-height: 1.3; width: 310px;">
+              <th class="th-criteria text-left" style="font-size: 7.2pt; font-weight: normal; text-align: left !important; padding: 3px 5px; line-height: 1.25; width: 310px;">
                 <div style="text-align: left !important;">+ បទពិសោធន៍ស្របមុខតំណែង និងមានសញ្ញាបត្រ<br>
                 -១ឆ្នាំ/ដង ដល់២ឆ្នាំ/ដង =៤ពិន្ទុ, ៣ឆ្នាំ/ដង ដល់៤ឆ្នាំ/ដង=៨ពិន្ទុ<br>
                 ៥ឆ្នាំ/ដងឡើង =១២ពិន្ទុ<br>
@@ -2971,20 +2973,41 @@ async function renderReportPreview() {
 
     reportContentHtml = `
       <div class="print-paper-sheet landscape">
-        ${buildReportLetterheadHtml(ps)}
-        ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
-        <table class="official-print-table" style="margin-top: 4px;">
-          <thead>
-            ${tableHeaderHtml}
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-        ${getOfficialSignatureBlock(ps, 'sortlist')}
-        <!-- Print-only page 2 bottom-center footer -->
-        <div class="print-page2-footer print-only" style="text-align: center; font-size: 11pt; font-weight: 700; margin-top: 18px; width: 100%;">
-          - ២ -
+        <!-- PAGE 1 : Roles 1 to 3 (ប្រធាន, អនុប្រធាន, លេខាធិការ) -->
+        <div class="report-print-page report-print-page-1">
+          <div class="report-page-body">
+            ${buildReportLetterheadHtml(ps)}
+            ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
+            <table class="official-print-table" style="margin-top: 4px; margin-bottom: 0;">
+              <thead>
+                ${tableHeaderHtml}
+              </thead>
+              <tbody>
+                ${rowsPage1Html}
+              </tbody>
+            </table>
+          </div>
+          <div class="report-page-footer print-only">
+            - ១ -
+          </div>
+        </div>
+
+        <!-- PAGE 2 : Roles 4 to 6 (សមាជិកទី១, សមាជិកទី២, សមាជិកទី៣) + Signatures -->
+        <div class="report-print-page report-print-page-2">
+          <div class="report-page-body">
+            <table class="official-print-table" style="margin-top: 0;">
+              <thead class="print-only">
+                ${tableHeaderHtml}
+              </thead>
+              <tbody>
+                ${rowsPage2Html}
+              </tbody>
+            </table>
+            ${getOfficialSignatureBlock(ps, 'sortlist')}
+          </div>
+          <div class="report-page-footer print-only">
+            - ២ -
+          </div>
         </div>
       </div>
     `;
@@ -3556,8 +3579,8 @@ function setupReportDateInteractions() {
 }
 
 function exportCurrentReportToExcel() {
-  const table = document.querySelector('#printContainer table.official-print-table');
-  if (!table) {
+  const tables = document.querySelectorAll('#printContainer table.official-print-table');
+  if (!tables || !tables.length) {
     alert('មិនទាន់មានទិន្នន័យតារាងសម្រាប់ Export ឡើយ!');
     return;
   }
@@ -3575,8 +3598,23 @@ function exportCurrentReportToExcel() {
   };
   const sheetName = sheetNamesMap[reportType] || 'Report';
 
+  // If there are multiple tables (e.g. 2-page SortList), merge their tbody rows for Excel export
+  let exportTable = tables[0];
+  if (tables.length > 1) {
+    exportTable = tables[0].cloneNode(true);
+    const mainTbody = exportTable.querySelector('tbody');
+    for (let i = 1; i < tables.length; i++) {
+      const otherTbody = tables[i].querySelector('tbody');
+      if (otherTbody && mainTbody) {
+        Array.from(otherTbody.children).forEach(tr => {
+          mainTbody.appendChild(tr.cloneNode(true));
+        });
+      }
+    }
+  }
+
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.table_to_sheet(table, { raw: true });
+  const ws = XLSX.utils.table_to_sheet(exportTable, { raw: true });
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, `គ.ក.ប_2027_${sheetName}_កូដ_${code4}.xlsx`);
 }
