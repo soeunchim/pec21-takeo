@@ -1249,6 +1249,8 @@ const server = http.createServer(async (req, res) => {
       const totalPollingStations = db.pollingStations.length;
       const totalPassed = db.candidates.filter(c => c.status === 'A-ជាប់').length;
       const totalReserve = db.candidates.filter(c => c.status && c.status.includes('បម្រុង')).length;
+      const totalReserveB = db.candidates.filter(c => c.status === 'B-បម្រុង').length;
+      const totalReserveC = db.candidates.filter(c => c.status && (c.status === 'C-បម្រុងបន្ទាប់' || c.status === 'C-បម្រុង')).length;
       const totalAbsent = db.candidates.filter(c => c.status === 'អវត្តមាន').length;
       const femaleCandidates = db.candidates.filter(c => c.gender === 'ស').length;
 
@@ -1263,6 +1265,8 @@ const server = http.createServer(async (req, res) => {
           candidateCount: cList.length,
           passedCount: cList.filter(c => c.status === 'A-ជាប់').length,
           reserveCount: cList.filter(c => c.status && c.status.includes('បម្រុង')).length,
+          reserveBCount: cList.filter(c => c.status === 'B-បម្រុង').length,
+          reserveCCount: cList.filter(c => c.status && (c.status === 'C-បម្រុងបន្ទាប់' || c.status === 'C-បម្រុង')).length,
           absentCount: cList.filter(c => c.status === 'អវត្តមាន').length
         };
       });
@@ -1274,6 +1278,8 @@ const server = http.createServer(async (req, res) => {
           totalPollingStations,
           totalPassed,
           totalReserve,
+          totalReserveB,
+          totalReserveC,
           totalAbsent,
           femaleCandidates,
           byDistrict

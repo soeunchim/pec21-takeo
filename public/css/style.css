@@ -465,6 +465,7 @@ textarea,
 .stat-box.amber { border-left-color: var(--accent); }
 .stat-box.red { border-left-color: var(--danger); }
 .stat-box.teal { border-left-color: var(--secondary); }
+.stat-box.purple { border-left-color: #8b5cf6; }
 
 .stat-box .stat-label {
   font-size: 13px;

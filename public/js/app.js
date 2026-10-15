@@ -926,13 +926,23 @@ async function loadDashboardStats() {
     document.getElementById('dashTotalCandidates').textContent = s.totalCandidates.toLocaleString();
     document.getElementById('dashTotalStations').textContent = s.totalPollingStations.toLocaleString();
     document.getElementById('dashTotalPassed').textContent = s.totalPassed.toLocaleString();
-    document.getElementById('dashTotalReserve').textContent = s.totalReserve.toLocaleString();
+    if (document.getElementById('dashTotalReserveB')) {
+      document.getElementById('dashTotalReserveB').textContent = (s.totalReserveB !== undefined ? s.totalReserveB : s.totalReserve).toLocaleString();
+    }
+    if (document.getElementById('dashTotalReserveC')) {
+      document.getElementById('dashTotalReserveC').textContent = (s.totalReserveC !== undefined ? s.totalReserveC : 0).toLocaleString();
+    }
+    if (document.getElementById('dashTotalReserve')) {
+      document.getElementById('dashTotalReserve').textContent = s.totalReserve.toLocaleString();
+    }
     document.getElementById('dashTotalAbsent').textContent = s.totalAbsent.toLocaleString();
 
     const tbody = document.getElementById('districtStatsTableBody');
     tbody.innerHTML = '';
 
     s.byDistrict.forEach((d, idx) => {
+      const resB = d.reserveBCount !== undefined ? d.reserveBCount : d.reserveCount;
+      const resC = d.reserveCCount !== undefined ? d.reserveCCount : 0;
       tbody.innerHTML += `
         <tr>
           <td style="text-align: center;">${idx + 1}</td>
@@ -940,7 +950,8 @@ async function loadDashboardStats() {
           <td style="text-align: center;">${d.pollingStationCount}</td>
           <td style="text-align: center; font-weight: 700;">${d.candidateCount}</td>
           <td style="text-align: center;"><span class="badge badge-passed">${d.passedCount}</span></td>
-          <td style="text-align: center;"><span class="badge badge-reserve">${d.reserveCount}</span></td>
+          <td style="text-align: center;"><span class="badge badge-reserve">${resB}</span></td>
+          <td style="text-align: center;"><span class="badge badge-reserve2">${resC}</span></td>
           <td style="text-align: center;"><span class="badge badge-absent">${d.absentCount}</span></td>
         </tr>
       `;
@@ -3273,8 +3284,8 @@ async function renderReportPreview() {
               statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #15803d;">A-ជាប់</td>`;
             } else if (c.status === 'B-បម្រុង') {
               statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #1e40af;">B-បម្រុង</td>`;
-            } else if (c.status === 'C-បម្រុង') {
-              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #6b21a8;">C-បម្រុង</td>`;
+            } else if (c.status === 'C-បម្រុង' || c.status === 'C-បម្រុងបន្ទាប់') {
+              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #6b21a8;">C-បម្រុងបន្ទាប់</td>`;
             } else {
               statusHtml = `<td class="center" style="width: 110px; font-weight: 600;">${c.status || ''}</td>`;
             }
