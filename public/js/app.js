@@ -177,6 +177,9 @@ function setupEventListeners() {
 
   // Direct Print Button
   document.getElementById('btnDirectPrint').addEventListener('click', () => {
+    if (typeof removePausedBannersBeforePrint === 'function') {
+      removePausedBannersBeforePrint();
+    }
     window.print();
   });
 
@@ -2978,7 +2981,7 @@ async function renderReportPreview() {
             ${rowsHtml}
           </tbody>
         </table>
-        ${getOfficialSignatureBlock(ps)}
+        ${getOfficialSignatureBlock(ps, 'sortlist')}
         <!-- Print-only page 2 bottom-center footer -->
         <div class="print-page2-footer print-only" style="text-align: center; font-size: 11pt; font-weight: 700; margin-top: 18px; width: 100%;">
           - ២ -
@@ -3050,7 +3053,7 @@ async function renderReportPreview() {
             ${rowsHtml}
           </tbody>
         </table>
-        ${getOfficialSignatureBlock(ps)}
+        ${getOfficialSignatureBlock(ps, 'notice')}
       </div>
     `;
   }
@@ -3109,7 +3112,7 @@ async function renderReportPreview() {
             ${rowsHtml}
           </tbody>
         </table>
-        ${getOfficialSignatureBlock(ps)}
+        ${getOfficialSignatureBlock(ps, 'attendance')}
       </div>
     `;
   }
@@ -3194,7 +3197,7 @@ async function renderReportPreview() {
             ${rowsHtml}
           </tbody>
         </table>
-        ${getOfficialSignatureBlock(ps)}
+        ${getOfficialSignatureBlock(ps, 'scoresheet')}
       </div>
     `;
   }
@@ -3292,7 +3295,7 @@ async function renderReportPreview() {
             ${rowsHtml}
           </tbody>
         </table>
-        ${getOfficialSignatureBlock(ps)}
+        ${getOfficialSignatureBlock(ps, 'results')}
       </div>
     `;
   }
@@ -3390,22 +3393,13 @@ function computeAutoDates(targetDate) {
   return { solar, lunar, isoDate };
 }
 
-function getOfficialSignatureBlock(ps) {
+function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
   const dateCfg = getReportDateConfig();
-  return `
-    <div class="signature-section" style="margin-top: 14px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid; break-inside: avoid;">
-      <!-- Box 1 (Left Box): Cleared as requested -->
-      <div class="signature-box signature-box-left" style="width: 35%; text-align: left;">
-      </div>
 
-      <!-- Box 2 (Right Box): 5-Member Committee Signatures Centered -->
-      <div class="signature-box signature-box-right" style="width: 62%; text-align: center; color: #000; font-family: var(--font-body);">
-        <div id="sigLunarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px;">
-          ${dateCfg.lunar}
-        </div>
-        <div id="sigSolarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px;">
-          ${dateCfg.solar}
-        </div>
+  let signatureContent = '';
+  if (reportType === 'sortlist') {
+    // Report 1: 5-Member Committee Signatures Centered
+    signatureContent = `
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
           គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប
         </div>
@@ -3441,9 +3435,53 @@ function getOfficialSignatureBlock(ps) {
             <span style="width: 120px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
           </div>
         </div>
+    `;
+  } else {
+    // Reports 2-5: ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប / ប្រធាន (Centered)
+    signatureContent = `
+        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 4px; color: #000; text-align: center;">
+          ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប
+        </div>
+        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 60px; color: #000; text-align: center;">
+          ប្រធាន
+        </div>
+    `;
+  }
+
+  return `
+    <div class="signature-section" style="margin-top: 14px; width: 100%; display: flex; justify-content: space-between; page-break-inside: avoid; break-inside: avoid;">
+      <!-- Box 1 (Left Box): Cleared as requested -->
+      <div class="signature-box signature-box-left" style="width: 35%; text-align: left;">
+      </div>
+
+      <!-- Box 2 (Right Box): Signatures Centered -->
+      <div class="signature-box signature-box-right" style="width: 62%; text-align: center; color: #000; font-family: var(--font-body);">
+        <div id="sigLunarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px;">
+          ${dateCfg.lunar}
+        </div>
+        <div id="sigSolarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px;">
+          ${dateCfg.solar}
+        </div>
+        ${signatureContent}
       </div>
     </div>
   `;
+}
+
+function removePausedBannersBeforePrint() {
+  document.querySelectorAll('*').forEach(el => {
+    if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+    const txt = (el.textContent || '').trim();
+    if (/deployment.*temporarily\s*paused|temporarily\s*paused/i.test(txt)) {
+      if (el.children.length <= 2) {
+        el.style.display = 'none';
+        el.remove();
+      }
+    }
+  });
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeprint', removePausedBannersBeforePrint);
 }
 
 function setupReportDateInteractions() {
