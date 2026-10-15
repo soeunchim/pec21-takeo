@@ -1301,17 +1301,30 @@ textarea,
    Report Template Formatting (Box 1, Box 2, Box 3 & Movable/Resizable Logo)
    ============================================================================== */
 
-/* Box 1: Left Institution Header (Khmer OS Muol Light, Size: 10pt, Editable) */
+/* Box 1: Left Institution Header (Khmer OS Muol Light, Size: 10pt, Editable, Underneath Logo) */
 .report-inst-header-box {
   font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
   font-size: 10pt !important;
   font-weight: normal !important;
-  line-height: 1.5;
+  line-height: 1.55;
   color: #000;
   outline: none;
   border-radius: 4px;
-  padding: 2px 4px;
+  padding: 4px 6px;
+  text-align: center;
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
   transition: all 0.2s ease;
+}
+
+.report-inst-header-box div {
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 10pt !important;
+  font-weight: normal !important;
+  line-height: 1.55;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .report-inst-header-box:hover,

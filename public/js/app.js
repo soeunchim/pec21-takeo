@@ -2640,27 +2640,30 @@ function buildReportLetterheadHtml(ps) {
     <div class="letterhead" style="width: 100%; margin-bottom: 12px;">
       <table style="width: 100%; border: none !important; border-collapse: collapse;">
         <tr>
-          <!-- Item 1 & 4: Box 1 (Left Institution Header) & Movable/Resizable/Uploadable Logo -->
-          <td style="width: 52%; border: none !important; vertical-align: top; padding: 0;">
-            <div style="display: flex; align-items: flex-start; gap: 10px;">
-              <div class="report-logo-wrapper" style="position: relative; flex-shrink: 0;">
+          <!-- Item 1 & 4: Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo -->
+          <td style="width: 50%; border: none !important; vertical-align: top; padding: 0; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%;">
+              <!-- Logo Container with Toolbar -->
+              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 6px;">
                 <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចដើម្បីប្តូរ Logo ឬអូសរំកិលទីតាំង">
                   <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="width: ${logoCfg.size}px; height: ${logoCfg.size}px; object-fit: contain; border-radius: 50%; display: block;">
                   <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
                 </div>
-                <div class="report-logo-toolbar no-print" style="margin-top: 5px; display: flex; align-items: center; gap: 4px; font-size: 11px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); width: fit-content;">
+                <!-- Interactive Controls (Hidden in Print) -->
+                <div class="report-logo-toolbar no-print" style="margin-top: 5px; display: flex; align-items: center; gap: 4px; font-size: 11px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); width: fit-content;">
                   <button type="button" id="btnUploadReportLogo" class="btn btn-secondary btn-xs" style="padding: 1px 5px; font-size: 10px; border-radius: 4px;" title="បញ្ចូល Logo ថ្មី">📷 ប្តូរ</button>
                   <span style="color: #cbd5e1;">|</span>
                   <span title="ពង្រីក/បង្រួម Logo">🔍</span>
                   <input type="range" id="reportLogoSizeSlider" min="40" max="130" value="${logoCfg.size}" style="width: 50px; height: 12px; cursor: pointer;" title="ទំហំ Logo: ${logoCfg.size}px">
                   <span style="color: #cbd5e1;">|</span>
                   <span title="រំកិល ឆ្វេង-ស្តាំ">↔️</span>
-                  <input type="range" id="reportLogoXSlider" min="-50" max="80" value="${logoCfg.x}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល ឆ្វេង/ស្តាំ">
+                  <input type="range" id="reportLogoXSlider" min="-80" max="80" value="${logoCfg.x}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល ឆ្វេង/ស្តាំ">
                   <span title="រំកិល លើ-ក្រោម">↕️</span>
-                  <input type="range" id="reportLogoYSlider" min="-30" max="50" value="${logoCfg.y}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល លើ/ក្រោម">
+                  <input type="range" id="reportLogoYSlider" min="-40" max="60" value="${logoCfg.y}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល លើ/ក្រោម">
                   <button type="button" id="btnResetReportLogo" class="btn btn-secondary btn-xs" style="padding: 0 4px; font-size: 10px; border-radius: 3px;" title="កំណត់ឡើងវិញ (Reset)">↺</button>
                 </div>
               </div>
+              <!-- Box 1 (Left Institution Header): Situated Underneath Logo, full width, non-wrapping lines -->
               <div class="report-inst-header-box" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
                 <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
                 <div>${provinceTitle}</div>
@@ -2670,8 +2673,8 @@ function buildReportLetterheadHtml(ps) {
             </div>
           </td>
           <!-- Item 2: Box 2 (Right Kingdom Header: Khmer OS Muol Light Size 12pt, Tacteing Size 18pt, Centered) -->
-          <td style="width: 48%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
-            <div class="report-kingdom-header-box">
+          <td style="width: 50%; border: none !important; vertical-align: top; text-align: center; padding: 0;">
+            <div class="report-kingdom-header-box" style="padding-top: 6px;">
               <div class="report-kingdom-title">ព្រះរាជាណាចក្រកម្ពុជា</div>
               <div class="report-kingdom-title">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
               <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">3 5 3</div>
