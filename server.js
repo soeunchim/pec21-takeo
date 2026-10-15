@@ -565,6 +565,11 @@ const server = http.createServer(async (req, res) => {
   // ----------------------------------------------------------------------------
 
   try {
+    // 0. GET /api/ping or /health (Keep-alive ping endpoint)
+    if ((pathname === '/api/ping' || pathname === '/health') && req.method === 'GET') {
+      return sendJSON(res, 200, { status: 'ok', uptime: Math.floor(process.uptime()), time: new Date().toISOString() });
+    }
+
     // 1. POST /api/login
     if (pathname === '/api/login' && req.method === 'POST') {
       const { username, password } = await parseBody(req);
@@ -1375,4 +1380,24 @@ server.listen(PORT, async () => {
   console.log(`  Local Access: http://localhost:${PORT}`);
   console.log(`================================================================`);
   await initCloudSync();
+
+  // Automatic Self-Ping for Render (Keep-Alive: prevents 15-min inactivity spin down)
+  const targetUrl = process.env.RENDER_EXTERNAL_URL || 'https://pec21-takeo.onrender.com';
+  if (process.env.RENDER || process.env.NODE_ENV === 'production' || process.env.RENDER_EXTERNAL_URL) {
+    const PING_INTERVAL_MS = 10 * 60 * 1000; // Ping every 10 minutes (threshold is 15 minutes)
+    setInterval(() => {
+      try {
+        const pingUrl = `${targetUrl.replace(/\/$/, '')}/api/ping`;
+        const client = pingUrl.startsWith('https') ? https : http;
+        client.get(pingUrl, (pRes) => {
+          console.log(`[Keep-Alive] Pinged ${pingUrl} -> Status ${pRes.statusCode}`);
+        }).on('error', (pErr) => {
+          console.warn(`[Keep-Alive] Ping warning: ${pErr.message}`);
+        });
+      } catch (e) {
+        console.warn(`[Keep-Alive] Ping error: ${e.message}`);
+      }
+    }, PING_INTERVAL_MS);
+    console.log(`[Keep-Alive] Initialized self-ping every 10m to prevent Render spin-down.`);
+  }
 });
