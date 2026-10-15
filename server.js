@@ -1369,6 +1369,36 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 21. POST /api/candidates/batch-restore-all (Restore multiple candidates from browser backup)
+    if (pathname === '/api/candidates/batch-restore-all' && req.method === 'POST') {
+      const payload = await parseBody(req);
+      const candidates = payload.candidates;
+      if (!Array.isArray(candidates) || !candidates.length) {
+        return sendJSON(res, 400, { success: false, message: 'បញ្ជីបេក្ខជនមិនត្រឹមត្រូវ' });
+      }
+
+      candidates.forEach(c => {
+        if (!c || !c.name || !c.name.trim()) return;
+        const existingIdx = db.candidates.findIndex(x => (c.id && x.id === c.id) || (x.pollingStationId === c.pollingStationId && x.role === c.role && x.orderInRole === c.orderInRole));
+        if (existingIdx !== -1) {
+          db.candidates[existingIdx] = Object.assign({}, db.candidates[existingIdx], c);
+        } else {
+          if (!c.id) c.id = `cand_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+          db.candidates.push(c);
+        }
+      });
+
+      const affectedStations = [...new Set(candidates.map(c => c.pollingStationId).filter(Boolean))];
+      affectedStations.forEach(stId => recalculatePollingStationRanks(stId));
+      saveLocalDatabase();
+      syncToGoogleSheet('sync_all', { user: currentUser.username });
+      return sendJSON(res, 200, {
+        success: true,
+        message: `បានស្ដារបេក្ខជនចំនួន ${candidates.length} នាក់ដោយជោគជ័យ!`,
+        totalCandidates: db.candidates.length
+      });
+    }
+
     // 404 for unknown API
     return sendJSON(res, 404, { success: false, message: 'API Endpoint Not Found' });
 

@@ -913,6 +913,178 @@ async function checkCloudStatus() {
 }
 
 // ==============================================================================
+// LOCAL STORAGE AUTO-BACKUP & DISASTER RECOVERY ENGINE
+// ==============================================================================
+const LOCAL_BACKUP_KEY = 'pec21_kkb_candidates_backup';
+
+function backupStationCandidatesToLocalStorage(stationId, candidates) {
+  if (!candidates || !Array.isArray(candidates)) return;
+  try {
+    let backupMap = {};
+    const stored = localStorage.getItem(LOCAL_BACKUP_KEY);
+    if (stored) {
+      try { backupMap = JSON.parse(stored) || {}; } catch(e) { backupMap = {}; }
+    }
+    candidates.forEach(c => {
+      if (!c || !c.name || !c.name.trim()) return;
+      const key = `${c.pollingStationId || stationId}_${c.role}_${c.orderInRole}`;
+      backupMap[key] = {
+        id: c.id && !c.id.startsWith('temp_') ? c.id : undefined,
+        pollingStationId: c.pollingStationId || stationId,
+        role: c.role,
+        orderInRole: c.orderInRole,
+        name: c.name.trim(),
+        gender: c.gender || 'ប',
+        dob: c.dob || '',
+        phone: c.phone || '',
+        degree: c.degree || '',
+        scoreDegree: c.scoreDegree || 0,
+        experience: c.experience || '',
+        scoreExp: c.scoreExp || 0,
+        scoreInterview: c.scoreInterview || '',
+        status: c.status || '',
+        rank: c.rank || c.orderInRole
+      };
+    });
+    localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(backupMap));
+    localStorage.setItem('pec21_kkb_backup_last_time', new Date().toISOString());
+  } catch (err) {
+    console.warn('[LocalStorage Backup] Could not save:', err);
+  }
+}
+
+function getAllLocalBackupCandidates() {
+  try {
+    const stored = localStorage.getItem(LOCAL_BACKUP_KEY);
+    if (!stored) return [];
+    const map = JSON.parse(stored) || {};
+    return Object.values(map).filter(c => c && c.name && c.name.trim());
+  } catch (e) {
+    return [];
+  }
+}
+
+async function restoreAllCandidatesFromBrowser() {
+  const localCandidates = getAllLocalBackupCandidates();
+  if (!localCandidates.length) {
+    alert('មិនមានទិន្នន័យបម្រុងទុកនៅក្នុង Browser នេះឡើយ!');
+    return;
+  }
+  if (!confirm(`តើលោកអ្នកពិតជាចង់ស្ដារបេក្ខជនចំនួន ${localCandidates.length} នាក់ដែលបានរក្សាទុកក្នុង Browser នេះចូលក្នុងប្រព័ន្ធវិញមែនទេ?`)) {
+    return;
+  }
+
+  const bannerBtn = document.getElementById('btnRestoreBrowserBackup');
+  if (bannerBtn) {
+    bannerBtn.disabled = true;
+    bannerBtn.textContent = '⏳ កំពុងស្ដារទិន្នន័យ...';
+  }
+
+  try {
+    const res = await fetch('/api/candidates/batch-restore-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ candidates: localCandidates })
+    });
+    const result = await res.json();
+    if (result.success) {
+      alert(`🎉 ជោគជ័យ! ${result.message}`);
+      const banner = document.getElementById('browserRecoveryBanner');
+      if (banner) banner.remove();
+      await loadDashboardStats();
+      if (document.getElementById('scoringStationSelect')?.value) {
+        await renderScoringTableForActiveStation();
+      }
+    } else {
+      alert('កំហុស៖ ' + result.message);
+      if (bannerBtn) {
+        bannerBtn.disabled = false;
+        bannerBtn.textContent = `🔄 ស្ដារទិន្នន័យបេក្ខជនទាំងអស់ឡើងវិញ (${localCandidates.length} នាក់)`;
+      }
+    }
+  } catch (err) {
+    alert('Network error: ' + err.message);
+    if (bannerBtn) {
+      bannerBtn.disabled = false;
+      bannerBtn.textContent = `🔄 ស្ដារទិន្នន័យបេក្ខជនទាំងអស់ឡើងវិញ (${localCandidates.length} នាក់)`;
+    }
+  }
+}
+window.restoreAllCandidatesFromBrowser = restoreAllCandidatesFromBrowser;
+
+function checkAndShowBrowserRecoveryBanner(serverCandidateCount) {
+  const localCandidates = getAllLocalBackupCandidates();
+  const existingBanner = document.getElementById('browserRecoveryBanner');
+  
+  if (serverCandidateCount === 0 && localCandidates.length > 0) {
+    if (!existingBanner) {
+      const banner = document.createElement('div');
+      banner.id = 'browserRecoveryBanner';
+      banner.style.cssText = `
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin: 15px 0 25px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+      `;
+      banner.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="font-size: 32px;">🛡️</div>
+          <div>
+            <div style="font-size: 15px; font-weight: 700; color: #92400e; margin-bottom: 3px;">
+              ប្រព័ន្ធរកឃើញទិន្នន័យបម្រុងទុកសុវត្ថិភាពក្នុង Browser (${toKhmerNum(localCandidates.length)} នាក់)!
+            </div>
+            <div style="font-size: 13px; color: #78350f;">
+              បន្ទាប់ពីការ Update ប្រព័ន្ធ ឬ Server Restart, លោកអ្នកអាចស្ដារទិន្នន័យបេក្ខជនទាំងអស់ដែលធ្លាប់បានបញ្ចូលឡើងវិញដោយគ្រាន់តែចុចប៊ូតុងខាងក្រោម ៖
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
+          <button id="btnRestoreBrowserBackup" onclick="restoreAllCandidatesFromBrowser()" style="
+            background: #d97706;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+          ">
+            🔄 ស្ដារទិន្នន័យបេក្ខជនទាំងអស់ឡើងវិញ (${toKhmerNum(localCandidates.length)} នាក់)
+          </button>
+          <button onclick="document.getElementById('browserRecoveryBanner').remove()" style="
+            background: transparent;
+            border: 1px solid #d97706;
+            color: #92400e;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+          ">
+            ✕ បិទ
+          </button>
+        </div>
+      `;
+      const tab1 = document.getElementById('tabDashboard');
+      if (tab1) {
+        tab1.insertBefore(banner, tab1.firstChild);
+      }
+    }
+  } else if (existingBanner && serverCandidateCount > 0) {
+    existingBanner.remove();
+  }
+}
+
+// ==============================================================================
 // TAB 1: DASHBOARD
 // ==============================================================================
 
@@ -923,6 +1095,7 @@ async function loadDashboardStats() {
     if (!data.success) return;
 
     const s = data.stats;
+    checkAndShowBrowserRecoveryBanner(s.totalCandidates);
     document.getElementById('dashTotalCandidates').textContent = s.totalCandidates.toLocaleString();
     document.getElementById('dashTotalStations').textContent = s.totalPollingStations.toLocaleString();
     document.getElementById('dashTotalPassed').textContent = s.totalPassed.toLocaleString();
@@ -1268,6 +1441,7 @@ async function renderScoringTableForActiveStation() {
     const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
     const data = await res.json();
     currentCandidates = data.candidates || [];
+    backupStationCandidatesToLocalStorage(stationId, currentCandidates);
 
     if (countBadge) {
       const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
@@ -1542,6 +1716,8 @@ async function saveBatchScores() {
       scoreInterview: tr.querySelector('.cand-interview') ? tr.querySelector('.cand-interview').value.trim() : ''
     });
   });
+
+  backupStationCandidatesToLocalStorage(stationId, candidatesPayload);
 
   const saveBtn = document.getElementById('btnSaveBatchScores');
   const originalText = saveBtn.innerHTML;

@@ -598,9 +598,12 @@
               <input type="text" id="settingMandate" class="form-control">
             </div>
 
-            <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
               <button id="btnSaveSettings" class="btn btn-primary">រក្សាទុកការកំណត់ (Save Settings)</button>
               <a href="/api/backup" class="btn btn-secondary" download>📥 Backup Data (JSON)</a>
+              <button type="button" class="btn btn-outline" onclick="restoreAllCandidatesFromBrowser()" title="ស្ដារបេក្ខជនទាំងអស់ពី Browser Backup">
+                🔄 ស្ដារបេក្ខជនពី Browser Backup
+              </button>
             </div>
           </div>
         </div>
