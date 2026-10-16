@@ -26,12 +26,46 @@ const ROLE_CODES = {
 // MODERN ELEGANT POPUP SYSTEM (Replaces native browser alert & confirm)
 // ==============================================================================
 
+const _nativeAlert = typeof window !== 'undefined' ? window.alert.bind(window) : null;
+const _nativeConfirm = typeof window !== 'undefined' ? window.confirm.bind(window) : null;
+
 let modernPopupResolver = null;
+
+function ensureModernPopupDOM() {
+  let overlay = document.getElementById('modernPopupOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'modernPopupOverlay';
+    overlay.className = 'modern-popup-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:9999999;display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+    overlay.innerHTML = `
+      <div class="modern-popup-card">
+        <div class="modern-popup-icon-wrapper" id="modernPopupIcon"></div>
+        <h3 class="modern-popup-title" id="modernPopupTitle">សេចក្តីជូនដំណឹង</h3>
+        <div class="modern-popup-message" id="modernPopupMessage"></div>
+        <div class="modern-popup-actions" id="modernPopupActions">
+          <button type="button" class="modern-popup-btn modern-popup-btn-cancel" id="btnModernPopupCancel">
+            បោះបង់
+          </button>
+          <button type="button" class="modern-popup-btn modern-popup-btn-confirm" id="btnModernPopupConfirm">
+            យល់ព្រម
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  return overlay;
+}
 
 function closeModernPopup(result = false) {
   const overlay = document.getElementById('modernPopupOverlay');
-  if (!overlay) return;
-  overlay.classList.remove('active');
+  if (overlay) {
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+  }
   if (modernPopupResolver) {
     const resolver = modernPopupResolver;
     modernPopupResolver = null;
@@ -50,76 +84,110 @@ function showModernPopup({
   isDanger = false
 }) {
   return new Promise((resolve) => {
-    if (modernPopupResolver) {
-      modernPopupResolver(false);
-      modernPopupResolver = null;
-    }
-    modernPopupResolver = resolve;
+    try {
+      const overlay = ensureModernPopupDOM();
+      const titleEl = document.getElementById('modernPopupTitle');
+      const msgEl = document.getElementById('modernPopupMessage');
+      const iconEl = document.getElementById('modernPopupIcon');
+      const btnCancel = document.getElementById('btnModernPopupCancel');
+      const btnConfirm = document.getElementById('btnModernPopupConfirm');
 
-    const overlay = document.getElementById('modernPopupOverlay');
-    const titleEl = document.getElementById('modernPopupTitle');
-    const msgEl = document.getElementById('modernPopupMessage');
-    const iconEl = document.getElementById('modernPopupIcon');
-    const btnCancel = document.getElementById('btnModernPopupCancel');
-    const btnConfirm = document.getElementById('btnModernPopupConfirm');
-
-    if (!overlay || !titleEl || !msgEl || !iconEl || !btnConfirm || !btnCancel) {
-      console.warn('Modern popup elements missing from DOM');
-      return resolve(false);
-    }
-
-    titleEl.textContent = title;
-    msgEl.textContent = message;
-
-    // Reset styles
-    iconEl.className = 'modern-popup-icon-wrapper';
-    btnConfirm.className = 'modern-popup-btn modern-popup-btn-confirm';
-
-    let resolvedType = type;
-    let resolvedIcon = icon;
-
-    if (!resolvedIcon) {
-      const msgStr = String(message || '');
-      if (resolvedType === 'success' || msgStr.includes('ជោគជ័យ') || msgStr.includes('✅') || msgStr.includes('រួចរាល់')) {
-        resolvedType = 'success';
-        resolvedIcon = '✅';
-      } else if (resolvedType === 'danger' || isDanger || msgStr.includes('លុប') || msgStr.includes('បរាជ័យ') || msgStr.includes('❌') || msgStr.includes('គ្រោះថ្នាក់')) {
-        resolvedType = 'danger';
-        resolvedIcon = (isDanger || msgStr.includes('លុប')) ? '🗑️' : '❌';
-      } else if (resolvedType === 'warning' || msgStr.includes('⚠️') || msgStr.includes('សូមប្រយ័ត្ន') || msgStr.includes('មិនទាន់បាន')) {
-        resolvedType = 'warning';
-        resolvedIcon = '⚠️';
-      } else if (resolvedType === 'question' || showCancel) {
-        resolvedType = 'question';
-        resolvedIcon = '❓';
-      } else if (msgStr.includes('💻')) {
-        resolvedType = 'info';
-        resolvedIcon = '💻';
-      } else if (msgStr.includes('🌐')) {
-        resolvedType = 'info';
-        resolvedIcon = '🌐';
-      } else {
-        resolvedType = 'info';
-        resolvedIcon = 'ℹ️';
+      if (!overlay || !titleEl || !msgEl || !iconEl || !btnConfirm || !btnCancel) {
+        if (showCancel && _nativeConfirm) {
+          return resolve(_nativeConfirm(message));
+        }
+        if (!showCancel && _nativeAlert) {
+          _nativeAlert(message);
+        }
+        return resolve(true);
       }
+
+      if (modernPopupResolver) {
+        modernPopupResolver(false);
+        modernPopupResolver = null;
+      }
+      modernPopupResolver = resolve;
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+
+      // Reset styles
+      iconEl.className = 'modern-popup-icon-wrapper';
+      btnConfirm.className = 'modern-popup-btn modern-popup-btn-confirm';
+
+      let resolvedType = type;
+      let resolvedIcon = icon;
+
+      if (!resolvedIcon) {
+        const msgStr = String(message || '');
+        if (resolvedType === 'success' || msgStr.includes('ជោគជ័យ') || msgStr.includes('✅') || msgStr.includes('រួចរាល់')) {
+          resolvedType = 'success';
+          resolvedIcon = '✅';
+        } else if (resolvedType === 'danger' || isDanger || msgStr.includes('លុប') || msgStr.includes('បរាជ័យ') || msgStr.includes('❌') || msgStr.includes('គ្រោះថ្នាក់')) {
+          resolvedType = 'danger';
+          resolvedIcon = (isDanger || msgStr.includes('លុប')) ? '🗑️' : '❌';
+        } else if (resolvedType === 'warning' || msgStr.includes('⚠️') || msgStr.includes('សូមប្រយ័ត្ន') || msgStr.includes('មិនទាន់បាន')) {
+          resolvedType = 'warning';
+          resolvedIcon = '⚠️';
+        } else if (resolvedType === 'question' || showCancel) {
+          resolvedType = 'question';
+          resolvedIcon = '❓';
+        } else if (msgStr.includes('💻')) {
+          resolvedType = 'info';
+          resolvedIcon = '💻';
+        } else if (msgStr.includes('🌐')) {
+          resolvedType = 'info';
+          resolvedIcon = '🌐';
+        } else {
+          resolvedType = 'info';
+          resolvedIcon = 'ℹ️';
+        }
+      }
+
+      iconEl.classList.add(`icon-${resolvedType}`);
+      iconEl.textContent = resolvedIcon;
+
+      if (isDanger || resolvedType === 'danger') {
+        btnConfirm.classList.add('btn-danger-confirm');
+      }
+
+      btnConfirm.textContent = confirmText;
+      btnCancel.textContent = cancelText;
+      btnCancel.style.display = showCancel ? 'inline-flex' : 'none';
+
+      // Direct immediate event binding
+      btnConfirm.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        closeModernPopup(true);
+      };
+      btnCancel.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        closeModernPopup(false);
+      };
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          e.preventDefault();
+          closeModernPopup(false);
+        }
+      };
+
+      // Show immediately
+      overlay.style.display = 'flex';
+      overlay.classList.add('active');
+
+      setTimeout(() => {
+        try { btnConfirm.focus(); } catch (err) {}
+      }, 30);
+    } catch (err) {
+      console.error('Error showing modern popup:', err);
+      if (showCancel && _nativeConfirm) {
+        return resolve(_nativeConfirm(message));
+      }
+      if (!showCancel && _nativeAlert) {
+        _nativeAlert(message);
+      }
+      return resolve(true);
     }
-
-    iconEl.classList.add(`icon-${resolvedType}`);
-    iconEl.textContent = resolvedIcon;
-
-    if (isDanger || resolvedType === 'danger') {
-      btnConfirm.classList.add('btn-danger-confirm');
-    }
-
-    btnConfirm.textContent = confirmText;
-    btnCancel.textContent = cancelText;
-    btnCancel.style.display = showCancel ? 'inline-flex' : 'none';
-
-    overlay.classList.add('active');
-
-    setTimeout(() => {
-      btnConfirm.focus();
-    }, 60);
   });
 }
 
@@ -156,27 +224,11 @@ window.alert = function(msg, opts) {
 };
 
 function initModernPopupEvents() {
-  const btnConfirm = document.getElementById('btnModernPopupConfirm');
-  const btnCancel = document.getElementById('btnModernPopupCancel');
-  const overlay = document.getElementById('modernPopupOverlay');
-
-  if (btnConfirm) {
-    btnConfirm.addEventListener('click', () => closeModernPopup(true));
-  }
-  if (btnCancel) {
-    btnCancel.addEventListener('click', () => closeModernPopup(false));
-  }
-  if (overlay) {
-    overlay.addEventListener('click', (e) => {
-      if (e.target.id === 'modernPopupOverlay') {
-        closeModernPopup(false);
-      }
-    });
-  }
+  ensureModernPopupDOM();
 
   window.addEventListener('keydown', (e) => {
     const ov = document.getElementById('modernPopupOverlay');
-    if (ov && ov.classList.contains('active')) {
+    if (ov && (ov.classList.contains('active') || ov.style.display === 'flex')) {
       if (e.key === 'Escape') {
         e.preventDefault();
         closeModernPopup(false);
