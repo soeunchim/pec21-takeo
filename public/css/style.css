@@ -1264,7 +1264,7 @@ textarea,
   box-shadow: 0 0 0 1px #93c5fd;
 }
 
-/* Screen mode: seamless continuous document without artificial breaks */
+/* Screen mode: clear 2-page preview matching print */
 .report-print-page {
   width: 100%;
 }
@@ -1272,14 +1272,66 @@ textarea,
   margin-bottom: 0;
 }
 .report-print-page-2 {
-  margin-top: 0;
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 2px dashed #cbd5e1;
 }
 .report-print-page-2 thead {
-  display: none;
+  display: table-header-group !important;
 }
-.report-page-footer,
-.print-only {
-  display: none !important;
+.report-page-footer {
+  display: block !important;
+  text-align: center !important;
+  font-size: 11pt !important;
+  font-weight: 700 !important;
+  padding: 8px 0 !important;
+  color: #000 !important;
+}
+
+/* Landscape Mode Table Styling (Applies on Screen and Print) */
+.print-paper-sheet.landscape .official-print-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+.print-paper-sheet.landscape .official-print-table th:not(.th-criteria) {
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 11pt !important;
+  font-weight: normal !important;
+  text-align: center !important;
+  padding: 2.5px 4px !important;
+  line-height: 1.25 !important;
+}
+.print-paper-sheet.landscape .official-print-table tr.category-row td {
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 11pt !important;
+  font-weight: normal !important;
+  text-align: left !important;
+  padding: 2.5px 8px !important;
+  line-height: 1.25 !important;
+}
+.print-paper-sheet.landscape .official-print-table td {
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
+  padding: 2px 4px !important;
+  line-height: 1.25 !important;
+}
+.print-paper-sheet.landscape .th-criteria {
+  font-size: 7.5pt !important;
+  line-height: 1.2 !important;
+  padding: 2px 4px !important;
+  font-weight: normal !important;
+}
+.th-dob,
+.official-print-table th.th-dob {
+  white-space: nowrap !important;
+  min-width: 125px !important;
+  width: 125px !important;
+}
+.th-total-score,
+.official-print-table th.th-total-score {
+  white-space: nowrap !important;
+  min-width: 85px !important;
+  width: 85px !important;
 }
 
 /* Print mode: Exactly 2 pages with footers pinned at bottom */
@@ -1326,6 +1378,9 @@ textarea,
   }
 
   .report-print-page-2 {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
     page-break-before: avoid !important;
     break-before: avoid !important;
     page-break-after: avoid !important;
@@ -1349,41 +1404,6 @@ textarea,
     color: #000 !important;
   }
 
-  /* Table styling for Landscape Mode (Report 1 - SortList) */
-  .print-paper-sheet.landscape .official-print-table th:not(.th-criteria) {
-    font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
-    font-size: 11pt !important;
-    font-weight: normal !important;
-    text-align: center !important;
-    padding: 2.5px 4px !important;
-    line-height: 1.25 !important;
-  }
-  .print-paper-sheet.landscape .official-print-table tr.category-row td {
-    font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
-    font-size: 11pt !important;
-    font-weight: normal !important;
-    text-align: left !important;
-    padding: 2.5px 8px !important;
-    line-height: 1.25 !important;
-  }
-  .print-paper-sheet.landscape .official-print-table td {
-    font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-    font-size: 11pt !important;
-    padding: 2px 4px !important;
-    line-height: 1.25 !important;
-  }
-  .print-paper-sheet.landscape .th-criteria {
-    font-size: 7.5pt !important;
-    line-height: 1.2 !important;
-    padding: 2px 4px !important;
-    font-weight: normal !important;
-  }
-  .th-dob,
-  .official-print-table th.th-dob {
-    white-space: nowrap !important;
-    min-width: 125px !important;
-    width: 125px !important;
-  }
   .print-paper-sheet.landscape .letterhead {
     margin-bottom: 2px !important;
   }

@@ -3107,12 +3107,12 @@ async function renderReportPreview() {
             <td class="center" style="width: 38px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
             <td style="font-weight: 600; min-width: 160px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cName}</td>
             <td class="center" style="width: 42px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
-            <td style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cDegree}</td>
+            <td class="center" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
+            <td style="width: 230px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cDegree}</td>
             <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreDeg}</td>
-            <td style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cExp}</td>
+            <td style="width: 300px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cExp}</td>
             <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreExp}</td>
-            <td class="center" style="font-weight: 700; width: 65px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreTot}</td>
+            <td class="center" style="font-weight: 700; width: 85px; min-width: 85px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreTot}</td>
             <td style="width: 70px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cNotes}</td>
           </tr>
         `;
@@ -3125,6 +3125,21 @@ async function renderReportPreview() {
       }
     });
 
+    const tableColgroupHtml = `
+      <colgroup>
+        <col style="width: 38px;">
+        <col style="min-width: 160px;">
+        <col style="width: 42px;">
+        <col style="width: 125px;">
+        <col style="width: 230px;">
+        <col style="width: 40px;">
+        <col style="width: 300px;">
+        <col style="width: 40px;">
+        <col style="width: 85px;">
+        <col style="width: 70px;">
+      </colgroup>
+    `;
+
     const tableHeaderHtml = `
             <tr>
               <th rowspan="2" style="width: 38px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
@@ -3133,7 +3148,7 @@ async function renderReportPreview() {
               <th rowspan="2" class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">កម្រិតសញ្ញាបត្រ</th>
               <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">បទពិសោធន៍</th>
-              <th rowspan="2" style="width: 65px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
+              <th rowspan="2" class="th-total-score" style="width: 85px; min-width: 85px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
               <th rowspan="2" style="width: 70px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
             <tr>
@@ -3166,6 +3181,7 @@ async function renderReportPreview() {
             ${buildReportLetterheadHtml(ps)}
             ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
             <table class="official-print-table" style="margin-top: 4px; margin-bottom: 0;">
+              ${tableColgroupHtml}
               <thead>
                 ${tableHeaderHtml}
               </thead>
@@ -3174,7 +3190,7 @@ async function renderReportPreview() {
               </tbody>
             </table>
           </div>
-          <div class="report-page-footer print-only">
+          <div class="report-page-footer">
             - ១ -
           </div>
         </div>
@@ -3183,7 +3199,8 @@ async function renderReportPreview() {
         <div class="report-print-page report-print-page-2">
           <div class="report-page-body">
             <table class="official-print-table" style="margin-top: 0;">
-              <thead class="print-only">
+              ${tableColgroupHtml}
+              <thead>
                 ${tableHeaderHtml}
               </thead>
               <tbody>
@@ -3192,7 +3209,7 @@ async function renderReportPreview() {
             </table>
             ${getOfficialSignatureBlock(ps, 'sortlist')}
           </div>
-          <div class="report-page-footer print-only">
+          <div class="report-page-footer">
             - ២ -
           </div>
         </div>
