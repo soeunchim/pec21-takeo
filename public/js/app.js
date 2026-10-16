@@ -3792,99 +3792,21 @@ async function renderReportPreview() {
       });
     });
 
-    const summaryBoxHtml = `
-      <div class="final-roster-summary-box" style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
-        <table class="final-roster-summary-table" style="border-collapse: collapse; border: 1px solid #000; font-size: 9.5pt; text-align: center;">
-          <thead>
-            <tr>
-              <th style="border: 1px solid #000; padding: 2px 8px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; background: #f8fafc; min-width: 85px;"></th>
-              <th style="border: 1px solid #000; padding: 2px 8px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; background: #f8fafc; width: 55px;">សរុប</th>
-              <th style="border: 1px solid #000; padding: 2px 8px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; background: #f8fafc; width: 55px;">ស្រី</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">ប្រធាន</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['ប្រធាន'].total)}</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['ប្រធាន'].female)}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">អនុប្រធាន</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['អនុប្រធាន'].total)}</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['អនុប្រធាន'].female)}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">លេខាធិការ</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['លេខាធិការ'].total)}</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['លេខាធិការ'].female)}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">សមាជិកទី១</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី១'].total)}</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី១'].female)}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">សមាជិកទី២</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី២'].total)}</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី២'].female)}</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">សមាជិកទី៣</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី៣'].total)}</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី៣'].female)}</td>
-            </tr>
-            <tr class="total-row" style="background: #f1f5f9; font-weight: 700;">
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; text-align: center;">សរុប</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; font-weight: 700;">${toKhmerNum(stats.grandTotal)}</td>
-              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; font-weight: 700;">${toKhmerNum(stats.grandFemale)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-
     const bottomClosingHtml = `
       <div class="final-roster-bottom-breakdown" style="margin-top: 10px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; page-break-inside: avoid; break-inside: avoid;">
         <div style="font-weight: 700; margin-bottom: 6px;">
           បញ្ឈប់បញ្ជីនេះត្រឹមចំនួន ${toKhmerNum(stats.grandTotal)} នាក់ ក្នុងនោះ ស្រី ${toKhmerNum(stats.grandFemale)} នាក់។
         </div>
-        <table style="border-collapse: collapse; border: none; font-size: 10pt; margin-top: 4px;">
-          <tr>
-            <td style="padding: 1px 8px; border: none; font-weight: 600;">- ប្រធាន</td>
-            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['ប្រធាន'].female)} នាក់</td>
-          </tr>
-          <tr>
-            <td style="padding: 1px 8px; border: none; font-weight: 600;">- អនុប្រធាន</td>
-            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['អនុប្រធាន'].female)} នាក់</td>
-          </tr>
-          <tr>
-            <td style="padding: 1px 8px; border: none; font-weight: 600;">- លេខា</td>
-            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['លេខាធិការ'].female)} នាក់</td>
-          </tr>
-          <tr>
-            <td style="padding: 1px 8px; border: none; font-weight: 600;">- សមាជិកទី១</td>
-            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['សមាជិកទី១'].female)} នាក់</td>
-          </tr>
-          <tr>
-            <td style="padding: 1px 8px; border: none; font-weight: 600;">- សមាជិកទី២</td>
-            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['សមាជិកទី២'].female)} នាក់</td>
-          </tr>
-          <tr>
-            <td style="padding: 1px 8px; border: none; font-weight: 600;">- សមាជិកទី៣</td>
-            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['សមាជិកទី៣'].female)} នាក់</td>
-          </tr>
-        </table>
       </div>
     `;
 
     reportContentHtml = `
       <div class="print-paper-sheet">
-        <div style="text-align: center; margin-bottom: 6px;">
-          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 13pt !important; font-weight: normal !important; color: #000; margin-bottom: 3px; text-align: center;">បញ្ជីរាយនាម</div>
-          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 3px; text-align: center;">សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) </div>
+        <div style="text-align: center; margin-bottom: 10px;">
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 13pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">បញ្ជីរាយនាម</div>
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) </div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
         </div>
-        ${summaryBoxHtml}
         <table class="final-roster-table official-print-table" style="margin-top: 4px;">
           <thead>
             <tr>
@@ -4381,47 +4303,20 @@ async function exportFinalRosterToExcel(ps) {
   // Row 7 (Excel row 8): Subtitle
   aoa.push(["សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) "]);
 
-  // Row 8 (Excel row 9): Mandate + Summary headers in Col J & K
-  aoa.push([
-    mandateText, "", "", "", "", "", "", "", "", "សរុប", "ស្រី"
-  ]);
+  // Row 8 (Excel row 9): Mandate
+  aoa.push([mandateText]);
 
-  // Row 9 (Excel row 10): Table headers + Summary row 1 (ប្រធាន)
+  // Row 9 (Excel row 10): Table headers
   aoa.push([
-    "ល.រ", "គោត្តនាម និងនាម", "ភេទ", "មុខតំណែង", "ឃុំ សង្កាត់", "ក្រុង ស្រុក", "លេខកូដការិ.",
-    "", "ប្រធាន", stats['ប្រធាន'].total, stats['ប្រធាន'].female
+    "ល.រ", "គោត្តនាម និងនាម", "ភេទ", "មុខតំណែង", "ឃុំ សង្កាត់", "ក្រុង ស្រុក", "លេខកូដការិ."
   ]);
-
-  // Mapping summary rows across candidate rows (rows 10 to 15, Excel rows 11 to 16)
-  const summaryRoles = [
-    { role: 'អនុប្រធាន', total: stats['អនុប្រធាន'].total, female: stats['អនុប្រធាន'].female },
-    { role: 'លេខាធិការ', total: stats['លេខាធិការ'].total, female: stats['លេខាធិការ'].female },
-    { role: 'សមាជិកទី១', total: stats['សមាជិកទី១'].total, female: stats['សមាជិកទី១'].female },
-    { role: 'សមាជិកទី២', total: stats['សមាជិកទី២'].total, female: stats['សមាជិកទី២'].female },
-    { role: 'សមាជិកទី៣', total: stats['សមាជិកទី៣'].total, female: stats['សមាជិកទី៣'].female },
-    { role: '', total: stats.grandTotal, female: stats.grandFemale }
-  ];
 
   for (let i = 0; i < candidateRows.length; i++) {
-    const cRow = [...candidateRows[i]];
-    if (i < summaryRoles.length) {
-      const sItem = summaryRoles[i];
-      cRow[7] = "";
-      cRow[8] = sItem.role;
-      cRow[9] = sItem.total;
-      cRow[10] = sItem.female;
-    }
-    aoa.push(cRow);
+    aoa.push(candidateRows[i]);
   }
 
-  // Bottom notes
+  // Bottom note
   aoa.push([`បញ្ឈប់បញ្ជីនេះត្រឹមចំនួន ${toKhmerNum(stats.grandTotal)} នាក់ ក្នុងនោះ ស្រី ${toKhmerNum(stats.grandFemale)} នាក់។`]);
-  aoa.push(["", "ប្រធាន", stats['ប្រធាន'].female]);
-  aoa.push(["", "អនុប្រធាន", stats['អនុប្រធាន'].female]);
-  aoa.push(["", "លេខា", stats['លេខាធិការ'].female]);
-  aoa.push(["", "សមាជិកទី១", stats['សមាជិកទី១'].female]);
-  aoa.push(["", "សមាជិកទី២", stats['សមាជិកទី២'].female]);
-  aoa.push(["", "សមាជិកទី៣", stats['សមាជិកទី៣'].female]);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 
@@ -4440,11 +4335,7 @@ async function exportFinalRosterToExcel(ps) {
     { wch: 13.55 },  // D: មុខតំណែង
     { wch: 13.78 },  // E: ឃុំ សង្កាត់
     { wch: 13.78 },  // F: ក្រុង ស្រុក
-    { wch: 12.44 },  // G: លេខកូដការិ.
-    { wch: 8.89 },   // H: spacer
-    { wch: 21.00 },  // I: Summary role
-    { wch: 8.89 },   // J: Summary Total
-    { wch: 8.89 }    // K: Summary Female
+    { wch: 12.44 }   // G: លេខកូដការិ.
   ];
 
   const wb = XLSX.utils.book_new();
