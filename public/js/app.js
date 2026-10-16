@@ -3082,7 +3082,7 @@ async function renderReportPreview() {
     ROLES_ORDER.forEach((role, rIdx) => {
       let roleHtml = `
         <tr class="category-row">
-          <td colspan="10" style="font-weight: 700; background: #fff; padding: 3px 8px; border: 1px solid #000;">
+          <td colspan="10" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; background: #fff; padding: 3px 8px; border: 1px solid #000; text-align: left;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -3104,16 +3104,16 @@ async function renderReportPreview() {
 
         roleHtml += `
           <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
-            <td class="center" style="width: 38px;">${khmerIdx}</td>
-            <td style="font-weight: 600; min-width: 160px;">${cName}</td>
-            <td class="center" style="width: 42px;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 105px;">${dobKhmer}</td>
-            <td>${cDegree}</td>
-            <td class="center" style="width: 40px;">${scoreDeg}</td>
-            <td>${cExp}</td>
-            <td class="center" style="width: 40px;">${scoreExp}</td>
-            <td class="center" style="font-weight: 700; width: 65px;">${scoreTot}</td>
-            <td style="width: 70px;">${cNotes}</td>
+            <td class="center" style="width: 38px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
+            <td style="font-weight: 600; min-width: 160px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cName}</td>
+            <td class="center" style="width: 42px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
+            <td style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cDegree}</td>
+            <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreDeg}</td>
+            <td style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cExp}</td>
+            <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreExp}</td>
+            <td class="center" style="font-weight: 700; width: 65px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreTot}</td>
+            <td style="width: 70px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cNotes}</td>
           </tr>
         `;
       }
@@ -3127,14 +3127,14 @@ async function renderReportPreview() {
 
     const tableHeaderHtml = `
             <tr>
-              <th rowspan="2" style="width: 38px; vertical-align: middle;">ល.រ</th>
-              <th rowspan="2" style="min-width: 160px; vertical-align: middle;">គោត្តនាម-នាម</th>
-              <th rowspan="2" style="width: 42px; vertical-align: middle;">ភេទ</th>
-              <th rowspan="2" style="width: 105px; vertical-align: middle;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
-              <th colspan="2" style="text-align: center;">កម្រិតសញ្ញាបត្រ</th>
-              <th colspan="2" style="text-align: center;">បទពិសោធន៍</th>
-              <th rowspan="2" style="width: 65px; vertical-align: middle;">សរុបពិន្ទុ</th>
-              <th rowspan="2" style="width: 70px; vertical-align: middle;">ផ្សេងៗ</th>
+              <th rowspan="2" style="width: 38px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
+              <th rowspan="2" style="min-width: 160px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
+              <th rowspan="2" style="width: 42px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
+              <th rowspan="2" class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">កម្រិតសញ្ញាបត្រ</th>
+              <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">បទពិសោធន៍</th>
+              <th rowspan="2" style="width: 65px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
+              <th rowspan="2" style="width: 70px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
             <tr>
               <th class="th-criteria text-left" style="font-size: 8pt; font-weight: normal; text-align: left !important; padding: 3px 5px; line-height: 1.3; width: 230px;">
@@ -3143,7 +3143,7 @@ async function renderReportPreview() {
                 -សញ្ញាបត្រខ្ពស់ជាង ឬបទពិសោធន៍ស្របនឹងមុខតំណែង<br>
                 ចាប់ពី៣ឆ្នាំ/ដង ឡើង =៨ពិន្ទុ</div>
               </th>
-              <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
+              <th style="width: 40px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុ</th>
               <th class="th-criteria text-left" style="font-size: 7.2pt; font-weight: normal; text-align: left !important; padding: 3px 5px; line-height: 1.25; width: 310px;">
                 <div style="text-align: left !important;">+ បទពិសោធន៍ស្របមុខតំណែង និងមានសញ្ញាបត្រ<br>
                 -១ឆ្នាំ/ដង ដល់២ឆ្នាំ/ដង =៤ពិន្ទុ, ៣ឆ្នាំ/ដង ដល់៤ឆ្នាំ/ដង=៨ពិន្ទុ<br>
@@ -3154,7 +3154,7 @@ async function renderReportPreview() {
                 + សមាជិកទី១,សមាជិកទី២,សមាជិកទី៣<br>
                 -២ឆ្នាំ=៨ពិន្ទុ ,ចាប់ពី៣ឆ្នាំឡើង=១២ពិន្ទុ</div>
               </th>
-              <th style="width: 40px; vertical-align: middle;">ពិន្ទុ</th>
+              <th style="width: 40px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុ</th>
             </tr>
     `;
 
@@ -3225,7 +3225,7 @@ async function renderReportPreview() {
             <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
             <td style="font-weight: 600; min-width: 180px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.name || '') : ''}</td>
             <td class="center" style="width: 50px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 120px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
+            <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
             <td class="center" style="width: 130px; font-weight: 600; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.phone || '') : ''}</td>
             <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
           </tr>
@@ -3253,7 +3253,7 @@ async function renderReportPreview() {
               <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
               <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
               <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
-              <th style="width: 120px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 130px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">លេខទូរសព្ទ</th>
               <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
@@ -3292,7 +3292,7 @@ async function renderReportPreview() {
             <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
             <td style="font-weight: 600; min-width: 180px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.name || '') : ''}</td>
             <td class="center" style="width: 50px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 120px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
+            <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
             <td style="width: 130px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>
             <td style="width: 130px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>
             <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
@@ -3311,7 +3311,7 @@ async function renderReportPreview() {
               <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
               <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
               <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
-              <th style="width: 120px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 130px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ហត្ថលេខាចូល</th>
               <th style="width: 130px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ហត្ថលេខាចេញ</th>
               <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
@@ -3334,7 +3334,7 @@ async function renderReportPreview() {
     ROLES_ORDER.forEach(role => {
       rowsHtml += `
         <tr class="category-row">
-          <td colspan="8" style="font-weight: 700; background: #fff; padding: 2px 6px; border: 1px solid #000;">
+          <td colspan="8" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; background: #fff; padding: 2px 6px; border: 1px solid #000; text-align: left;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -3353,33 +3353,33 @@ async function renderReportPreview() {
 
         if (c && c.name) {
           if (isAbsent) {
-            scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: 600;">${c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? Number(c.scoreShortlist).toFixed(2) : '0.00'}</td>`;
-            scoreInterviewHtml = `<td class="center official-absent-cell" style="width: 110px;">អវត្តមាន</td>`;
-            scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px;">អវត្តមាន</td>`;
+            scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: 600; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? Number(c.scoreShortlist).toFixed(2) : '0.00'}</td>`;
+            scoreInterviewHtml = `<td class="center official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
+            scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
           } else {
             const sShort = c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? Number(c.scoreShortlist).toFixed(2) : '';
             const sInt = c.scoreInterview !== undefined && c.scoreInterview !== '' ? Number(c.scoreInterview).toFixed(2) : '';
             const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
-            scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: 600;">${sShort}</td>`;
-            scoreInterviewHtml = `<td class="center" style="width: 110px; font-weight: 600;">${sInt}</td>`;
-            scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: 700;">${sTot}</td>`;
+            scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: 600; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sShort}</td>`;
+            scoreInterviewHtml = `<td class="center" style="width: 110px; font-weight: 600; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sInt}</td>`;
+            scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: 700; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
           }
         } else {
-          scoreShortlistHtml = `<td class="center" style="width: 95px;"></td>`;
-          scoreInterviewHtml = `<td class="center" style="width: 110px;"></td>`;
-          scoreTotalHtml = `<td class="center" style="width: 95px;"></td>`;
+          scoreShortlistHtml = `<td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
+          scoreInterviewHtml = `<td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
+          scoreTotalHtml = `<td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
         }
 
         rowsHtml += `
           <tr class="${isEmpty ? 'empty-candidate-row' : ''} ${isAbsent ? 'absent-row' : ''}">
-            <td class="center" style="width: 45px;">${khmerIdx}</td>
-            <td style="font-weight: 600; min-width: 180px;">${c ? (c.name || '') : ''}</td>
-            <td class="center" style="width: 50px;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 120px;">${dobKhmer}</td>
+            <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
+            <td style="font-weight: 600; min-width: 180px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.name || '') : ''}</td>
+            <td class="center" style="width: 50px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
             ${scoreShortlistHtml}
             ${scoreInterviewHtml}
             ${scoreTotalHtml}
-            <td style="width: 90px;">${c ? (c.notes || '') : ''}</td>
+            <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
           </tr>
         `;
       }
@@ -3392,14 +3392,14 @@ async function renderReportPreview() {
         <table class="official-print-table" style="margin-top: 4px;">
           <thead>
             <tr>
-              <th style="width: 45px;">ល.រ</th>
-              <th style="min-width: 180px;">គោត្តនាម-នាម</th>
-              <th style="width: 50px;">ភេទ</th>
-              <th style="width: 120px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
-              <th style="width: 95px;">ពិន្ទុសម្រាំង</th>
-              <th style="width: 110px;">ពិន្ទុសម្ភាសន៍</th>
-              <th style="width: 95px;">សរុបពិន្ទុ</th>
-              <th style="width: 90px;">ផ្សេងៗ</th>
+              <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
+              <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
+              <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
+              <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុសម្រាំង</th>
+              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុសម្ភាសន៍</th>
+              <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
+              <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
           </thead>
           <tbody>
@@ -3475,7 +3475,7 @@ async function renderReportPreview() {
             <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
             <td style="font-weight: 600; min-width: 180px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.name || '') : ''}</td>
             <td class="center" style="width: 50px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 120px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
+            <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
             ${scoreTotalHtml}
             ${statusHtml}
             <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
@@ -3494,7 +3494,7 @@ async function renderReportPreview() {
               <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
               <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
               <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
-              <th style="width: 120px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
               <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">និទ្ទេស</th>
               <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>

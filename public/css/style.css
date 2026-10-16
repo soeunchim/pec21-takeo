@@ -1349,21 +1349,40 @@ textarea,
     color: #000 !important;
   }
 
-  /* Compact table styling for print to guarantee fitting */
-  .print-paper-sheet.landscape .official-print-table th,
-  .print-paper-sheet.landscape .official-print-table td {
-    padding: 2px 4px !important;
-    font-size: 8.5pt !important;
+  /* Table styling for Landscape Mode (Report 1 - SortList) */
+  .print-paper-sheet.landscape .official-print-table th:not(.th-criteria) {
+    font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+    font-size: 11pt !important;
+    font-weight: normal !important;
+    text-align: center !important;
+    padding: 2.5px 4px !important;
     line-height: 1.25 !important;
   }
   .print-paper-sheet.landscape .official-print-table tr.category-row td {
-    padding: 2px 6px !important;
-    font-size: 9pt !important;
+    font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+    font-size: 11pt !important;
+    font-weight: normal !important;
+    text-align: left !important;
+    padding: 2.5px 8px !important;
+    line-height: 1.25 !important;
+  }
+  .print-paper-sheet.landscape .official-print-table td {
+    font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+    font-size: 11pt !important;
+    padding: 2px 4px !important;
+    line-height: 1.25 !important;
   }
   .print-paper-sheet.landscape .th-criteria {
-    font-size: 7.2pt !important;
-    line-height: 1.15 !important;
+    font-size: 7.5pt !important;
+    line-height: 1.2 !important;
     padding: 2px 4px !important;
+    font-weight: normal !important;
+  }
+  .th-dob,
+  .official-print-table th.th-dob {
+    white-space: nowrap !important;
+    min-width: 125px !important;
+    width: 125px !important;
   }
   .print-paper-sheet.landscape .letterhead {
     margin-bottom: 2px !important;
