@@ -340,38 +340,78 @@ function showAppShell() {
   }
 }
 
-function setupEventListeners() {
-  // Login Form
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
-    const errBox = document.getElementById('loginError');
-    errBox.style.display = 'none';
+window.handleLoginSubmit = async function(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  const uInput = document.getElementById('loginUsername');
+  const pInput = document.getElementById('loginPassword');
+  const errBox = document.getElementById('loginError');
+  const btnSubmit = document.getElementById('btnLoginSubmit');
 
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (data.success) {
-        currentUser = data.user;
-        showAppShell();
+  if (errBox) errBox.style.display = 'none';
+
+  const username = uInput ? uInput.value.trim() : '';
+  const password = pInput ? pInput.value.trim() : '';
+
+  if (!username || !password) {
+    if (errBox) {
+      errBox.textContent = 'សូមបញ្ចូលឈ្មោះគណនី និងលេខសម្ងាត់!';
+      errBox.style.display = 'block';
+    }
+    return false;
+  }
+
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'កំពុងចូលប្រព័ន្ធ...';
+  }
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentUser = data.user;
+      showAppShell();
+      try {
         await loadInitialData();
-        if (currentUser.mustChangePassword) {
-          openChangePasswordModal(true);
-        }
-      } else {
+      } catch (loadErr) {
+        console.warn('Initial data load warning:', loadErr);
+      }
+      if (currentUser.mustChangePassword) {
+        openChangePasswordModal(true);
+      }
+    } else {
+      if (errBox) {
         errBox.textContent = data.message || 'Login failed';
         errBox.style.display = 'block';
       }
-    } catch (err) {
+    }
+  } catch (err) {
+    if (errBox) {
       errBox.textContent = 'Network error: ' + err.message;
       errBox.style.display = 'block';
     }
-  });
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'ចូលប្រព័ន្ធ (Sign In)';
+    }
+  }
+  return false;
+};
+
+function setupEventListeners() {
+  // Login Form
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', window.handleLoginSubmit);
+  }
 
   // Logout
   document.getElementById('btnLogout').addEventListener('click', async () => {
@@ -518,6 +558,8 @@ function setupEventListeners() {
       e.preventDefault();
       saveCommuneInterviewSchedule('modal');
     });
+  }
+
   // Manual Scoring Sync Button
   const btnManualSyncScoring = document.getElementById('btnManualScoringSync');
   if (btnManualSyncScoring) {

@@ -23,7 +23,7 @@
         <h2>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ (គ.ខ.ប ២១)</h2>
         <p>ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប</p>
       </div>
-      <form id="loginForm">
+      <form id="loginForm" action="javascript:void(0);" onsubmit="event.preventDefault(); return (window.handleLoginSubmit ? window.handleLoginSubmit(event) : false);">
         <div class="form-group">
           <label class="form-label">ឈ្មោះគណនី (Username)</label>
           <input type="text" id="loginUsername" class="form-control" placeholder="ឧ. soeunchim, PEC2101T001, COM21001T001" required autofocus>
@@ -33,7 +33,7 @@
           <input type="password" id="loginPassword" class="form-control" placeholder="បញ្ចូលលេខសម្ងាត់" required>
         </div>
         <div id="loginError" style="color: var(--danger); font-size: 13px; margin-bottom: 12px; display: none;"></div>
-        <button type="submit" id="btnLoginSubmit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px;">
+        <button type="submit" id="btnLoginSubmit" onclick="if(window.handleLoginSubmit){event.preventDefault(); window.handleLoginSubmit(event);}" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px;">
           ចូលប្រព័ន្ធ (Sign In)
         </button>
       </form>
@@ -988,6 +988,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261016_sync_fix_v2"></script>
+  <script src="js/app.js?v=20261016_login_fixed_v3"></script>
 </body>
 </html>
