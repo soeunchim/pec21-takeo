@@ -64,21 +64,25 @@ function showAppShell() {
   document.getElementById('userRoleTag').textContent = `${currentUser.role} ${currentUser.district !== 'all' ? '(' + currentUser.district + ')' : ''}`;
 
   // Role permissions UI adjustments
+  const stationsNav = document.querySelector('[data-tab="tabPollingStations"]');
   const usersNav = document.getElementById('tabUsersNav');
   const settingsNav = document.getElementById('tabSettingsNav');
 
   if (currentUser.role === 'Commune') {
+    if (stationsNav) stationsNav.style.display = 'none';
     if (usersNav) usersNav.style.display = 'none';
     if (settingsNav) settingsNav.style.display = 'none';
     const filterBar = document.getElementById('stationFilterBar');
     if (filterBar) filterBar.style.display = 'none';
   } else if (currentUser.role === 'Trainer') {
+    if (stationsNav) stationsNav.style.display = 'inline-flex';
     if (usersNav) {
       usersNav.style.display = 'inline-flex';
       usersNav.innerHTML = `👥 គណនីឃុំក្នុង ${currentUser.district}`;
     }
     if (settingsNav) settingsNav.style.display = 'none';
   } else {
+    if (stationsNav) stationsNav.style.display = 'inline-flex';
     if (usersNav) usersNav.style.display = 'inline-flex';
     if (settingsNav) settingsNav.style.display = 'inline-flex';
   }
@@ -1113,36 +1117,138 @@ async function loadDashboardStats() {
 
     const s = data.stats;
     checkAndShowBrowserRecoveryBanner(s.totalCandidates);
-    document.getElementById('dashTotalCandidates').textContent = s.totalCandidates.toLocaleString();
-    document.getElementById('dashTotalStations').textContent = s.totalPollingStations.toLocaleString();
-    document.getElementById('dashTotalPassed').textContent = s.totalPassed.toLocaleString();
+    document.getElementById('dashTotalCandidates').textContent = toKhmerNum(s.totalCandidates);
+    document.getElementById('dashTotalStations').textContent = toKhmerNum(s.totalPollingStations);
+    document.getElementById('dashTotalPassed').textContent = toKhmerNum(s.totalPassed);
     if (document.getElementById('dashTotalReserveB')) {
-      document.getElementById('dashTotalReserveB').textContent = (s.totalReserveB !== undefined ? s.totalReserveB : s.totalReserve).toLocaleString();
+      document.getElementById('dashTotalReserveB').textContent = toKhmerNum(s.totalReserveB !== undefined ? s.totalReserveB : s.totalReserve);
     }
     if (document.getElementById('dashTotalReserveC')) {
-      document.getElementById('dashTotalReserveC').textContent = (s.totalReserveC !== undefined ? s.totalReserveC : 0).toLocaleString();
+      document.getElementById('dashTotalReserveC').textContent = toKhmerNum(s.totalReserveC !== undefined ? s.totalReserveC : 0);
     }
     if (document.getElementById('dashTotalReserve')) {
-      document.getElementById('dashTotalReserve').textContent = s.totalReserve.toLocaleString();
+      document.getElementById('dashTotalReserve').textContent = toKhmerNum(s.totalReserve);
     }
-    document.getElementById('dashTotalAbsent').textContent = s.totalAbsent.toLocaleString();
+    document.getElementById('dashTotalAbsent').textContent = toKhmerNum(s.totalAbsent);
 
+    const titleEl = document.querySelector('#tabDashboard .card-header .card-title');
+    const theadEl = document.querySelector('#tabDashboard table.table-custom thead');
     const tbody = document.getElementById('districtStatsTableBody');
     tbody.innerHTML = '';
 
-    s.byDistrict.forEach((d, idx) => {
+    // 1. Role: Commune -> Show Polling Stations in this Commune
+    if (currentUser && currentUser.role === 'Commune') {
+      const comPrefix = getCommunePrefix(currentUser.communeName, currentUser.district);
+      const comCode3 = toKhmerNum(String(currentUser.communeCode || '').padStart(3, '0'));
+      if (titleEl) {
+        titleEl.textContent = `📈 ស្ថិតិបេក្ខជនតាមឃុំសង្កាត់ ៖ ${comPrefix} (${comCode3})`;
+      }
+      if (theadEl) {
+        theadEl.innerHTML = `
+          <tr>
+            <th style="width: 50px; text-align: center;">ល.រ</th>
+            <th style="min-width: 150px;">ការិយាល័យបោះឆ្នោត</th>
+            <th style="min-width: 170px;">ទីតាំងការិយាល័យ</th>
+            <th style="text-align: center; width: 100px;">បេក្ខជនសរុប</th>
+            <th style="text-align: center; width: 80px;">A-ជាប់</th>
+            <th style="text-align: center; width: 80px;">B-បម្រុង</th>
+            <th style="text-align: center; width: 90px;">C-បម្រុងបន្ទាប់</th>
+            <th style="text-align: center; width: 80px;">អវត្តមាន</th>
+          </tr>
+        `;
+      }
+
+      const stationsList = s.byStation || [];
+      stationsList.forEach((st, idx) => {
+        const c4Khmer = toKhmerNum(st.code);
+        tbody.innerHTML += `
+          <tr>
+            <td style="text-align: center;">${toKhmerNum(idx + 1)}</td>
+            <td style="font-weight: 600;">ការិយាល័យ ${c4Khmer}</td>
+            <td style="color: var(--text-muted);">${st.location || '-'}</td>
+            <td style="text-align: center; font-weight: 700;">${toKhmerNum(st.candidateCount)}</td>
+            <td style="text-align: center;"><span class="badge badge-passed">${toKhmerNum(st.passedCount)}</span></td>
+            <td style="text-align: center;"><span class="badge badge-reserve">${toKhmerNum(st.reserveBCount)}</span></td>
+            <td style="text-align: center;"><span class="badge badge-reserve2">${toKhmerNum(st.reserveCCount)}</span></td>
+            <td style="text-align: center;"><span class="badge badge-absent">${toKhmerNum(st.absentCount)}</span></td>
+          </tr>
+        `;
+      });
+      return;
+    }
+
+    // 2. Role: Trainer -> Show Communes in this District
+    if (currentUser && currentUser.role === 'Trainer') {
+      const distPrefix = getDistrictPrefix(currentUser.district);
+      if (titleEl) {
+        titleEl.textContent = `📈 ស្ថិតិបេក្ខជនតាមឃុំ-សង្កាត់ក្នុង ${distPrefix}`;
+      }
+      if (theadEl) {
+        theadEl.innerHTML = `
+          <tr>
+            <th style="width: 50px; text-align: center;">ល.រ</th>
+            <th>ឃុំ/សង្កាត់</th>
+            <th style="text-align: center;">ការិយាល័យ</th>
+            <th style="text-align: center;">បេក្ខជនសរុប</th>
+            <th style="text-align: center;">A-ជាប់</th>
+            <th style="text-align: center;">B-បម្រុង</th>
+            <th style="text-align: center;">C-បម្រុងបន្ទាប់</th>
+            <th style="text-align: center;">អវត្តមាន</th>
+          </tr>
+        `;
+      }
+
+      const comList = s.byCommune || [];
+      comList.forEach((c, idx) => {
+        const prefix = getCommunePrefix(c.communeName, c.district);
+        tbody.innerHTML += `
+          <tr>
+            <td style="text-align: center;">${toKhmerNum(idx + 1)}</td>
+            <td style="font-weight: 600;">${prefix} (${toKhmerNum(c.communeCode)})</td>
+            <td style="text-align: center;">${toKhmerNum(c.pollingStationCount)}</td>
+            <td style="text-align: center; font-weight: 700;">${toKhmerNum(c.candidateCount)}</td>
+            <td style="text-align: center;"><span class="badge badge-passed">${toKhmerNum(c.passedCount)}</span></td>
+            <td style="text-align: center;"><span class="badge badge-reserve">${toKhmerNum(c.reserveBCount)}</span></td>
+            <td style="text-align: center;"><span class="badge badge-reserve2">${toKhmerNum(c.reserveCCount)}</span></td>
+            <td style="text-align: center;"><span class="badge badge-absent">${toKhmerNum(c.absentCount)}</span></td>
+          </tr>
+        `;
+      });
+      return;
+    }
+
+    // 3. Default: SuperAdmin / Admin / PEC21 -> Show Statistics By District
+    if (titleEl) {
+      titleEl.textContent = '📈 ស្ថិតិបេក្ខជនតាមក្រុង-ស្រុក (Statistics By District)';
+    }
+    if (theadEl) {
+      theadEl.innerHTML = `
+        <tr>
+          <th style="width: 50px; text-align: center;">ល.រ</th>
+          <th>ក្រុង-ស្រុក</th>
+          <th style="text-align: center;">ការិយាល័យ</th>
+          <th style="text-align: center;">បេក្ខជនសរុប</th>
+          <th style="text-align: center;">A-ជាប់</th>
+          <th style="text-align: center;">B-បម្រុង</th>
+          <th style="text-align: center;">C-បម្រុងបន្ទាប់</th>
+          <th style="text-align: center;">អវត្តមាន</th>
+        </tr>
+      `;
+    }
+
+    (s.byDistrict || []).forEach((d, idx) => {
       const resB = d.reserveBCount !== undefined ? d.reserveBCount : d.reserveCount;
       const resC = d.reserveCCount !== undefined ? d.reserveCCount : 0;
       tbody.innerHTML += `
         <tr>
-          <td style="text-align: center;">${idx + 1}</td>
+          <td style="text-align: center;">${toKhmerNum(idx + 1)}</td>
           <td style="font-weight: 600;">${d.district}</td>
-          <td style="text-align: center;">${d.pollingStationCount}</td>
-          <td style="text-align: center; font-weight: 700;">${d.candidateCount}</td>
-          <td style="text-align: center;"><span class="badge badge-passed">${d.passedCount}</span></td>
-          <td style="text-align: center;"><span class="badge badge-reserve">${resB}</span></td>
-          <td style="text-align: center;"><span class="badge badge-reserve2">${resC}</span></td>
-          <td style="text-align: center;"><span class="badge badge-absent">${d.absentCount}</span></td>
+          <td style="text-align: center;">${toKhmerNum(d.pollingStationCount)}</td>
+          <td style="text-align: center; font-weight: 700;">${toKhmerNum(d.candidateCount)}</td>
+          <td style="text-align: center;"><span class="badge badge-passed">${toKhmerNum(d.passedCount)}</span></td>
+          <td style="text-align: center;"><span class="badge badge-reserve">${toKhmerNum(resB)}</span></td>
+          <td style="text-align: center;"><span class="badge badge-reserve2">${toKhmerNum(resC)}</span></td>
+          <td style="text-align: center;"><span class="badge badge-absent">${toKhmerNum(d.absentCount)}</span></td>
         </tr>
       `;
     });

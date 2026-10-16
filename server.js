@@ -1254,8 +1254,115 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // 17. GET /api/stats (Overall, district, and commune statistics)
+    // 17. GET /api/stats (Overall, district, and commune statistics scoped by user role)
     if (pathname === '/api/stats' && req.method === 'GET') {
+      if (currentUser.role === 'Commune') {
+        const uComCode = String(currentUser.communeCode || '').padStart(3, '0');
+        const psList = (db.pollingStations || []).filter(p => String(p.communeCode).padStart(3, '0') === uComCode);
+        const psIds = psList.map(p => p.id);
+        const cList = (db.candidates || []).filter(c => psIds.includes(c.pollingStationId) || String(c.communeCode).padStart(3, '0') === uComCode);
+
+        const totalCandidates = cList.length;
+        const totalPollingStations = psList.length;
+        const totalPassed = cList.filter(c => c.status === 'A-ជាប់').length;
+        const totalReserve = cList.filter(c => c.status && c.status.includes('បម្រុង')).length;
+        const totalReserveB = cList.filter(c => c.status === 'B-បម្រុង').length;
+        const totalReserveC = cList.filter(c => c.status && (c.status === 'C-បម្រុងបន្ទាប់' || c.status === 'C-បម្រុង')).length;
+        const totalAbsent = cList.filter(c => c.status === 'អវត្តមាន').length;
+        const femaleCandidates = cList.filter(c => c.gender === 'ស' || c.gender === 'ស្រី').length;
+
+        // Sort stations by code
+        psList.sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+        const byStation = psList.map(ps => {
+          const stCands = cList.filter(c => c.pollingStationId === ps.id);
+          const c4 = String(ps.code || '').padStart(4, '0');
+          return {
+            stationId: ps.id,
+            code: c4,
+            name: ps.name || `ការិយាល័យ ${c4}`,
+            location: ps.location || '',
+            candidateCount: stCands.length,
+            passedCount: stCands.filter(c => c.status === 'A-ជាប់').length,
+            reserveBCount: stCands.filter(c => c.status === 'B-បម្រុង').length,
+            reserveCCount: stCands.filter(c => c.status && (c.status === 'C-បម្រុងបន្ទាប់' || c.status === 'C-បម្រុង')).length,
+            absentCount: stCands.filter(c => c.status === 'អវត្តមាន').length
+          };
+        });
+
+        return sendJSON(res, 200, {
+          success: true,
+          scope: 'commune',
+          communeName: currentUser.communeName || '',
+          communeCode: uComCode,
+          district: currentUser.district || '',
+          stats: {
+            totalCandidates,
+            totalPollingStations,
+            totalPassed,
+            totalReserve,
+            totalReserveB,
+            totalReserveC,
+            totalAbsent,
+            femaleCandidates,
+            byStation
+          }
+        });
+      }
+
+      if (currentUser.role === 'Trainer') {
+        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        const psList = (db.pollingStations || []).filter(p => (p.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
+        const psIds = psList.map(p => p.id);
+        const cList = (db.candidates || []).filter(c => psIds.includes(c.pollingStationId) || (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
+
+        const totalCandidates = cList.length;
+        const totalPollingStations = psList.length;
+        const totalPassed = cList.filter(c => c.status === 'A-ជាប់').length;
+        const totalReserve = cList.filter(c => c.status && c.status.includes('បម្រុង')).length;
+        const totalReserveB = cList.filter(c => c.status === 'B-បម្រុង').length;
+        const totalReserveC = cList.filter(c => c.status && (c.status === 'C-បម្រុងបន្ទាប់' || c.status === 'C-បម្រុង')).length;
+        const totalAbsent = cList.filter(c => c.status === 'អវត្តមាន').length;
+        const femaleCandidates = cList.filter(c => c.gender === 'ស' || c.gender === 'ស្រី').length;
+
+        const distCommunes = (db.communes || []).filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
+        distCommunes.sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+
+        const byCommune = distCommunes.map(com => {
+          const comCode = String(com.code).padStart(3, '0');
+          const comPs = psList.filter(p => String(p.communeCode).padStart(3, '0') === comCode);
+          const comCands = cList.filter(c => String(c.communeCode).padStart(3, '0') === comCode);
+          return {
+            communeCode: comCode,
+            communeName: com.name,
+            district: com.district,
+            pollingStationCount: comPs.length,
+            candidateCount: comCands.length,
+            passedCount: comCands.filter(c => c.status === 'A-ជាប់').length,
+            reserveBCount: comCands.filter(c => c.status === 'B-បម្រុង').length,
+            reserveCCount: comCands.filter(c => c.status && (c.status === 'C-បម្រុងបន្ទាប់' || c.status === 'C-បម្រុង')).length,
+            absentCount: comCands.filter(c => c.status === 'អវត្តមាន').length
+          };
+        });
+
+        return sendJSON(res, 200, {
+          success: true,
+          scope: 'trainer',
+          district: currentUser.district,
+          stats: {
+            totalCandidates,
+            totalPollingStations,
+            totalPassed,
+            totalReserve,
+            totalReserveB,
+            totalReserveC,
+            totalAbsent,
+            femaleCandidates,
+            byCommune
+          }
+        });
+      }
+
+      // Default province-wide (SuperAdmin, Admin, PEC21)
       const totalCandidates = db.candidates.length;
       const totalPollingStations = db.pollingStations.length;
       const totalPassed = db.candidates.filter(c => c.status === 'A-ជាប់').length;
@@ -1263,7 +1370,7 @@ const server = http.createServer(async (req, res) => {
       const totalReserveB = db.candidates.filter(c => c.status === 'B-បម្រុង').length;
       const totalReserveC = db.candidates.filter(c => c.status && (c.status === 'C-បម្រុងបន្ទាប់' || c.status === 'C-បម្រុង')).length;
       const totalAbsent = db.candidates.filter(c => c.status === 'អវត្តមាន').length;
-      const femaleCandidates = db.candidates.filter(c => c.gender === 'ស').length;
+      const femaleCandidates = db.candidates.filter(c => c.gender === 'ស' || c.gender === 'ស្រី').length;
 
       // Group by district
       const byDistrict = db.districts.map(d => {
@@ -1284,6 +1391,7 @@ const server = http.createServer(async (req, res) => {
 
       return sendJSON(res, 200, {
         success: true,
+        scope: 'province',
         stats: {
           totalCandidates,
           totalPollingStations,
