@@ -2480,7 +2480,15 @@ function initReportSelectorBar() {
 
   if (!distSelect || !comSelect) return;
 
-  // 1. Populate Districts
+  // 1. Populate Districts based on user role
+  const isSuperOrAdmin = currentUser && (
+    currentUser.role === 'SuperAdmin' || 
+    currentUser.role === 'Admin' || 
+    currentUser.role === 'PEC21'
+  );
+  const isTrainer = currentUser && currentUser.role === 'Trainer';
+  const isCommune = currentUser && currentUser.role === 'Commune';
+
   const rawDistNames = allDistricts.length 
     ? allDistricts.map(d => d.name) 
     : [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
@@ -2488,34 +2496,40 @@ function initReportSelectorBar() {
   const distNames = [...new Set(rawDistNames.map(n => String(n).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '')))];
   distNames.sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b));
 
-  const isSuperOrAdmin = currentUser && (currentUser.role === 'SuperAdmin' || currentUser.role === 'Admin' || currentUser.role === 'PEC21');
+  distSelect.innerHTML = '';
 
-  distSelect.innerHTML = '<option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>';
   if (isSuperOrAdmin) {
+    distSelect.innerHTML = '<option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>';
     distSelect.innerHTML += '<option value="all">⭐ គ្រប់ក្រុង-ស្រុក (ទូទាំងខេត្ត)</option>';
-  }
-  distNames.forEach(name => {
-    const label = getDistrictPrefix(name);
-    distSelect.innerHTML += `<option value="${name}">${label}</option>`;
-  });
-
-  // Handle role restrictions for Trainer / Commune
-  if (currentUser) {
-    if (currentUser.role === 'Trainer' && currentUser.district && currentUser.district !== 'all') {
-      const cleanUserDist = String(currentUser.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-      distSelect.value = cleanUserDist;
-      distSelect.disabled = true;
-    } else if (currentUser.role === 'Commune' && currentUser.district && currentUser.district !== 'all') {
-      const cleanUserDist = String(currentUser.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-      distSelect.value = cleanUserDist;
-      distSelect.disabled = true;
-    }
+    distNames.forEach(name => {
+      const label = getDistrictPrefix(name);
+      distSelect.innerHTML += `<option value="${name}">${label}</option>`;
+    });
+    distSelect.disabled = false;
+  } else if (isTrainer || isCommune) {
+    const cleanUserDist = String(currentUser.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    distSelect.innerHTML = `<option value="${cleanUserDist}">${getDistrictPrefix(cleanUserDist)}</option>`;
+    distSelect.value = cleanUserDist;
+    distSelect.disabled = true;
+  } else {
+    distNames.forEach(name => {
+      const label = getDistrictPrefix(name);
+      distSelect.innerHTML += `<option value="${name}">${label}</option>`;
+    });
   }
 
-  // Populate datalist with ALL station codes in province
+  // Populate datalist with station codes scoped to user permission
   if (codeDatalist) {
     codeDatalist.innerHTML = '';
-    allPollingStations.forEach(ps => {
+    let allowedStations = allPollingStations;
+    if (isCommune && currentUser.communeCode) {
+      const uCom = String(currentUser.communeCode).padStart(3, '0');
+      allowedStations = allPollingStations.filter(p => String(p.communeCode).padStart(3, '0') === uCom);
+    } else if (isTrainer && currentUser.district && currentUser.district !== 'all') {
+      const uDistClean = String(currentUser.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      allowedStations = allPollingStations.filter(p => String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
+    }
+    allowedStations.forEach(ps => {
       const c4 = String(ps.code || '').padStart(4, '0');
       const opt = document.createElement('option');
       opt.value = c4;
@@ -2567,9 +2581,13 @@ function initReportSelectorBar() {
           alert(`ការិយាល័យកូដ ${c4} ស្ថិតនៅ${getCommunePrefix(matched.communeName, matched.district)}! គណនីរបស់អ្នកមានសិទ្ធិតែក្នុង${getCommunePrefix(currentUser.communeName, currentUser.district)} ប៉ុណ្ណោះ។`);
           return;
         }
-        if (currentUser && currentUser.role === 'Trainer' && matched.district !== currentUser.district) {
-          alert(`ការិយាល័យកូដ ${c4} ស្ថិតនៅ${getDistrictPrefix(matched.district)}!`);
-          return;
+        if (currentUser && currentUser.role === 'Trainer') {
+          const uDistClean = String(currentUser.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+          const mDistClean = String(matched.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+          if (uDistClean !== mDistClean) {
+            alert(`ការិយាល័យកូដ ${c4} ស្ថិតនៅ${getDistrictPrefix(matched.district)}! គណនីរបស់អ្នកមានសិទ្ធិតែក្នុង${getDistrictPrefix(currentUser.district)} ប៉ុណ្ណោះ។`);
+            return;
+          }
         }
         const cleanMatchedDist = String(matched.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
         distSelect.value = cleanMatchedDist;
@@ -2657,7 +2675,13 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
   const selDist = distSelect.value;
   const isKrong = selDist === 'ដូនកែវ';
   const isAllDistricts = (selDist === 'all');
-  const isSuperOrAdmin = currentUser && (currentUser.role === 'SuperAdmin' || currentUser.role === 'Admin' || currentUser.role === 'PEC21');
+  const isSuperOrAdmin = currentUser && (
+    currentUser.role === 'SuperAdmin' || 
+    currentUser.role === 'Admin' || 
+    currentUser.role === 'PEC21'
+  );
+  const isTrainer = currentUser && currentUser.role === 'Trainer';
+  const isCommune = currentUser && currentUser.role === 'Commune';
 
   if (distLabel) {
     distLabel.innerHTML = isAllDistricts ? '🏛️ វិសាលភាព (Scope)' : (isKrong ? '🏛️ ក្រុង (City / District)' : '🏛️ ស្រុក (District)');
@@ -2668,7 +2692,15 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
 
   comSelect.innerHTML = '';
 
+  // 1. All Districts (Province-wide) -> Only SuperAdmin, Admin, PEC21 can select
   if (isAllDistricts) {
+    if (!isSuperOrAdmin) {
+      const uDist = currentUser ? String(currentUser.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') : '';
+      distSelect.value = uDist;
+      updateReportCommunes(autoSelectFirst);
+      return;
+    }
+
     comSelect.innerHTML = '<option value="all">⭐ គ្រប់ឃុំ-សង្កាត់ (ទូទាំងខេត្ត)</option>';
     const sortedAllCommunes = [...allCommunes].sort((a, b) => {
       const da = getTakeoDistrictOrder(a.district);
@@ -2685,10 +2717,12 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
     } else {
       comSelect.value = 'all';
     }
+    comSelect.disabled = false;
     updateReportStationsForCommune(autoSelectFirst);
     return;
   }
 
+  // 2. Specific District
   const matchedStations = allPollingStations.filter(p => {
     const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
     return cleanDist === selDist;
@@ -2716,34 +2750,39 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
 
   distCommunes.sort((a, b) => parseInt(a.code, 10) - parseInt(b.code, 10));
 
+  // Role: Commune -> ONLY allow their own commune!
+  if (isCommune) {
+    const userComCode = String(currentUser.communeCode || '').padStart(3, '0');
+    const matchedCom = distCommunes.find(c => String(c.code).padStart(3, '0') === userComCode) || {
+      code: userComCode,
+      name: currentUser.communeName || `ឃុំកូដ ${userComCode}`,
+      district: currentUser.district
+    };
+    const prefix = getCommunePrefix(matchedCom.name, matchedCom.district);
+    comSelect.innerHTML = `<option value="${userComCode}">${prefix} (${userComCode})</option>`;
+    comSelect.value = userComCode;
+    comSelect.disabled = true;
+    updateReportStationsForCommune(autoSelectFirst);
+    return;
+  }
+
   if (!distCommunes.length) {
     comSelect.innerHTML = '<option value="">-- គ្មានឃុំ/សង្កាត់ --</option>';
     updateReportStationsForCommune(false);
     return;
   }
 
-  const canSelectAllCommunes = currentUser && (
-    currentUser.role === 'SuperAdmin' ||
-    currentUser.role === 'Admin' ||
-    currentUser.role === 'PEC21' ||
-    currentUser.role === 'Trainer'
-  );
-
-  if (canSelectAllCommunes) {
-    const allLabel = isKrong ? '⭐ គ្រប់សង្កាត់ទាំងអស់ក្នុងក្រុង' : '⭐ គ្រប់ឃុំទាំងអស់នៅក្នុងស្រុក';
-    comSelect.innerHTML += `<option value="all">${allLabel}</option>`;
-  }
+  // Role: SuperAdmin, Admin, PEC21, Trainer -> Can select All Communes in District or specific commune
+  const allLabel = isKrong ? '⭐ គ្រប់សង្កាត់ទាំងអស់ក្នុងក្រុង' : '⭐ គ្រប់ឃុំទាំងអស់នៅក្នុងស្រុក';
+  comSelect.innerHTML += `<option value="all">${allLabel}</option>`;
 
   distCommunes.forEach(c => {
     const prefix = getCommunePrefix(c.name, c.district);
     comSelect.innerHTML += `<option value="${c.code}">${prefix} (${c.code})</option>`;
   });
+  comSelect.disabled = false;
 
-  if (currentUser && currentUser.role === 'Commune' && currentUser.communeCode) {
-    const cleanCode = String(currentUser.communeCode).padStart(3, '0');
-    comSelect.value = cleanCode;
-    comSelect.disabled = true;
-  } else if (targetCommuneCode) {
+  if (targetCommuneCode) {
     comSelect.value = String(targetCommuneCode).padStart(3, '0');
   } else if (autoSelectFirst && distCommunes.length) {
     comSelect.value = distCommunes[0].code;
@@ -2779,6 +2818,15 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
     stations = allPollingStations.filter(p => {
       return String(p.communeCode).padStart(3, '0') === String(selCommuneCode).padStart(3, '0');
     });
+  }
+
+  // Safety filter by user role
+  if (currentUser && currentUser.role === 'Commune') {
+    const userComCode = String(currentUser.communeCode || '').padStart(3, '0');
+    stations = stations.filter(p => String(p.communeCode).padStart(3, '0') === userComCode);
+  } else if (currentUser && currentUser.role === 'Trainer') {
+    const uDistClean = String(currentUser.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    stations = stations.filter(p => String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
   }
 
   stations.sort((a, b) => {
@@ -2874,6 +2922,10 @@ function setReportStationById(stationId, source = '') {
   const infoSpan = document.getElementById('reportActiveStationInfo');
 
   if (stationId === 'all_district') {
+    if (currentUser && currentUser.role === 'Commune') {
+      alert('គណនីឃុំសង្កាត់អាចជ្រើសរើសបានត្រឹមកម្រិតឃុំសង្កាត់ខ្លួនប៉ុណ្ណោះ!');
+      return;
+    }
     if (comSelect) {
       comSelect.value = 'all';
       updateReportStationsForCommune(false, 'all');

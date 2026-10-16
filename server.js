@@ -672,16 +672,23 @@ const server = http.createServer(async (req, res) => {
 
     // 5. GET /api/districts
     if (pathname === '/api/districts' && req.method === 'GET') {
-      return sendJSON(res, 200, { success: true, districts: db.districts });
+      let list = db.districts || [];
+      if (currentUser.role === 'Trainer' || currentUser.role === 'Commune') {
+        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        list = list.filter(d => (d.name || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
+      }
+      return sendJSON(res, 200, { success: true, districts: list });
     }
 
     // 6. GET /api/communes
     if (pathname === '/api/communes' && req.method === 'GET') {
-      let filtered = db.communes;
+      let filtered = db.communes || [];
       if (currentUser.role === 'Trainer') {
-        filtered = db.communes.filter(c => c.district === currentUser.district);
+        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        filtered = filtered.filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
       } else if (currentUser.role === 'Commune') {
-        filtered = db.communes.filter(c => c.code === currentUser.communeCode);
+        const uComCode = String(currentUser.communeCode || '').padStart(3, '0');
+        filtered = filtered.filter(c => String(c.code).padStart(3, '0') === uComCode);
       }
       return sendJSON(res, 200, { success: true, communes: filtered });
     }
@@ -934,7 +941,8 @@ const server = http.createServer(async (req, res) => {
       const dist = parsedUrl.query.district;
 
       if (currentUser.role === 'Commune') {
-        list = list.filter(c => c.communeCode === currentUser.communeCode);
+        const uComCode = String(currentUser.communeCode || '').padStart(3, '0');
+        list = list.filter(c => String(c.communeCode).padStart(3, '0') === uComCode);
       } else if (currentUser.role === 'Trainer') {
         const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
         list = list.filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
