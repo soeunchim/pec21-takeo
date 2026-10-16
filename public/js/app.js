@@ -519,6 +519,23 @@ function getDistrictPrefix(districtName) {
   return `ស្រុក${clean}`;
 }
 
+// Official NEC Takeo Province 10 Districts Administrative Order
+function getTakeoDistrictOrder(districtName) {
+  if (!districtName) return 999;
+  const clean = String(districtName).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+  if (clean.includes('អង្គរ')) return 0;
+  if (clean.includes('បាទី')) return 1;
+  if (clean.includes('បូរី')) return 2;
+  if (clean.includes('គិរី') || clean.includes('គីរី')) return 3;
+  if (clean.includes('កោះ')) return 4;
+  if (clean.includes('ព្រៃ')) return 5;
+  if (clean.includes('សំរោង')) return 6;
+  if (clean.includes('ដូនកែវ')) return 7;
+  if (clean.includes('ត្រាំ')) return 8;
+  if (clean.includes('ទ្រាំង')) return 9;
+  return 999;
+}
+
 function getCommunePrefix(communeName, districtName) {
   if (!communeName) return '';
   const clean = String(communeName).trim().replace(/^(ឃុំ|សង្កាត់)\s*/, '');
@@ -2469,6 +2486,7 @@ function initReportSelectorBar() {
     : [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
 
   const distNames = [...new Set(rawDistNames.map(n => String(n).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '')))];
+  distNames.sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b));
 
   const isSuperOrAdmin = currentUser && (currentUser.role === 'SuperAdmin' || currentUser.role === 'Admin' || currentUser.role === 'PEC21');
 
@@ -2653,7 +2671,13 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
 
   if (isAllDistricts) {
     comSelect.innerHTML = '<option value="all">⭐ គ្រប់ឃុំ-សង្កាត់ (ទូទាំងខេត្ត)</option>';
-    allCommunes.forEach(c => {
+    const sortedAllCommunes = [...allCommunes].sort((a, b) => {
+      const da = getTakeoDistrictOrder(a.district);
+      const db = getTakeoDistrictOrder(b.district);
+      if (da !== db) return da - db;
+      return (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0);
+    });
+    sortedAllCommunes.forEach(c => {
       const prefix = getCommunePrefix(c.name, c.district);
       comSelect.innerHTML += `<option value="${c.code}">${prefix} (${c.code}) - ${c.district}</option>`;
     });
@@ -3656,9 +3680,9 @@ async function renderReportPreview() {
     }
 
     communeStations.sort((a, b) => {
-      const da = String(a.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-      const db = String(b.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-      if (da !== db) return da.localeCompare(db, 'km');
+      const da = getTakeoDistrictOrder(a.district);
+      const db = getTakeoDistrictOrder(b.district);
+      if (da !== db) return da - db;
       const ca = parseInt(a.communeCode, 10) || 0;
       const cb = parseInt(b.communeCode, 10) || 0;
       if (ca !== cb) return ca - cb;
@@ -3855,9 +3879,9 @@ async function renderReportPreview() {
     }
 
     targetStations.sort((a, b) => {
-      const da = String(a.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-      const db = String(b.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-      if (da !== db) return da.localeCompare(db, 'km');
+      const da = getTakeoDistrictOrder(a.district);
+      const db = getTakeoDistrictOrder(b.district);
+      if (da !== db) return da - db;
       const ca = parseInt(a.communeCode, 10) || 0;
       const cb = parseInt(b.communeCode, 10) || 0;
       if (ca !== cb) return ca - cb;
@@ -4418,9 +4442,9 @@ async function exportFinalRosterToExcel(ps) {
   }
 
   targetStations.sort((a, b) => {
-    const da = String(a.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-    const db = String(b.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-    if (da !== db) return da.localeCompare(db, 'km');
+    const da = getTakeoDistrictOrder(a.district);
+    const db = getTakeoDistrictOrder(b.district);
+    if (da !== db) return da - db;
     const ca = parseInt(a.communeCode, 10) || 0;
     const cb = parseInt(b.communeCode, 10) || 0;
     if (ca !== cb) return ca - cb;
