@@ -3945,8 +3945,8 @@ async function renderReportPreview() {
 
         const communeCol = (roleIdx === 0 && isFirstStOfCommune) ? (st.communeName || '') : ' -';
         const districtCol = (roleIdx === 0 && isFirstStOfDistrict) ? (st.district || '') : ' -';
-        const stCodeNum = parseInt(st.code, 10);
-        const stCodeCol = (roleIdx === 0) ? (toKhmerNum(stCodeNum) || toKhmerNum(st.code)) : ' -';
+        const stCodeFormatted = String(st.code || '').padStart(4, '0');
+        const stCodeCol = (roleIdx === 0) ? toKhmerNum(stCodeFormatted) : ' -';
 
         rowsHtml += `
           <tr>
@@ -4505,8 +4505,8 @@ async function exportFinalRosterToExcel(ps) {
       const candGender = c ? (c.gender || '') : '';
       const communeCol = (roleIdx === 0 && isFirstStOfCommune) ? (st.communeName || '') : ' -';
       const districtCol = (roleIdx === 0 && isFirstStOfDistrict) ? (st.district || '') : ' -';
-      const stCodeNum = parseInt(st.code, 10);
-      const stCodeCol = (roleIdx === 0) ? (stCodeNum || st.code) : ' -';
+      const stCodeFormatted = String(st.code || '').padStart(4, '0');
+      const stCodeCol = (roleIdx === 0) ? stCodeFormatted : ' -';
 
       candidateRows.push([
         globalRowIdx,
