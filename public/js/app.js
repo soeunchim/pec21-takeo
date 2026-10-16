@@ -2360,6 +2360,26 @@ function updateRowDeleteButtonState(tr) {
   }
 }
 
+window.onCandidateNameInput = function(input) {
+  const original = input.value;
+  // Allow ONLY Khmer characters (\u1780-\u17D3), zero-width characters (\u200B-\u200D), and whitespace (\s)
+  const sanitized = original.replace(/[^\u1780-\u17D3\u200B-\u200D\s]/g, '');
+  if (original !== sanitized) {
+    const start = input.selectionStart;
+    const diff = original.length - sanitized.length;
+    input.value = sanitized;
+    if (start !== null) {
+      const newPos = Math.max(0, start - diff);
+      input.setSelectionRange(newPos, newPos);
+    }
+  }
+  const tr = input.closest('tr');
+  if (tr) {
+    updateRowDeleteButtonState(tr);
+    onCandidateRowChange(input);
+  }
+};
+
 window.onCandidateDobInput = function(input) {
   const tr = input.closest('tr');
   const prevVal = input.value;
@@ -2610,7 +2630,7 @@ async function renderScoringTableForActiveStation() {
           <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
             <td class="excel-col-order">${toKhmerNum(order)}</td>
             <td>
-              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))" onkeydown="onCandidateNameKeyDown(event, this)">
+              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
             </td>
             <td style="text-align: center;">
               <select class="excel-cell-select cand-gender" onchange="onCandidateRowChange(this)">
