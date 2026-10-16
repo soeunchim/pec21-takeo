@@ -189,7 +189,9 @@ function showModernPopup({
       overlay.onclick = (e) => {
         if (e.target === overlay) {
           e.preventDefault();
-          closeModernPopup(false);
+          if (!cancelIsDanger && !isWide) {
+            closeModernPopup(false);
+          }
         }
       };
 
@@ -2641,14 +2643,40 @@ async function checkCandidateDuplicateRow(tr) {
       });
 
       if (confirmedNotDuplicate) {
-        // User confirmed NOT duplicate -> Highlight BOTH rows in RED!
+        // User confirmed NOT duplicate -> Highlight BOTH rows in RED and KEEP & PERSIST candidate in database!
         tr.dataset.dupConfirmedSig = currentSig;
         tr.dataset.isDuplicate = "true";
         tr.classList.add('duplicate-highlight-row');
 
+        // Retain input values in current row
+        if (nameInput) nameInput.value = rawName;
+        if (genderInput) genderInput.value = rawGender;
+        if (dobInput) dobInput.value = rawDob;
+
         const candId = tr.getAttribute('data-cand-id');
+        const roleName = tr.getAttribute('data-role') || 'ប្រធាន';
+        const order = parseInt(tr.getAttribute('data-order')) || 1;
+        const stationId = document.getElementById('scoringStationSelect')?.value;
+
         let cand = currentCandidates.find(c => c.id === candId);
-        if (cand) cand.isDuplicate = true;
+        if (!cand) {
+          cand = {
+            id: candId || `temp_${stationId}_${roleName}_${order}`,
+            pollingStationId: stationId,
+            role: roleName,
+            orderInRole: order,
+            name: rawName,
+            gender: rawGender,
+            dob: rawDob,
+            isDuplicate: true
+          };
+          currentCandidates.push(cand);
+        } else {
+          cand.name = rawName;
+          cand.gender = rawGender;
+          cand.dob = rawDob;
+          cand.isDuplicate = true;
+        }
 
         // Highlight the matched duplicate row in current table if present
         if (duplicateFound.otherTr) {
@@ -2659,7 +2687,7 @@ async function checkCandidateDuplicateRow(tr) {
           if (otherCand) otherCand.isDuplicate = true;
         }
 
-        // If duplicate was from server DB, mark it as duplicate on server as well
+        // If duplicate was from server DB, mark other candidate as duplicate in DB
         if (duplicateFound.otherId) {
           try {
             fetch('/api/candidates/mark-duplicate', {
@@ -2672,9 +2700,55 @@ async function checkCandidateDuplicateRow(tr) {
           }
         }
 
+        // Update delete button state and count badge
+        updateRowDeleteButtonState(tr);
+        const countBadge = document.getElementById('stationCandidateCountBadge');
+        if (countBadge) {
+          const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
+          countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} / ១៨ នាក់`;
+        }
+
+        // Immediately auto-save this candidate into database so it persists across station switching
+        if (stationId && rawName) {
+          try {
+            const rawInterview = tr.querySelector('.cand-interview') ? tr.querySelector('.cand-interview').value.trim() : '';
+            const cleanInterview = (rawInterview === 'អវត្តមាន' || rawInterview.startsWith('អ')) ? 'អវត្តមាន' : (fromKhmerNum(rawInterview));
+
+            const saveRes = await fetch('/api/candidates', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: candId && !candId.startsWith('temp_') ? candId : undefined,
+                pollingStationId: stationId,
+                role: roleName,
+                orderInRole: order,
+                name: rawName,
+                gender: rawGender,
+                dob: rawDob,
+                phone: tr.querySelector('.cand-phone')?.value?.trim() || '',
+                degree: tr.querySelector('.cand-degree')?.value?.trim() || '',
+                scoreDegree: parseFloat(fromKhmerNum(tr.querySelector('.cand-score-degree')?.value)) || 0,
+                experience: tr.querySelector('.cand-exp')?.value?.trim() || '',
+                scoreExp: parseFloat(fromKhmerNum(tr.querySelector('.cand-score-exp')?.value)) || 0,
+                scoreInterview: cleanInterview,
+                isDuplicate: true
+              })
+            });
+            if (saveRes.ok) {
+              const resData = await saveRes.json();
+              if (resData.candidate && resData.candidate.id) {
+                tr.setAttribute('data-cand-id', resData.candidate.id);
+                cand.id = resData.candidate.id;
+              }
+            }
+          } catch (saveErr) {
+            console.error('Error auto-saving confirmed duplicate candidate:', saveErr);
+          }
+        }
+
         return true;
       } else {
-        // User clicked "ស្ទួន" (or cancelled) -> Candidate cannot be entered
+        // User clicked "ស្ទួន" -> Candidate cannot be entered
         clearCandidateRowInputs(tr);
         return false;
       }
@@ -3246,6 +3320,9 @@ async function saveBatchScores() {
     const name = nameInput ? nameInput.value.trim() : '';
     const dob = dobInput ? dobInput.value.trim() : '';
     if (name && dob) {
+      if (tr.classList.contains('duplicate-highlight-row') || tr.dataset.isDuplicate === "true") {
+        continue;
+      }
       const ok = await checkCandidateDuplicateRow(tr);
       if (!ok) {
         return; // Stopped save because duplicate candidate was rejected
@@ -7429,6 +7506,17 @@ async function handleCandidateSubmit(e) {
 
         if (!ok) {
           return;
+        }
+
+        payload.isDuplicate = true;
+        if (ex && ex.id) {
+          try {
+            fetch('/api/candidates/mark-duplicate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: ex.id, isDuplicate: true })
+            });
+          } catch(e) {}
         }
       }
     }

@@ -1374,13 +1374,18 @@ const server = http.createServer(async (req, res) => {
         rank: 1,
         status: '',
         notes: data.notes || '',
+        isDuplicate: data.isDuplicate !== undefined ? !!data.isDuplicate : false,
         updatedAt: new Date().toISOString()
       };
 
       // Check if existing candidate for this slot
       const existingIdx = db.candidates.findIndex(c => (c.pollingStationId === station.id || findPollingStation(c.pollingStationId)?.id === station.id) && c.role === data.role && c.orderInRole === order);
       if (existingIdx !== -1) {
-        db.candidates[existingIdx] = { ...db.candidates[existingIdx], ...newCand };
+        db.candidates[existingIdx] = { 
+          ...db.candidates[existingIdx], 
+          ...newCand,
+          isDuplicate: data.isDuplicate !== undefined ? !!data.isDuplicate : (db.candidates[existingIdx].isDuplicate || false)
+        };
       } else {
         db.candidates.push(newCand);
       }
