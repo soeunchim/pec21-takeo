@@ -2121,6 +2121,20 @@ tr.excel-row-active td.excel-calc-rank {
   color: #1e293b;
 }
 
+.modern-popup-btn-cancel.btn-danger-cancel {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #f87171 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.15) !important;
+}
+
+.modern-popup-btn-cancel.btn-danger-cancel:hover {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border-color: #ef4444 !important;
+}
+
 /* Candidate Row Delete Button Disabled State */
 .cand-btn-delete:disabled {
   opacity: 0.28 !important;

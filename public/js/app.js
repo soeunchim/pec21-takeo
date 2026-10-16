@@ -82,7 +82,8 @@ function showModernPopup({
   showCancel = false,
   confirmText = 'យល់ព្រម',
   cancelText = 'បោះបង់',
-  isDanger = false
+  isDanger = false,
+  cancelIsDanger = false
 }) {
   return new Promise((resolve) => {
     try {
@@ -110,11 +111,19 @@ function showModernPopup({
       modernPopupResolver = resolve;
 
       titleEl.textContent = title;
-      msgEl.textContent = message;
+      if (typeof message === 'string' && message.includes('<') && message.includes('>')) {
+        msgEl.innerHTML = message;
+      } else {
+        msgEl.textContent = message;
+      }
 
       // Reset styles
       iconEl.className = 'modern-popup-icon-wrapper';
       btnConfirm.className = 'modern-popup-btn modern-popup-btn-confirm';
+      btnCancel.className = 'modern-popup-btn modern-popup-btn-cancel';
+      if (cancelIsDanger) {
+        btnCancel.classList.add('btn-danger-cancel');
+      }
 
       let resolvedType = type;
       let resolvedIcon = icon;
@@ -2331,12 +2340,298 @@ function handleScoringTablePaste(e) {
     if (stationId) {
       backupStationCandidatesToLocalStorage(stationId, currentCandidates);
     }
+
+    // Check duplicates for pasted rows
+    setTimeout(async () => {
+      for (let r = 0; r < rawLines.length; r++) {
+        const rowIdx = startRowIdx + r;
+        if (rowIdx >= allRows.length) break;
+        const tr = allRows[rowIdx];
+        const name = tr.querySelector('.cand-name')?.value?.trim();
+        const dob = tr.querySelector('.cand-dob')?.value?.trim();
+        if (name && dob) {
+          const ok = await checkCandidateDuplicateRow(tr);
+          if (!ok) break;
+        }
+      }
+    }, 150);
   }
 }
 
 // ==============================================================================
-// TAB 3: CANDIDATE SCORING & LIVE RANKING TABLE
+// CANDIDATE DUPLICATE DETECTION (TAB 3: PROVINCE-WIDE & TABLE-WIDE)
 // ==============================================================================
+
+let isCheckingDuplicate = false;
+
+function normKhmerText(str) {
+  if (!str) return '';
+  return String(str).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/\s+/g, ' ');
+}
+
+function normComparableDob(val) {
+  if (!val) return '';
+  let s = String(val).trim().replace(/[០-៩]/g, d => '០១២៣៤៥៦៧៨៩'.indexOf(d));
+  s = s.replace(/[\/\.]/g, '-');
+  const parts = s.split('-').map(p => p.trim()).filter(Boolean);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+    } else {
+      return parts[0].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[2];
+    }
+  }
+  return s.replace(/[^0-9]/g, '');
+}
+
+function normComparableGender(g) {
+  if (!g) return 'ប';
+  const s = String(g).trim().toLowerCase();
+  if (s.includes('ស') || s === 'f' || s === 'female' || s.includes('ស្រី')) return 'ស';
+  return 'ប';
+}
+
+function clearCandidateRowInputs(tr) {
+  if (!tr) return;
+  const order = parseInt(tr.getAttribute('data-order')) || 1;
+  const roleName = tr.getAttribute('data-role');
+  const candId = tr.getAttribute('data-cand-id');
+
+  const nameInput = tr.querySelector('.cand-name');
+  if (nameInput) nameInput.value = '';
+  const genderInput = tr.querySelector('.cand-gender');
+  if (genderInput) genderInput.value = 'ប';
+  const dobInput = tr.querySelector('.cand-dob');
+  if (dobInput) dobInput.value = '';
+  const phoneInput = tr.querySelector('.cand-phone');
+  if (phoneInput) phoneInput.value = '';
+  const degInput = tr.querySelector('.cand-degree');
+  if (degInput) degInput.value = '';
+  const degScore = tr.querySelector('.cand-score-degree');
+  if (degScore) degScore.value = toKhmerNum(0);
+  const expInput = tr.querySelector('.cand-exp');
+  if (expInput) expInput.value = '';
+  const expScore = tr.querySelector('.cand-score-exp');
+  if (expScore) expScore.value = toKhmerNum(0);
+  const shortlist = tr.querySelector('.cand-shortlist-display');
+  if (shortlist) shortlist.textContent = toKhmerNum(0);
+  const interview = tr.querySelector('.cand-interview');
+  if (interview) interview.value = '';
+  const total = tr.querySelector('.cand-total-display');
+  if (total) total.textContent = '---';
+  const rank = tr.querySelector('.cand-rank-display');
+  if (rank) rank.textContent = toKhmerNum(order);
+  const status = tr.querySelector('.cand-status-display');
+  if (status) status.innerHTML = '<span class="badge badge-reserve">---</span>';
+
+  delete tr.dataset.dupConfirmedSig;
+
+  if (candId) {
+    let cand = currentCandidates.find(c => c.id === candId);
+    if (cand) {
+      cand.name = '';
+      cand.gender = 'ប';
+      cand.dob = '';
+      cand.phone = '';
+      cand.degree = '';
+      cand.scoreDegree = 0;
+      cand.experience = '';
+      cand.scoreExp = 0;
+      cand.scoreShortlist = 0;
+      cand.scoreInterview = '';
+      cand.scoreTotal = '';
+      cand.rank = order;
+      cand.status = '';
+    }
+  }
+
+  updateRowDeleteButtonState(tr);
+  if (roleName) recalculateUIRanksForRole(roleName);
+
+  setTimeout(() => {
+    try {
+      if (nameInput) nameInput.focus();
+    } catch (e) {}
+  }, 100);
+}
+
+window.onCandidateFieldFinished = async function(inputEl) {
+  if (!inputEl) return;
+  const tr = inputEl.closest('tr[data-cand-id]');
+  if (tr) {
+    await checkCandidateDuplicateRow(tr);
+  }
+};
+
+async function checkCandidateDuplicateRow(tr) {
+  if (!tr || isCheckingDuplicate) return true;
+
+  const nameInput = tr.querySelector('.cand-name');
+  const genderInput = tr.querySelector('.cand-gender');
+  const dobInput = tr.querySelector('.cand-dob');
+
+  const rawName = nameInput ? nameInput.value.trim() : '';
+  const rawGender = genderInput ? genderInput.value : 'ប';
+  const rawDob = dobInput ? dobInput.value.trim() : '';
+
+  // Only check if BOTH name and dob are filled
+  if (!rawName || !rawDob) {
+    return true;
+  }
+
+  const qName = normKhmerText(rawName);
+  const qGender = normComparableGender(rawGender);
+  const qDob = normComparableDob(rawDob);
+
+  // If DOB digits < 8 and doesn't contain complete date separator, wait until user completes
+  const dobDigits = qDob.replace(/[^0-9]/g, '');
+  if (dobDigits.length < 8 && !qDob.includes('-')) {
+    return true;
+  }
+
+  const currentSig = `${qName}|${qGender}|${qDob}`;
+
+  // If already confirmed by user for this exact combination, skip
+  if (tr.dataset.dupConfirmedSig === currentSig) {
+    return true;
+  }
+
+  isCheckingDuplicate = true;
+
+  try {
+    let duplicateFound = null;
+
+    // 1. Check in the current table (among other rows)
+    const allRows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
+    for (const otherTr of allRows) {
+      if (otherTr === tr) continue;
+
+      const oName = otherTr.querySelector('.cand-name')?.value?.trim() || '';
+      const oGender = otherTr.querySelector('.cand-gender')?.value || 'ប';
+      const oDob = otherTr.querySelector('.cand-dob')?.value?.trim() || '';
+
+      if (!oName || !oDob) continue;
+
+      if (normKhmerText(oName) === qName && normComparableGender(oGender) === qGender && normComparableDob(oDob) === qDob) {
+        const oRole = otherTr.getAttribute('data-role') || '';
+        const oOrder = otherTr.getAttribute('data-order') || '1';
+        
+        const currStationId = document.getElementById('scoringStationSelect')?.value;
+        const currStation = (allPollingStations || []).find(s => s.id === currStationId) || {};
+        const curDistrict = currStation.district || '';
+        const curCommune = currStation.communeName || '';
+        const curStationName = currStation.name || (currStation.code ? `ការិយាល័យលេខ ${currStation.code}` : 'ការិយាល័យបច្ចុប្បន្ន');
+
+        duplicateFound = {
+          source: 'table',
+          district: curDistrict || 'ការិយាល័យបច្ចុប្បន្ន',
+          commune: curCommune || 'ការិយាល័យបច្ចុប្បន្ន',
+          station: curStationName,
+          role: `${oRole} (លេខរៀងទី ${toKhmerNum(oOrder)})`
+        };
+        break;
+      }
+    }
+
+    // 2. If not found in current table, check server database across the entire province (all 10 districts/cities)
+    if (!duplicateFound) {
+      const candId = tr.getAttribute('data-cand-id') || '';
+      const stationId = document.getElementById('scoringStationSelect')?.value || '';
+      const res = await fetch('/api/candidates/check-duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: rawName,
+          gender: rawGender,
+          dob: rawDob,
+          excludeId: candId.startsWith('temp_') ? undefined : candId,
+          currentPollingStationId: stationId
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.isDuplicate && data.existing) {
+          const ex = data.existing;
+          duplicateFound = {
+            source: 'server',
+            district: ex.district || 'មិនបានបញ្ជាក់',
+            commune: ex.communeName || 'មិនបានបញ្ជាក់',
+            station: ex.pollingStationName || (ex.pollingStationCode ? `ការិយាល័យលេខ ${ex.pollingStationCode}` : 'មិនបានបញ្ជាក់'),
+            role: ex.role || 'មិនបានបញ្ជាក់'
+          };
+        }
+      }
+    }
+
+    // 3. If duplicate is detected, show Popup
+    if (duplicateFound) {
+      const genderText = qGender === 'ប' ? 'ប្រុស (ប)' : 'ស្រី (ស)';
+      const msgHtml = `
+<div style="text-align: left; font-size: 14px; line-height: 1.8;">
+  <div style="font-weight: 700; color: #b91c1c; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+    <span>⚠️</span>
+    <span>ឈ្មោះបេក្ខជននេះស្ទួនហើយ សូមជួយពិនិត្យ និងផ្ទៀងផ្ទាត់ឡើងវិញ!</span>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
+    <div style="font-weight: 700; color: #1e293b; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+      📋 ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល ៖
+    </div>
+    <div>• <strong>គោត្តនាម-នាម ៖</strong> <span style="color:#0f172a; font-weight: 600;">${rawName}</span></div>
+    <div>• <strong>ភេទ ៖</strong> <span style="color:#0f172a;">${genderText}</span></div>
+    <div>• <strong>ថ្ងៃ ខែ ឆ្នាំកំណើត ៖</strong> <span style="color:#0f172a; font-weight: 600;">${rawDob}</span></div>
+  </div>
+
+  <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
+    <div style="font-weight: 700; color: #991b1b; margin-bottom: 8px; border-bottom: 1px dashed #fecdd3; padding-bottom: 4px; font-size: 14px;">
+      🚨 ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ ៖
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 4px;">
+      <div>• <strong>ស្រុក/ក្រុង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.district}</span></div>
+      <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.commune}</span></div>
+      <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.station}</span></div>
+      <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.role}</span></div>
+    </div>
+  </div>
+
+  <div style="font-size: 13px; color: #475569; background: #f1f5f9; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.7;">
+    <div style="margin-bottom: 4px;">👉 ប្រសិនបើអ្នកប្រាកដថា <strong>មិនស្ទួន</strong> សូមចុច <strong>(យល់ព្រម)</strong></div>
+    <div>👉 ប្រសិនបើអ្នកប្រាកដថា <strong>ស្ទួន</strong> សូមចុច <strong>(ស្ទួន)</strong> ឈ្មោះបេក្ខជននេះមិនអាចបញ្ចូលបានទេ</div>
+  </div>
+</div>
+      `.trim();
+
+      const confirmedNotDuplicate = await showModernPopup({
+        title: '⚠️ ឈ្មោះបេក្ខជននេះស្ទួនហើយ',
+        message: msgHtml,
+        type: 'warning',
+        icon: '⚠️',
+        showCancel: true,
+        confirmText: 'យល់ព្រម',
+        cancelText: 'ស្ទួន',
+        cancelIsDanger: true
+      });
+
+      if (confirmedNotDuplicate) {
+        // User confirmed NOT duplicate
+        tr.dataset.dupConfirmedSig = currentSig;
+        return true;
+      } else {
+        // User clicked "ស្ទួន" (or cancelled) -> Candidate cannot be entered
+        clearCandidateRowInputs(tr);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error during duplicate check:', err);
+    return true;
+  } finally {
+    isCheckingDuplicate = false;
+  }
+}
 
 function hasCandidateRowData(tr) {
   if (!tr) return false;
@@ -2375,6 +2670,7 @@ window.onCandidateNameInput = function(input) {
   }
   const tr = input.closest('tr');
   if (tr) {
+    delete tr.dataset.dupConfirmedSig;
     updateRowDeleteButtonState(tr);
     onCandidateRowChange(input);
   }
@@ -2382,6 +2678,7 @@ window.onCandidateNameInput = function(input) {
 
 window.onCandidateDobInput = function(input) {
   const tr = input.closest('tr');
+  if (tr) delete tr.dataset.dupConfirmedSig;
   const prevVal = input.value;
   const formatted = formatKhmerDate(prevVal);
   if (formatted !== prevVal) {
@@ -2389,6 +2686,11 @@ window.onCandidateDobInput = function(input) {
   }
   updateRowDeleteButtonState(tr);
   onCandidateRowChange(input);
+
+  const digits = fromKhmerNum(formatted).replace(/[^0-9]/g, '');
+  if (digits.length >= 8) {
+    onCandidateFieldFinished(input);
+  }
 };
 
 window.onCandidatePhoneInput = function(input) {
@@ -2634,16 +2936,16 @@ async function renderScoringTableForActiveStation() {
           <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
             <td class="excel-col-order">${toKhmerNum(order)}</td>
             <td>
-              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
+              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
             </td>
             <td style="text-align: center; width: 65px; min-width: 65px;">
-              <select class="excel-cell-select cand-gender" style="text-align: center; text-align-last: center;" onchange="onCandidateRowChange(this)">
+              <select class="excel-cell-select cand-gender" style="text-align: center; text-align-last: center;" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);">
                 <option value="ប" ${cand.gender === 'ប' ? 'selected' : ''}>ប</option>
                 <option value="ស" ${cand.gender === 'ស' ? 'selected' : ''}>ស</option>
               </select>
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-dob" value="${formatKhmerDate(cand.dob || '')}" placeholder="ថ្ងៃ-ខែ-ឆ្នាំ" style="text-align: center;" oninput="onCandidateDobInput(this)" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-dob" value="${formatKhmerDate(cand.dob || '')}" placeholder="ថ្ងៃ-ខែ-ឆ្នាំ" style="text-align: center;" oninput="onCandidateDobInput(this)" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);">
             </td>
             <td>
               <input type="text" class="excel-cell-input cand-phone" value="${formatKhmerPhoneNumber(cand.phone || '')}" placeholder="០៨៧..." oninput="onCandidatePhoneInput(this)" onchange="onCandidateRowChange(this)">
@@ -2860,6 +3162,21 @@ async function saveBatchScores() {
   if (!stationId) return alert('សូមជ្រើសរើស ឬវាយលេខកូដការិយាល័យជាមុនសិន!');
 
   const rows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
+
+  // Verify duplicates across rows and across the province before saving
+  for (const tr of rows) {
+    const nameInput = tr.querySelector('.cand-name');
+    const dobInput = tr.querySelector('.cand-dob');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const dob = dobInput ? dobInput.value.trim() : '';
+    if (name && dob) {
+      const ok = await checkCandidateDuplicateRow(tr);
+      if (!ok) {
+        return; // Stopped save because duplicate candidate was rejected
+      }
+    }
+  }
+
   const candidatesPayload = [];
 
   rows.forEach(tr => {
@@ -6963,6 +7280,75 @@ async function handleCandidateSubmit(e) {
     scoreExp: parseFloat(document.getElementById('candFormScoreExp').value) || 0,
     scoreInterview: document.getElementById('candFormScoreInterview').value.trim()
   };
+
+  if (payload.name && payload.dob) {
+    const dupRes = await fetch('/api/candidates/check-duplicate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: payload.name,
+        gender: payload.gender,
+        dob: payload.dob,
+        currentPollingStationId: stationId
+      })
+    });
+    if (dupRes.ok) {
+      const dupData = await dupRes.json();
+      if (dupData.success && dupData.isDuplicate && dupData.existing) {
+        const ex = dupData.existing;
+        const genderText = payload.gender === 'ប' ? 'ប្រុស (ប)' : 'ស្រី (ស)';
+        const msgHtml = `
+<div style="text-align: left; font-size: 14px; line-height: 1.8;">
+  <div style="font-weight: 700; color: #b91c1c; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+    <span>⚠️</span>
+    <span>ឈ្មោះបេក្ខជននេះស្ទួនហើយ សូមជួយពិនិត្យ និងផ្ទៀងផ្ទាត់ឡើងវិញ!</span>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
+    <div style="font-weight: 700; color: #1e293b; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+      📋 ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល ៖
+    </div>
+    <div>• <strong>គោត្តនាម-នាម ៖</strong> <span style="color:#0f172a; font-weight: 600;">${payload.name}</span></div>
+    <div>• <strong>ភេទ ៖</strong> <span style="color:#0f172a;">${genderText}</span></div>
+    <div>• <strong>ថ្ងៃ ខែ ឆ្នាំកំណើត ៖</strong> <span style="color:#0f172a; font-weight: 600;">${payload.dob}</span></div>
+  </div>
+
+  <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
+    <div style="font-weight: 700; color: #991b1b; margin-bottom: 8px; border-bottom: 1px dashed #fecdd3; padding-bottom: 4px; font-size: 14px;">
+      🚨 ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ ៖
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 4px;">
+      <div>• <strong>ស្រុក/ក្រុង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.district || 'មិនបានបញ្ជាក់'}</span></div>
+      <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.communeName || 'មិនបានបញ្ជាក់'}</span></div>
+      <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.pollingStationName || (ex.pollingStationCode ? 'ការិយាល័យលេខ ' + ex.pollingStationCode : 'មិនបានបញ្ជាក់')}</span></div>
+      <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.role || 'មិនបានបញ្ជាក់'}</span></div>
+    </div>
+  </div>
+
+  <div style="font-size: 13px; color: #475569; background: #f1f5f9; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.7;">
+    <div style="margin-bottom: 4px;">👉 ប្រសិនបើអ្នកប្រាកដថា <strong>មិនស្ទួន</strong> សូមចុច <strong>(យល់ព្រម)</strong></div>
+    <div>👉 ប្រសិនបើអ្នកប្រាកដថា <strong>ស្ទួន</strong> សូមចុច <strong>(ស្ទួន)</strong> ឈ្មោះបេក្ខជននេះមិនអាចបញ្ចូលបានទេ</div>
+  </div>
+</div>
+        `.trim();
+
+        const ok = await showModernPopup({
+          title: '⚠️ ឈ្មោះបេក្ខជននេះស្ទួនហើយ',
+          message: msgHtml,
+          type: 'warning',
+          icon: '⚠️',
+          showCancel: true,
+          confirmText: 'យល់ព្រម',
+          cancelText: 'ស្ទួន',
+          cancelIsDanger: true
+        });
+
+        if (!ok) {
+          return;
+        }
+      }
+    }
+  }
 
   try {
     const res = await fetch('/api/candidates', {

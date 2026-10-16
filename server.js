@@ -1228,6 +1228,86 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { success: true, candidates: list });
     }
 
+    // 11.1 POST /api/candidates/check-duplicate (Province-wide duplicate candidate check)
+    if (pathname === '/api/candidates/check-duplicate' && req.method === 'POST') {
+      const data = await parseBody(req);
+      const { name, gender, dob, excludeId, currentPollingStationId } = data;
+
+      function normKhmer(str) {
+        if (!str) return '';
+        return String(str).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/\s+/g, ' ');
+      }
+      function normDob(val) {
+        if (!val) return '';
+        let s = String(val).trim().replace(/[០-៩]/g, d => '០១២៣៤៥៦៧៨៩'.indexOf(d));
+        s = s.replace(/[\/\.]/g, '-');
+        const parts = s.split('-').map(p => p.trim()).filter(Boolean);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+          } else {
+            return parts[0].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[2];
+          }
+        }
+        return s.replace(/[^0-9]/g, '');
+      }
+      function normGender(g) {
+        if (!g) return 'ប';
+        const s = String(g).trim().toLowerCase();
+        if (s.includes('ស') || s === 'f' || s === 'female' || s.includes('ស្រី')) return 'ស';
+        return 'ប';
+      }
+
+      const qName = normKhmer(name);
+      const qGender = normGender(gender);
+      const qDob = normDob(dob);
+
+      if (!qName || !qDob) {
+        return sendJSON(res, 200, { success: true, isDuplicate: false });
+      }
+
+      const allCandidates = db.candidates || [];
+      const match = allCandidates.find(c => {
+        if (!c.name || !c.dob) return false;
+        if (excludeId && c.id === excludeId) return false;
+        if (c.pollingStationId === currentPollingStationId && excludeId && c.id === excludeId) return false;
+
+        const cName = normKhmer(c.name);
+        const cGender = normGender(c.gender);
+        const cDob = normDob(c.dob);
+
+        return cName === qName && cGender === qGender && cDob === qDob;
+      });
+
+      if (match) {
+        const station = findPollingStation(match.pollingStationId);
+        const commune = (db.communes || []).find(cm => String(cm.code).padStart(3, '0') === String(match.communeCode || (station ? station.communeCode : '')).padStart(3, '0'));
+        const distName = match.district || (station ? station.district : (commune ? commune.district : ''));
+        const comName = match.communeName || (station ? station.communeName : (commune ? commune.name : ''));
+        const stCode = station ? (station.code || station.id) : (match.pollingStationId || '');
+        const stName = station ? (station.name || `ការិយាល័យលេខ ${station.code}`) : '';
+
+        return sendJSON(res, 200, {
+          success: true,
+          isDuplicate: true,
+          existing: {
+            id: match.id,
+            name: match.name,
+            gender: match.gender,
+            dob: match.dob,
+            role: match.role || '',
+            pollingStationId: match.pollingStationId,
+            pollingStationCode: stCode,
+            pollingStationName: stName,
+            communeName: comName,
+            district: distName
+          }
+        });
+      }
+
+      return sendJSON(res, 200, { success: true, isDuplicate: false });
+    }
+
     // 12. POST /api/candidates (Add / Upsert Candidate)
     if (pathname === '/api/candidates' && req.method === 'POST') {
       const data = await parseBody(req);
