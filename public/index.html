@@ -6,7 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261016_report_fixes_v2">
+  <link rel="stylesheet" href="css/style.css?v=20261016_commune_schedule_v1">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗳️</text></svg>">
 </head>
 <body>
@@ -248,6 +248,9 @@
               <button id="btnOpenAddCandidateModal" class="btn btn-secondary btn-sm" title="បន្ថែមបេក្ខជនថ្មីដោយផ្ទាល់">
                 ➕ បន្ថែមបេក្ខជន
               </button>
+              <button id="btnOpenCommuneScheduleModal" class="btn btn-outline btn-sm" style="border: 1.5px solid #16a34a; color: #16a34a; background: #f0fdf4; font-weight: 700; padding: 4px 10px; font-size: 13px;" type="button" title="កំណត់ទីកន្លែង កាលបរិច្ឆេទ និងម៉ោងសម្ភាសន៍សម្រាប់ឃុំនេះ">
+                ⏰ កាលវិភាគសម្ភាសន៍
+              </button>
             </div>
           </div>
 
@@ -473,6 +476,38 @@
           </div>
         </div>
 
+        <!-- Panel for Commune Interview Place, Date, Time (Hidden in Print) -->
+        <div class="card no-print" id="reportInterviewScheduleCard" style="margin-bottom: 12px; padding: 10px 14px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; box-shadow: 0 1px 4px rgba(22, 101, 52, 0.08);">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 700; color: #166534; font-size: 13px;">
+                📢 កាលវិភាគសម្ភាសន៍ <span id="reportScheduleCommuneLabel" style="color: #15803d; text-decoration: underline;">ឃុំ/សង្កាត់</span> ៖
+              </span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+              <!-- 1. ទីកន្លែងសម្ភាសន៍ -->
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1.5; min-width: 200px;">
+                <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">📍 ទីកន្លែង ៖</span>
+                <input type="text" id="reportInterviewPlaceInput" class="form-control form-control-sm" style="font-size: 12px; padding: 4px 8px; flex: 1; font-weight: 600; border-color: #86efac;" placeholder="ឧ. សាលាឃុំអង្គរបូរី">
+              </div>
+              <!-- 2. កាលបរិច្ឆេទសម្ភាសន៍ -->
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 155px;">
+                <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 ថ្ងៃសម្ភាសន៍ ៖</span>
+                <input type="date" id="reportInterviewDatePicker" class="form-control form-control-sm" style="font-size: 12px; padding: 3px 6px; flex: 1; border-color: #86efac; font-weight: 600;">
+              </div>
+              <!-- 3. ម៉ោងសម្ភាសន៍ -->
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 140px;">
+                <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">⏰ ម៉ោង ៖</span>
+                <input type="text" id="reportInterviewTimeInput" class="form-control form-control-sm" style="font-size: 12px; padding: 4px 8px; flex: 1; font-weight: 600; border-color: #86efac;" placeholder="ឧ. ០៧:០០ ព្រឹក" value="០៧:០០ ព្រឹក">
+              </div>
+              <!-- Button Save -->
+              <button type="button" id="btnSaveReportInterviewSchedule" class="btn btn-success btn-sm" style="padding: 5px 14px; font-size: 12px; font-weight: 700; white-space: nowrap;" title="រក្សាទុកកាលបរិច្ឆេទ ម៉ោង និងទីកន្លែងសម្ភាសន៍សម្រាប់ឃុំនេះ">
+                💾 រក្សាទុកកាលវិភាគ
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Printable Document Container Preview -->
         <div id="printContainer" class="print-area">
           <!-- Dynamically Rendered Report Document -->
@@ -678,6 +713,39 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('modalStation')">បោះបង់</button>
           <button type="submit" class="btn btn-primary">រក្សាទុក</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Commune Interview Schedule -->
+  <div id="modalCommuneSchedule" class="modal-overlay">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header" style="background: #f0fdf4; border-bottom: 1.5px solid #86efac;">
+        <h3 style="color: #166534; font-size: 16px; font-weight: 700;">
+          ⏰ កំណត់កាលវិភាគសម្ភាសន៍ឃុំ/សង្កាត់
+        </h3>
+        <button class="btn-close" onclick="closeModal('modalCommuneSchedule')">&times;</button>
+      </div>
+      <form id="formCommuneSchedule">
+        <div class="modal-body" style="padding: 16px 20px;">
+          <p id="modalScheduleCommuneInfo" style="font-weight: 700; color: #1e3a8a; margin-bottom: 14px; font-size: 14px;"></p>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-weight: 700;">📍 ទីកន្លែងសម្ភាសន៍</label>
+            <input type="text" id="modalInterviewPlaceInput" class="form-control" placeholder="ឧ. សាលាឃុំអង្គរបូរី" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-weight: 700;">📅 កាលបរិច្ឆេទសម្ភាសន៍</label>
+            <input type="date" id="modalInterviewDatePicker" class="form-control" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-weight: 700;">⏰ ម៉ោងសម្ភាសន៍</label>
+            <input type="text" id="modalInterviewTimeInput" class="form-control" placeholder="ឧ. ០៧:០០ ព្រឹក" value="០៧:០០ ព្រឹក" required>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalCommuneSchedule')">បោះបង់</button>
+          <button type="submit" class="btn btn-success" style="font-weight: 700;">💾 រក្សាទុកកាលវិភាគ</button>
         </div>
       </form>
     </div>
@@ -917,6 +985,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261016_interview_khmer_only"></script>
+  <script src="js/app.js?v=20261016_commune_schedule_v1"></script>
 </body>
 </html>

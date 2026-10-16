@@ -503,6 +503,23 @@ function setupEventListeners() {
   document.getElementById('formCandidate').addEventListener('submit', handleCandidateSubmit);
   document.getElementById('formChangePassword').addEventListener('submit', handleChangePasswordSubmit);
 
+  // Commune Interview Schedule Listeners
+  const btnSaveReportSchedule = document.getElementById('btnSaveReportInterviewSchedule');
+  if (btnSaveReportSchedule) {
+    btnSaveReportSchedule.addEventListener('click', () => saveCommuneInterviewSchedule('reports'));
+  }
+  const btnOpenScheduleModal = document.getElementById('btnOpenCommuneScheduleModal');
+  if (btnOpenScheduleModal) {
+    btnOpenScheduleModal.addEventListener('click', openCommuneScheduleModal);
+  }
+  const formCommuneSchedule = document.getElementById('formCommuneSchedule');
+  if (formCommuneSchedule) {
+    formCommuneSchedule.addEventListener('submit', (e) => {
+      e.preventDefault();
+      saveCommuneInterviewSchedule('modal');
+    });
+  }
+
   // Settings Save & Google Sync
   const btnSaveSettings = document.getElementById('btnSaveSettings');
   if (btnSaveSettings) btnSaveSettings.addEventListener('click', handleSaveSettings);
@@ -3861,6 +3878,9 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
     locSelect.innerHTML += `<option value="${ps.id}">${ps.name} [${c4}]${locText}</option>`;
   });
 
+  // Synchronize interview schedule panel inputs for this commune
+  updateReportInterviewScheduleInputs(selCommuneCode, stations);
+
   // 3. Selection resolution
   if (targetStationId === 'all') {
     setReportStationById('all', 'init');
@@ -3982,6 +4002,226 @@ function syncScoringStationToReports() {
     }
   }
 }
+
+// ==============================================================================
+// COMMUNE INTERVIEW SCHEDULE MANAGEMENT (Place, Date, Time)
+// ==============================================================================
+
+function toISODate(dStr) {
+  if (!dStr) return '';
+  const str = String(dStr).trim();
+  const dmy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmy) {
+    return `${dmy[3]}-${String(dmy[2]).padStart(2, '0')}-${String(dmy[1]).padStart(2, '0')}`;
+  }
+  const ymd = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymd) {
+    return `${ymd[1]}-${String(ymd[2]).padStart(2, '0')}-${String(ymd[3]).padStart(2, '0')}`;
+  }
+  return '';
+}
+
+function updateReportInterviewScheduleInputs(selCommuneCode, stations) {
+  const card = document.getElementById('reportInterviewScheduleCard');
+  if (!card) return;
+
+  let comCode = selCommuneCode;
+  if (!comCode || comCode === 'all') {
+    const comSelect = document.getElementById('reportCommuneFilter');
+    comCode = comSelect ? comSelect.value : '';
+  }
+  if (!comCode || comCode === 'all') {
+    const hiddenStation = document.getElementById('reportStationSelect');
+    const ps = allPollingStations.find(p => p.id === (hiddenStation ? hiddenStation.value : ''));
+    if (ps) comCode = String(ps.communeCode).padStart(3, '0');
+  }
+  if (currentUser && currentUser.role === 'Commune') {
+    comCode = String(currentUser.communeCode).padStart(3, '0');
+  }
+
+  const label = document.getElementById('reportScheduleCommuneLabel');
+
+  if (!comCode || comCode === 'all') {
+    if (label) label.textContent = 'គ្រប់ឃុំ (សូមជ្រើសរើសឃុំជាក់លាក់)';
+    card.style.opacity = '0.6';
+    return;
+  }
+
+  card.style.opacity = '1';
+  card.style.display = 'block';
+
+  const comObj = (allCommunes || []).find(c => String(c.code).padStart(3, '0') === String(comCode).padStart(3, '0'));
+  const comName = comObj ? comObj.name : '';
+  const comPrefix = comName ? getCommunePrefix(comName, comObj?.district) : 'ឃុំ';
+
+  if (label) {
+    label.textContent = `${comPrefix} (${toKhmerNum(comCode)})`;
+  }
+
+  const sampleStation = (stations && stations.length)
+    ? stations.find(s => String(s.communeCode).padStart(3, '0') === String(comCode).padStart(3, '0'))
+    : allPollingStations.find(s => String(s.communeCode).padStart(3, '0') === String(comCode).padStart(3, '0'));
+
+  const placeInput = document.getElementById('reportInterviewPlaceInput');
+  const datePicker = document.getElementById('reportInterviewDatePicker');
+  const timeInput = document.getElementById('reportInterviewTimeInput');
+
+  if (placeInput) {
+    placeInput.value = sampleStation?.interviewPlace || (comName ? `សាលា${comPrefix}` : 'សាលាឃុំ');
+  }
+  if (datePicker) {
+    datePicker.value = toISODate(sampleStation?.interviewDate) || '2027-09-07';
+  }
+  if (timeInput) {
+    timeInput.value = sampleStation?.interviewTime || '០៧:០០ ព្រឹក';
+  }
+}
+
+async function saveCommuneInterviewSchedule(source = 'reports') {
+  let comCode = '';
+  let place = '';
+  let date = '';
+  let time = '';
+  let btn = null;
+
+  if (source === 'modal') {
+    const comSelect = document.getElementById('scoringCommuneFilter');
+    comCode = comSelect ? comSelect.value : '';
+    if (currentUser && currentUser.role === 'Commune') {
+      comCode = String(currentUser.communeCode).padStart(3, '0');
+    }
+    if (!comCode) {
+      const stationId = document.getElementById('scoringStationSelect')?.value;
+      const ps = allPollingStations.find(p => p.id === stationId);
+      if (ps) comCode = String(ps.communeCode).padStart(3, '0');
+    }
+    place = document.getElementById('modalInterviewPlaceInput')?.value?.trim();
+    date = document.getElementById('modalInterviewDatePicker')?.value?.trim();
+    time = document.getElementById('modalInterviewTimeInput')?.value?.trim();
+    btn = document.querySelector('#formCommuneSchedule button[type="submit"]');
+  } else {
+    const comSelect = document.getElementById('reportCommuneFilter');
+    comCode = comSelect ? comSelect.value : '';
+    if (!comCode || comCode === 'all') {
+      const hiddenStation = document.getElementById('reportStationSelect');
+      const ps = allPollingStations.find(p => p.id === (hiddenStation ? hiddenStation.value : ''));
+      if (ps) comCode = String(ps.communeCode).padStart(3, '0');
+    }
+    if (currentUser && currentUser.role === 'Commune') {
+      comCode = String(currentUser.communeCode).padStart(3, '0');
+    }
+    place = document.getElementById('reportInterviewPlaceInput')?.value?.trim();
+    date = document.getElementById('reportInterviewDatePicker')?.value?.trim();
+    time = document.getElementById('reportInterviewTimeInput')?.value?.trim();
+    btn = document.getElementById('btnSaveReportInterviewSchedule');
+  }
+
+  if (!comCode || comCode === 'all') {
+    showModernAlert('សូមជ្រើសរើសឃុំ/សង្កាត់ជាក់លាក់មួយជាមុនសិន!');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'កំពុងរក្សាទុក...';
+  }
+
+  try {
+    const res = await fetch('/api/communes/interview-schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        communeCode: comCode,
+        interviewPlace: place,
+        interviewDate: date,
+        interviewTime: time
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      // Update in-memory stations
+      allPollingStations.forEach(s => {
+        if (String(s.communeCode).padStart(3, '0') === String(comCode).padStart(3, '0')) {
+          if (place) s.interviewPlace = place;
+          if (date) s.interviewDate = date;
+          if (time) s.interviewTime = time;
+        }
+      });
+
+      // Sync inputs across tabs
+      const rPlace = document.getElementById('reportInterviewPlaceInput');
+      const rDate = document.getElementById('reportInterviewDatePicker');
+      const rTime = document.getElementById('reportInterviewTimeInput');
+      if (rPlace && place) rPlace.value = place;
+      if (rDate && date) rDate.value = toISODate(date);
+      if (rTime && time) rTime.value = time;
+
+      const mPlace = document.getElementById('modalInterviewPlaceInput');
+      const mDate = document.getElementById('modalInterviewDatePicker');
+      const mTime = document.getElementById('modalInterviewTimeInput');
+      if (mPlace && place) mPlace.value = place;
+      if (mDate && date) mDate.value = toISODate(date);
+      if (mTime && time) mTime.value = time;
+
+      if (source === 'modal') {
+        closeModal('modalCommuneSchedule');
+      }
+
+      showModernAlert(data.message || 'បានរក្សាទុកព័ត៌មានសម្ភាសន៍ដោយជោគជ័យ!');
+
+      // Re-render report preview
+      renderReportPreview();
+    } else {
+      showModernAlert(data.message || 'មិនអាចរក្សាទុកបានទេ');
+    }
+  } catch (err) {
+    console.error('Error saving interview schedule:', err);
+    showModernAlert('មានបញ្ហាក្នុងការតភ្ជាប់ទៅកាន់ Server');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = source === 'modal' ? '💾 រក្សាទុកកាលវិភាគ' : '💾 រក្សាទុក';
+    }
+  }
+}
+
+window.openCommuneScheduleModal = function() {
+  const comSelect = document.getElementById('scoringCommuneFilter');
+  let comCode = comSelect ? comSelect.value : '';
+  if (currentUser && currentUser.role === 'Commune') {
+    comCode = String(currentUser.communeCode).padStart(3, '0');
+  }
+  if (!comCode) {
+    const stationId = document.getElementById('scoringStationSelect')?.value;
+    const ps = allPollingStations.find(p => p.id === stationId);
+    if (ps) comCode = String(ps.communeCode).padStart(3, '0');
+  }
+
+  if (!comCode) {
+    showModernAlert('សូមជ្រើសរើសឃុំ/សង្កាត់ជាមុនសិន!');
+    return;
+  }
+
+  const comObj = (allCommunes || []).find(c => String(c.code).padStart(3, '0') === String(comCode).padStart(3, '0'));
+  const comName = comObj ? comObj.name : '';
+  const comPrefix = comName ? getCommunePrefix(comName, comObj?.district) : 'ឃុំ';
+  const sampleStation = allPollingStations.find(s => String(s.communeCode).padStart(3, '0') === String(comCode).padStart(3, '0'));
+
+  const infoP = document.getElementById('modalScheduleCommuneInfo');
+  if (infoP) {
+    infoP.textContent = `🏛️ កាលវិភាគសម្ភាសន៍ ៖ ${comPrefix} (${toKhmerNum(comCode)})`;
+  }
+
+  const placeInput = document.getElementById('modalInterviewPlaceInput');
+  const dateInput = document.getElementById('modalInterviewDatePicker');
+  const timeInput = document.getElementById('modalInterviewTimeInput');
+
+  if (placeInput) placeInput.value = sampleStation?.interviewPlace || (comName ? `សាលា${comPrefix}` : '');
+  if (dateInput) dateInput.value = toISODate(sampleStation?.interviewDate) || '2027-09-07';
+  if (timeInput) timeInput.value = sampleStation?.interviewTime || '០៧:០០ ព្រឹក';
+
+  openModal('modalCommuneSchedule');
+};
 
 // ==============================================================================
 // TAB 4: REPORT HEADER HELPERS & LOGO CONTROLS (Box 1, Box 2, Box 3 & Logo)
@@ -4258,6 +4498,8 @@ async function renderReportPreview() {
   const comSelect = document.getElementById('reportCommuneFilter');
   const selDist = distSelect ? distSelect.value : '';
   const selCommuneCode = comSelect ? comSelect.value : '';
+
+  updateReportInterviewScheduleInputs(selCommuneCode);
 
   let allTargetCandidates = [];
   let targetStations = [];
@@ -4643,7 +4885,7 @@ async function renderReportPreview() {
 
     const noticeSubHtml = `
       <div style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; line-height: 1.6; color: #000; text-align: justify !important; text-justify: inter-word !important; margin: 4px 0 2px 0; width: 100%;">
-        បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍ នៅ${interviewPlace} នាថ្ងៃទី${solarDateFormatted} វេលាម៉ោង ${interviewTime} តទៅ។
+        បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍ នៅ<span class="report-editable-notice-place" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលទីកន្លែងសម្ភាសន៍">${interviewPlace}</span> នាថ្ងៃទី<span class="report-editable-notice-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសម្ភាសន៍">${solarDateFormatted}</span> វេលាម៉ោង <span class="report-editable-notice-time" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលម៉ោងសម្ភាសន៍">${interviewTime}</span> តទៅ។
       </div>
     `;
 

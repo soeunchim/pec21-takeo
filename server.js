@@ -705,13 +705,69 @@ const server = http.createServer(async (req, res) => {
         const cCode = String(c.code).padStart(3, '0');
         const offCount = (officialPollingStations || []).filter(s => String(s.communeCode).padStart(3, '0') === cCode).length;
         const curCount = (db.pollingStations || []).filter(s => String(s.communeCode).padStart(3, '0') === cCode).length;
+        const sched = (db.communeInterviewSchedules && db.communeInterviewSchedules[cCode]) || null;
         return {
           ...c,
           officialStationCount: offCount,
-          currentStationCount: curCount
+          currentStationCount: curCount,
+          interviewSchedule: sched
         };
       });
-      return sendJSON(res, 200, { success: true, communes: enriched });
+      return sendJSON(res, 200, { success: true, communes: enriched, interviewSchedules: db.communeInterviewSchedules || {} });
+    }
+
+    // 6.1 POST /api/communes/interview-schedule (Update interview place, date, time for commune)
+    if (pathname === '/api/communes/interview-schedule' && req.method === 'POST') {
+      const data = await parseBody(req);
+      let targetCommuneCode = data.communeCode ? String(data.communeCode).padStart(3, '0') : null;
+      if (currentUser.role === 'Commune') {
+        targetCommuneCode = String(currentUser.communeCode).padStart(3, '0');
+      }
+
+      if (!targetCommuneCode) {
+        return sendJSON(res, 400, { success: false, message: 'សូមបញ្ជាក់លេខកូដឃុំ/សង្កាត់' });
+      }
+
+      const targetCommune = (db.communes || []).find(c => String(c.code).padStart(3, '0') === targetCommuneCode);
+      if (currentUser.role === 'Trainer') {
+        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        if (targetCommune && (targetCommune.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') !== uDistClean) {
+          return sendJSON(res, 403, { success: false, message: 'អ្នកគ្មានសិទ្ធិកែប្រែឃុំក្រៅស្រុកឡើយ' });
+        }
+      }
+
+      const interviewPlace = data.interviewPlace !== undefined ? String(data.interviewPlace).trim() : undefined;
+      const interviewDate = data.interviewDate !== undefined ? String(data.interviewDate).trim() : undefined;
+      const interviewTime = data.interviewTime !== undefined ? String(data.interviewTime).trim() : undefined;
+
+      let updatedCount = 0;
+      (db.pollingStations || []).forEach(s => {
+        if (String(s.communeCode).padStart(3, '0') === targetCommuneCode) {
+          if (interviewPlace !== undefined && interviewPlace !== '') s.interviewPlace = interviewPlace;
+          if (interviewDate !== undefined && interviewDate !== '') s.interviewDate = interviewDate;
+          if (interviewTime !== undefined && interviewTime !== '') s.interviewTime = interviewTime;
+          updatedCount++;
+        }
+      });
+
+      if (!db.communeInterviewSchedules) db.communeInterviewSchedules = {};
+      db.communeInterviewSchedules[targetCommuneCode] = {
+        interviewPlace: interviewPlace || (targetCommune ? `សាលាឃុំ${targetCommune.name}` : ''),
+        interviewDate: interviewDate || '09-07-2027',
+        interviewTime: interviewTime || '០៧:០០ ព្រឹក',
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.username
+      };
+
+      saveLocalDatabase();
+      syncToGoogleSheet('sync_all', { user: currentUser.username });
+
+      return sendJSON(res, 200, {
+        success: true,
+        message: `បានរក្សាទុកព័ត៌មានសម្ភាសន៍ដោយជោគជ័យ (បានធ្វើបច្ចុប្បន្នភាព ${updatedCount} ការិយាល័យ)!`,
+        schedule: db.communeInterviewSchedules[targetCommuneCode],
+        updatedStationsCount: updatedCount
+      });
     }
 
     // 7. GET /api/polling-stations
