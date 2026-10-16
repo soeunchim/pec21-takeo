@@ -2610,8 +2610,7 @@ function initReportSelectorBar() {
           'attendance': '✍️ សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ជ្រើសរើស គ.ក.ប (Attendance)',
           'scoresheet': '📝 សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប (Score Sheet)',
           'results': '🏆 សន្លឹក ៥ ៖ លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប តាមលំដាប់ពិន្ទុ (Ranked Results)',
-          'commune_results': '🏛️ សន្លឹក ៦ ៖ លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប តាមលំដាប់ពិន្ទុ (គ្រប់ការិយាល័យក្នុងឃុំ/សង្កាត់)',
-          'final_roster': '📜 សន្លឹក ៧ ៖ បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ'
+          'final_roster': '📜 សន្លឹក ៦ ៖ បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ'
         };
         titleEl.textContent = titles[repType] || '';
       }
@@ -2783,9 +2782,15 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
   }
 
   stations.sort((a, b) => {
-    const ca = parseInt(a.code, 10) || 0;
-    const cb = parseInt(b.code, 10) || 0;
-    return ca - cb;
+    const da = getTakeoDistrictOrder(a.district);
+    const db = getTakeoDistrictOrder(b.district);
+    if (da !== db) return da - db;
+    const ca = parseInt(a.communeCode, 10) || 0;
+    const cb = parseInt(b.communeCode, 10) || 0;
+    if (ca !== cb) return ca - cb;
+    const sa = parseInt(a.code, 10) || 0;
+    const sb = parseInt(b.code, 10) || 0;
+    return sa - sb;
   });
 
   if (!stations.length) {
@@ -2797,21 +2802,35 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
     return;
   }
 
+  // 1. Build the "⭐ គ្រប់ការិយាល័យ..." option at the top
+  let allLabel = '';
+  let allLocLabel = '';
   if (selCommuneCode === 'all') {
     const scopeLabel = (selDist === 'all') ? 'ទូទាំងខេត្ត' : getDistrictPrefix(selDist);
-    codeSelect.innerHTML = `<option value="all">⭐ គ្រប់ការិយាល័យ (${scopeLabel} ${toKhmerNum(stations.length)})</option>`;
-    locSelect.innerHTML = `<option value="all">📍 គ្រប់ទីតាំងការិយាល័យ (${scopeLabel})</option>`;
-    if (codeInput) {
-      codeInput.value = '';
-      codeInput.placeholder = 'គ្រប់កូដ...';
-    }
-    if (hiddenStation && stations.length) {
-      hiddenStation.value = stations[0].id;
-    }
-    renderReportPreview();
-    return;
+    allLabel = `⭐ គ្រប់ការិយាល័យនៃ${scopeLabel} (${toKhmerNum(stations.length)})`;
+    allLocLabel = `📍 គ្រប់ទីតាំងការិយាល័យនៃ${scopeLabel}`;
+  } else {
+    const comPrefix = stations.length ? getCommunePrefix(stations[0].communeName, stations[0].district) : 'ឃុំ/សង្កាត់';
+    allLabel = `⭐ គ្រប់ការិយាល័យក្នុង${comPrefix} (${toKhmerNum(stations.length)})`;
+    allLocLabel = `📍 គ្រប់ទីតាំងការិយាល័យក្នុង${comPrefix}`;
   }
 
+  codeSelect.innerHTML += `<option value="all">${allLabel}</option>`;
+  locSelect.innerHTML += `<option value="all">${allLocLabel}</option>`;
+
+  // For district trainers and admins who are viewing a specific commune, also offer "គ្រប់ការិយាល័យនៃក្រុងស្រុក"
+  const canSelectAllInDist = currentUser && (
+    currentUser.role === 'SuperAdmin' ||
+    currentUser.role === 'Admin' ||
+    currentUser.role === 'PEC21' ||
+    currentUser.role === 'Trainer'
+  );
+  if (canSelectAllInDist && selCommuneCode !== 'all' && selDist && selDist !== 'all') {
+    codeSelect.innerHTML += `<option value="all_district">⭐ គ្រប់ការិយាល័យនៃ${getDistrictPrefix(selDist)}</option>`;
+    locSelect.innerHTML += `<option value="all_district">📍 គ្រប់ទីតាំងការិយាល័យនៃ${getDistrictPrefix(selDist)}</option>`;
+  }
+
+  // 2. Build individual station options
   stations.forEach(ps => {
     const c4 = String(ps.code || '').padStart(4, '0');
     codeSelect.innerHTML += `<option value="${ps.id}">${c4}</option>`;
@@ -2819,23 +2838,33 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
     locSelect.innerHTML += `<option value="${ps.id}">${ps.name} [${c4}]${locText}</option>`;
   });
 
-  let selectedStation = null;
-  if (targetStationId) {
-    selectedStation = stations.find(p => p.id === targetStationId);
+  // 3. Selection resolution
+  if (targetStationId === 'all') {
+    setReportStationById('all', 'init');
+    return;
   }
-  if (!selectedStation && autoSelectFirst) {
-    selectedStation = stations[0];
+  if (targetStationId === 'all_district') {
+    setReportStationById('all_district', 'init');
+    return;
+  }
+  if (targetStationId) {
+    const matched = stations.find(p => p.id === targetStationId);
+    if (matched) {
+      setReportStationById(matched.id, 'init');
+      return;
+    }
   }
 
-  if (selectedStation) {
-    setReportStationById(selectedStation.id, 'init');
+  if (selCommuneCode === 'all') {
+    setReportStationById('all', 'init');
+  } else if (autoSelectFirst && stations.length) {
+    setReportStationById(stations[0].id, 'init');
+  } else {
+    renderReportPreview();
   }
 }
 
 function setReportStationById(stationId, source = '') {
-  const ps = allPollingStations.find(p => p.id === stationId);
-  if (!ps) return;
-
   const distSelect = document.getElementById('reportDistrictFilter');
   const comSelect = document.getElementById('reportCommuneFilter');
   const codeInput = document.getElementById('reportCodeInput');
@@ -2844,14 +2873,51 @@ function setReportStationById(stationId, source = '') {
   const hiddenStation = document.getElementById('reportStationSelect');
   const infoSpan = document.getElementById('reportActiveStationInfo');
 
+  if (stationId === 'all_district') {
+    if (comSelect) {
+      comSelect.value = 'all';
+      updateReportStationsForCommune(false, 'all');
+      return;
+    }
+  }
+
+  if (stationId === 'all') {
+    if (source !== 'codeSelect' && codeSelect) codeSelect.value = 'all';
+    if (source !== 'locSelect' && locSelect) locSelect.value = 'all';
+    if (codeInput) {
+      codeInput.value = '';
+      codeInput.placeholder = 'គ្រប់កូដ...';
+    }
+    if (hiddenStation) hiddenStation.value = 'all';
+
+    if (infoSpan) {
+      const selDist = distSelect ? distSelect.value : '';
+      const selCom = comSelect ? comSelect.value : '';
+      let scopeStr = 'គ្រប់ការិយាល័យ';
+      if (selDist === 'all') scopeStr = 'គ្រប់ការិយាល័យទូទាំងខេត្ត';
+      else if (selCom === 'all') scopeStr = `គ្រប់ការិយាល័យនៃ${getDistrictPrefix(selDist)}`;
+      else {
+        const curCom = allCommunes.find(c => String(c.code).padStart(3, '0') === String(selCom).padStart(3, '0'));
+        scopeStr = curCom ? `គ្រប់ការិយាល័យក្នុង${getCommunePrefix(curCom.name, curCom.district)}` : 'គ្រប់ការិយាល័យក្នុងឃុំ';
+      }
+      infoSpan.textContent = `⭐ ${scopeStr}`;
+    }
+
+    renderReportPreview();
+    return;
+  }
+
+  const ps = allPollingStations.find(p => p.id === stationId);
+  if (!ps) return;
+
   const c4 = String(ps.code || '').padStart(4, '0');
   const cleanDist = String(ps.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
 
-  if (distSelect && distSelect.value !== cleanDist) {
+  if (distSelect && distSelect.value !== 'all' && distSelect.value !== cleanDist) {
     distSelect.value = cleanDist;
   }
   const comCode3 = String(ps.communeCode).padStart(3, '0');
-  if (comSelect && comSelect.value !== comCode3) {
+  if (comSelect && comSelect.value !== 'all' && comSelect.value !== comCode3) {
     comSelect.value = comCode3;
   }
   if (source !== 'codeInput' && codeInput) {
@@ -3117,16 +3183,40 @@ function setupReportLogoInteractions() {
 }
 
 async function renderReportPreview() {
-  const stationId = document.getElementById('reportStationSelect').value;
+  const hiddenStation = document.getElementById('reportStationSelect');
+  const codeSelect = document.getElementById('reportCodeSelect');
+  const stationId = hiddenStation ? hiddenStation.value : '';
   const reportType = document.getElementById('reportTypeSelect').value;
   const container = document.getElementById('printContainer');
 
-  if (!stationId) {
+  const isAllStations = (stationId === 'all' || (codeSelect && codeSelect.value === 'all') || stationId === 'all_district');
+
+  if (!stationId && !isAllStations) {
     container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">សូមជ្រើសរើសការិយាល័យបោះឆ្នោតដើម្បីពិនិត្យ និងបោះពុម្ពរបាយការណ៍</div>';
     return;
   }
 
-  const ps = allPollingStations.find(p => p.id === stationId);
+  // Representative station (ps) for letterhead and fallback
+  let ps = null;
+  if (stationId && stationId !== 'all' && stationId !== 'all_district') {
+    ps = allPollingStations.find(p => p.id === stationId);
+  }
+  if (!ps) {
+    const distSelect = document.getElementById('reportDistrictFilter');
+    const comSelect = document.getElementById('reportCommuneFilter');
+    const selDist = distSelect ? distSelect.value : '';
+    const selCommuneCode = comSelect ? comSelect.value : '';
+    
+    if (selCommuneCode && selCommuneCode !== 'all') {
+      ps = allPollingStations.find(p => String(p.communeCode).padStart(3, '0') === String(selCommuneCode).padStart(3, '0'));
+    } else if (selDist && selDist !== 'all') {
+      ps = allPollingStations.find(p => String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === selDist);
+    }
+    if (!ps && allPollingStations.length) {
+      ps = allPollingStations[0];
+    }
+  }
+
   if (!ps) return;
 
   const psCodeFormatted = String(ps.code || '').padStart(4, '0');
@@ -3137,14 +3227,16 @@ async function renderReportPreview() {
   const provinceTitle = ps.province || 'គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ';
   const committeeTitle = ps.committeeName || 'គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប';
 
-  // Fetch candidates for this station
+  // Fetch candidates for single station (if not all stations or needed for single station reports)
   let cList = [];
-  try {
-    const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
-    const data = await res.json();
-    cList = data.candidates || [];
-  } catch (err) {
-    console.error('Error fetching candidates for report:', err);
+  if (ps && ps.id && !isAllStations) {
+    try {
+      const res = await fetch(`/api/candidates?pollingStationId=${ps.id}`);
+      const data = await res.json();
+      cList = data.candidates || [];
+    } catch (err) {
+      console.error('Error fetching candidates for report:', err);
+    }
   }
 
   // Group candidates by role
@@ -3163,7 +3255,7 @@ async function renderReportPreview() {
     document.body.classList.remove('report-landscape-active');
   }
 
-  const isMultiPage = (reportType === 'sortlist' || reportType === 'commune_results' || reportType === 'final_roster');
+  const isMultiPage = (reportType === 'sortlist' || reportType === 'final_roster' || (reportType === 'results' && isAllStations));
   if (isMultiPage) {
     document.body.classList.add('report-multipage-active');
   } else {
@@ -3558,204 +3650,211 @@ async function renderReportPreview() {
   }
 
   // ----------------------------------------------------------------------------
-  // SHEET 5: លទ្ធផលតាមលំដាប់ (Ranked official result notice for public posting)
+  // SHEET 5: លទ្ធផលតាមលំដាប់ (Ranked official results for 1 station or ALL stations)
   // ----------------------------------------------------------------------------
-  else if (reportType === 'results') {
-    let rowsHtml = '';
-    ROLES_ORDER.forEach(role => {
-      rowsHtml += `
-        <tr class="category-row">
-          <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; background: #fff; padding: 2px 6px; border: 1px solid #000; text-align: left;">
-            - មុខតំណែង ៖ ${role}
-          </td>
-        </tr>
-      `;
-      const items = roleGroups[role] || [];
-      // Strictly sort by rank / score, absent candidates placed last
-      const present = items.filter(c => c && c.name && c.scoreTotal !== 'អវត្តមាន' && c.scoreInterview !== 'អវត្តមាន');
-      const absent = items.filter(c => c && c.name && (c.scoreTotal === 'អវត្តមាន' || c.scoreInterview === 'អវត្តមាន'));
+  else if (reportType === 'results' || reportType === 'commune_results') {
+    if (isAllStations) {
+      const distSelect = document.getElementById('reportDistrictFilter');
+      const comSelect = document.getElementById('reportCommuneFilter');
+      const selDist = distSelect ? distSelect.value : '';
+      const selCommuneCode = comSelect ? comSelect.value : '';
 
-      present.sort((a, b) => {
-        if (a.rank && b.rank) return a.rank - b.rank;
-        const at = parseFloat(a.scoreTotal) || 0;
-        const bt = parseFloat(b.scoreTotal) || 0;
-        return bt - at;
+      let targetStations = [];
+      let apiUrl = '';
+      let scopeBoxTitle = `${communePrefix} (${communeCodeKhmer})`;
+
+      if (selDist === 'all' && selCommuneCode === 'all') {
+        targetStations = [...(allPollingStations || [])];
+        apiUrl = '/api/candidates?district=all&communeCode=all';
+        scopeBoxTitle = 'ទូទាំងខេត្តតាកែវ';
+      } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
+        targetStations = (allPollingStations || []).filter(p => {
+          const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+          return cleanDist === selDist;
+        });
+        apiUrl = `/api/candidates?district=${encodeURIComponent(selDist)}&communeCode=all`;
+        scopeBoxTitle = getDistrictPrefix(selDist);
+      } else {
+        const effectiveCommuneCode = (selCommuneCode && selCommuneCode !== 'all') ? selCommuneCode : ps.communeCode;
+        targetStations = (allPollingStations || []).filter(p => {
+          return String(p.communeCode).padStart(3, '0') === String(effectiveCommuneCode).padStart(3, '0');
+        });
+        apiUrl = `/api/candidates?communeCode=${effectiveCommuneCode}`;
+        const curCom = allCommunes.find(c => String(c.code).padStart(3, '0') === String(effectiveCommuneCode).padStart(3, '0'));
+        scopeBoxTitle = curCom ? `${getCommunePrefix(curCom.name, curCom.district)} (${toKhmerNum(curCom.code)})` : `${communePrefix} (${communeCodeKhmer})`;
+      }
+
+      targetStations.sort((a, b) => {
+        const da = getTakeoDistrictOrder(a.district);
+        const db = getTakeoDistrictOrder(b.district);
+        if (da !== db) return da - db;
+        const ca = parseInt(a.communeCode, 10) || 0;
+        const cb = parseInt(b.communeCode, 10) || 0;
+        if (ca !== cb) return ca - cb;
+        const sa = parseInt(a.code, 10) || 0;
+        const sb = parseInt(b.code, 10) || 0;
+        return sa - sb;
       });
 
-      const sortedCandidates = [...present, ...absent];
+      let allTargetCandidates = [];
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        allTargetCandidates = data.candidates || [];
+      } catch (err) {
+        console.error('Error fetching candidates:', err);
+      }
 
-      for (let i = 1; i <= 3; i++) {
-        const c = sortedCandidates[i - 1];
-        const isEmpty = !c || !c.name;
-        const khmerIdx = toKhmerNum(i);
-        const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
-        const isAbsent = c && (c.scoreInterview === 'អវត្តមាន' || c.scoreTotal === 'អវត្តមាន');
+      let rowsHtml = '';
+      let prevDist = null;
+      let prevCom = null;
 
-        let scoreTotalHtml = '';
-        let statusHtml = '';
-
-        if (c && c.name) {
-          if (isAbsent) {
-            scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
-            statusHtml = `<td class="center official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
-          } else {
-            const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
-            scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: 700; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
-            if (c.status === 'A-ជាប់') {
-              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">A-ជាប់</td>`;
-            } else if (c.status === 'B-បម្រុង') {
-              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">B-បម្រុង</td>`;
-            } else if (c.status === 'C-បម្រុង' || c.status === 'C-បម្រុងបន្ទាប់') {
-              statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">C-បម្រុងបន្ទាប់</td>`;
-            } else {
-              statusHtml = `<td class="center" style="width: 110px; font-weight: 600; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c.status || ''}</td>`;
-            }
-          }
-        } else {
-          scoreTotalHtml = `<td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
-          statusHtml = `<td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
+      targetStations.forEach(st => {
+        const cleanDist = String(st.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        if ((selDist === 'all' || selCommuneCode === 'all') && cleanDist !== prevDist) {
+          prevDist = cleanDist;
+          rowsHtml += `
+            <tr class="district-banner-row">
+              <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
+                🏛️ ${getDistrictPrefix(st.district)}
+              </td>
+            </tr>
+          `;
+        }
+        if (selCommuneCode === 'all' && st.communeCode !== prevCom) {
+          prevCom = st.communeCode;
+          rowsHtml += `
+            <tr class="commune-banner-row">
+              <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; background: #f1f5f9; padding: 4px 8px; border: 1px solid #000; text-align: left; color: #334155;">
+                🏘️ ${getCommunePrefix(st.communeName, st.district)} (${toKhmerNum(st.communeCode)})
+              </td>
+            </tr>
+          `;
         }
 
+        const stCodeFormatted = String(st.code || '').padStart(4, '0');
+        const stCodeKhmer = toKhmerNum(stCodeFormatted);
+
+        // Station code header banner inside the table (above President role)
         rowsHtml += `
-          <tr class="${isEmpty ? 'empty-candidate-row' : ''} ${isAbsent ? 'absent-row' : ''}">
-            <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
-            <td style="font-weight: 600; min-width: 180px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.name || '') : ''}</td>
-            <td class="center" style="width: 50px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
-            ${scoreTotalHtml}
-            ${statusHtml}
-            <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
+          <tr class="station-banner-row">
+            <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; background: #e2e8f0; padding: 4px 8px; border: 1px solid #000; text-align: left;">
+              - លេខកូដការិយាល័យ ៖ ${stCodeKhmer}
+            </td>
           </tr>
         `;
-      }
-    });
 
-    reportContentHtml = `
-      <div class="print-paper-sheet">
-        ${buildReportLetterheadHtml(ps)}
-        ${buildReportTitleBoxHtml(ps, 'លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
-        <table class="official-print-table" style="margin-top: 4px;">
-          <thead>
-            <tr>
-              <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
-              <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
-              <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
-              <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
-              <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
-              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">និទ្ទេស</th>
-              <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+        // Get candidates for this specific station
+        const stationCands = allTargetCandidates.filter(c => c.pollingStationId === st.id);
+        const stRoleGroups = {};
+        ROLES_ORDER.forEach(r => stRoleGroups[r] = []);
+        stationCands.forEach(c => {
+          if (stRoleGroups[c.role]) stRoleGroups[c.role].push(c);
+        });
+
+        // Render all 6 roles for this station
+        ROLES_ORDER.forEach(role => {
+          rowsHtml += `
+            <tr class="category-row">
+              <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; background: #fff; padding: 2px 6px; border: 1px solid #000; text-align: left;">
+                - មុខតំណែង ៖ ${role}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-        ${getOfficialSignatureBlock(ps, 'results')}
-      </div>
-    `;
-  }
+          `;
+          const items = stRoleGroups[role] || [];
+          const present = items.filter(c => c && c.name && c.scoreTotal !== 'អវត្តមាន' && c.scoreInterview !== 'អវត្តមាន');
+          const absent = items.filter(c => c && c.name && (c.scoreTotal === 'អវត្តមាន' || c.scoreInterview === 'អវត្តមាន'));
 
-  // ----------------------------------------------------------------------------
-  // SHEET 6: លទ្ធផលតាមលំដាប់ (គ្រប់ការិយាល័យក្នុងឃុំ/សង្កាត់ ឬទូទាំងខេត្ត)
-  // ----------------------------------------------------------------------------
-  else if (reportType === 'commune_results') {
-    const distSelect = document.getElementById('reportDistrictFilter');
-    const comSelect = document.getElementById('reportCommuneFilter');
-    const selDist = distSelect ? distSelect.value : '';
-    const selCommuneCode = comSelect ? comSelect.value : '';
+          present.sort((a, b) => {
+            if (a.rank && b.rank) return a.rank - b.rank;
+            const at = parseFloat(a.scoreTotal) || 0;
+            const bt = parseFloat(b.scoreTotal) || 0;
+            return bt - at;
+          });
 
-    let communeStations = [];
-    let apiUrl = '';
-    let scopeBoxTitle = `${communePrefix} (${communeCodeKhmer})`;
+          const sortedCandidates = [...present, ...absent];
 
-    if (selDist === 'all' && selCommuneCode === 'all') {
-      communeStations = [...(allPollingStations || [])];
-      apiUrl = '/api/candidates?district=all&communeCode=all';
-      scopeBoxTitle = 'ទូទាំងខេត្តតាកែវ';
-    } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
-      communeStations = (allPollingStations || []).filter(p => {
-        const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-        return cleanDist === selDist;
+          for (let i = 1; i <= 3; i++) {
+            const c = sortedCandidates[i - 1];
+            const isEmpty = !c || !c.name;
+            const khmerIdx = toKhmerNum(i);
+            const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
+            const isAbsent = c && (c.scoreInterview === 'អវត្តមាន' || c.scoreTotal === 'អវត្តមាន');
+
+            let scoreTotalHtml = '';
+            let statusHtml = '';
+
+            if (c && c.name) {
+              if (isAbsent) {
+                scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
+                statusHtml = `<td class="center official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
+              } else {
+                const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
+                scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: 700; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
+                if (c.status === 'A-ជាប់') {
+                  statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">A-ជាប់</td>`;
+                } else if (c.status === 'B-បម្រុង') {
+                  statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">B-បម្រុង</td>`;
+                } else if (c.status === 'C-បម្រុង' || c.status === 'C-បម្រុងបន្ទាប់') {
+                  statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">C-បម្រុងបន្ទាប់</td>`;
+                } else {
+                  statusHtml = `<td class="center" style="width: 110px; font-weight: 600; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c.status || ''}</td>`;
+                }
+              }
+            } else {
+              scoreTotalHtml = `<td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
+              statusHtml = `<td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
+            }
+
+            rowsHtml += `
+              <tr class="${isEmpty ? 'empty-candidate-row' : ''} ${isAbsent ? 'absent-row' : ''}">
+                <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
+                <td style="font-weight: 600; min-width: 180px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.name || '') : ''}</td>
+                <td class="center" style="width: 50px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
+                <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
+                ${scoreTotalHtml}
+                ${statusHtml}
+                <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
+              </tr>
+            `;
+          }
+        });
       });
-      apiUrl = `/api/candidates?district=${encodeURIComponent(selDist)}&communeCode=all`;
-      scopeBoxTitle = getDistrictPrefix(selDist);
-    } else {
-      const effectiveCommuneCode = (selCommuneCode && selCommuneCode !== 'all') ? selCommuneCode : ps.communeCode;
-      communeStations = (allPollingStations || []).filter(p => {
-        return String(p.communeCode).padStart(3, '0') === String(effectiveCommuneCode).padStart(3, '0');
-      });
-      apiUrl = `/api/candidates?communeCode=${effectiveCommuneCode}`;
-    }
 
-    communeStations.sort((a, b) => {
-      const da = getTakeoDistrictOrder(a.district);
-      const db = getTakeoDistrictOrder(b.district);
-      if (da !== db) return da - db;
-      const ca = parseInt(a.communeCode, 10) || 0;
-      const cb = parseInt(b.communeCode, 10) || 0;
-      if (ca !== cb) return ca - cb;
-      const sa = parseInt(a.code, 10) || 0;
-      const sb = parseInt(b.code, 10) || 0;
-      return sa - sb;
-    });
-
-    let communeCandidates = [];
-    try {
-      const res = await fetch(apiUrl);
-      const data = await res.json();
-      communeCandidates = data.candidates || [];
-    } catch (err) {
-      console.error('Error fetching commune candidates:', err);
-    }
-
-    let rowsHtml = '';
-    let prevDist = null;
-    let prevCom = null;
-
-    communeStations.forEach(st => {
-      const cleanDist = String(st.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-      if ((selDist === 'all' || selCommuneCode === 'all') && cleanDist !== prevDist) {
-        prevDist = cleanDist;
-        rowsHtml += `
-          <tr class="district-banner-row">
-            <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
-              🏛️ ${getDistrictPrefix(st.district)}
-            </td>
-          </tr>
-        `;
-      }
-      if (selCommuneCode === 'all' && st.communeCode !== prevCom) {
-        prevCom = st.communeCode;
-        rowsHtml += `
-          <tr class="commune-banner-row">
-            <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; background: #f1f5f9; padding: 4px 8px; border: 1px solid #000; text-align: left; color: #334155;">
-              🏘️ ${getCommunePrefix(st.communeName, st.district)} (${toKhmerNum(st.communeCode)})
-            </td>
-          </tr>
-        `;
-      }
-
-      const stCodeFormatted = String(st.code || '').padStart(4, '0');
-      const stCodeKhmer = toKhmerNum(stCodeFormatted);
-
-      // Station code header banner inside the table (above President role)
-      rowsHtml += `
-        <tr class="station-banner-row">
-          <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; background: #e2e8f0; padding: 4px 8px; border: 1px solid #000; text-align: left;">
-            - លេខកូដការិយាល័យ ៖ ${stCodeKhmer}
-          </td>
-        </tr>
+      const communeTitleBoxHtml = `
+        <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 4px 0 6px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
+        </div>
       `;
 
-      // Get candidates for this specific station
-      const stationCands = communeCandidates.filter(c => c.pollingStationId === st.id);
-      const stRoleGroups = {};
-      ROLES_ORDER.forEach(r => stRoleGroups[r] = []);
-      stationCands.forEach(c => {
-        if (stRoleGroups[c.role]) stRoleGroups[c.role].push(c);
-      });
-
-      // Render all 6 roles for this station
+      reportContentHtml = `
+        <div class="print-paper-sheet">
+          ${buildReportLetterheadHtml(ps)}
+          ${communeTitleBoxHtml}
+          <table class="official-print-table" style="margin-top: 4px;">
+            <thead>
+              <tr>
+                <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
+                <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
+                <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
+                <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+                <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
+                <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">និទ្ទេស</th>
+                <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          ${getOfficialSignatureBlock(ps, 'results')}
+        </div>
+      `;
+    } else {
+      // Single-Station View
+      let rowsHtml = '';
       ROLES_ORDER.forEach(role => {
         rowsHtml += `
           <tr class="category-row">
@@ -3764,7 +3863,8 @@ async function renderReportPreview() {
             </td>
           </tr>
         `;
-        const items = stRoleGroups[role] || [];
+        const items = roleGroups[role] || [];
+        // Strictly sort by rank / score, absent candidates placed last
         const present = items.filter(c => c && c.name && c.scoreTotal !== 'អវត្តមាន' && c.scoreInterview !== 'អវត្តមាន');
         const absent = items.filter(c => c && c.name && (c.scoreTotal === 'អវត្តមាន' || c.scoreInterview === 'អវត្តមាន'));
 
@@ -3822,43 +3922,35 @@ async function renderReportPreview() {
           `;
         }
       });
-    });
 
-    const communeTitleBoxHtml = `
-      <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 4px 0 6px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
-      </div>
-    `;
-
-    reportContentHtml = `
-      <div class="print-paper-sheet">
-        ${buildReportLetterheadHtml(ps)}
-        ${communeTitleBoxHtml}
-        <table class="official-print-table" style="margin-top: 4px;">
-          <thead>
-            <tr>
-              <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
-              <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
-              <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
-              <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
-              <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
-              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">និទ្ទេស</th>
-              <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-        ${getOfficialSignatureBlock(ps, 'results')}
-      </div>
-    `;
+      reportContentHtml = `
+        <div class="print-paper-sheet">
+          ${buildReportLetterheadHtml(ps)}
+          ${buildReportTitleBoxHtml(ps, 'លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
+          <table class="official-print-table" style="margin-top: 4px;">
+            <thead>
+              <tr>
+                <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
+                <th style="min-width: 180px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
+                <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
+                <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+                <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
+                <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">និទ្ទេស</th>
+                <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          ${getOfficialSignatureBlock(ps, 'results')}
+        </div>
+      `;
+    }
   }
 
   // ----------------------------------------------------------------------------
-  // SHEET 7: បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ
+  // SHEET 6: បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ
   // ----------------------------------------------------------------------------
   else if (reportType === 'final_roster') {
     const distSelect = document.getElementById('reportDistrictFilter');
@@ -4372,7 +4464,7 @@ function exportCurrentReportToExcel() {
     'attendance': 'បញ្ជីវត្តមាន',
     'scoresheet': 'បញ្ចូលពិន្ទុ',
     'results': 'លទ្ធផលតាមលំដាប់',
-    'commune_results': 'លទ្ធផលគ្រប់ការិយាល័យ',
+    'commune_results': 'លទ្ធផលតាមលំដាប់',
     'final_roster': '21-TAKEO'
   };
   const sheetName = sheetNamesMap[reportType] || 'Report';
@@ -4394,17 +4486,20 @@ function exportCurrentReportToExcel() {
 
   const distSelect = document.getElementById('reportDistrictFilter');
   const comSelect = document.getElementById('reportCommuneFilter');
+  const codeSelect = document.getElementById('reportCodeSelect');
   const selDist = distSelect ? distSelect.value : '';
   const selCommuneCode = comSelect ? comSelect.value : '';
 
+  const isAllStations = (stationId === 'all' || (codeSelect && codeSelect.value === 'all') || (exportTable && exportTable.querySelector('.station-banner-row')));
+
   let fileName = `គ.ក.ប_2027_${sheetName}_កូដ_${code4}.xlsx`;
-  if (reportType === 'commune_results') {
+  if ((reportType === 'results' || reportType === 'commune_results') && isAllStations) {
     if (selDist === 'all' && selCommuneCode === 'all') {
-      fileName = `គ.ក.ប_2027_${sheetName}_ទូទាំងខេត្តតាកែវ.xlsx`;
+      fileName = `គ.ក.ប_2027_លទ្ធផលគ្រប់ការិយាល័យ_ទូទាំងខេត្តតាកែវ.xlsx`;
     } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
-      fileName = `គ.ក.ប_2027_${sheetName}_ស្រុក_${selDist}.xlsx`;
+      fileName = `គ.ក.ប_2027_លទ្ធផលគ្រប់ការិយាល័យ_${getDistrictPrefix(selDist)}.xlsx`;
     } else {
-      fileName = `គ.ក.ប_2027_${sheetName}_ឃុំ_${ps ? ps.communeName : ''}_${ps ? ps.communeCode : ''}.xlsx`;
+      fileName = `គ.ក.ប_2027_លទ្ធផលគ្រប់ការិយាល័យ_${ps ? ps.communeName : ''}_${ps ? ps.communeCode : ''}.xlsx`;
     }
   }
 
