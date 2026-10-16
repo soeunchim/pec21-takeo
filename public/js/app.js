@@ -3077,12 +3077,13 @@ async function renderReportPreview() {
   // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប - ក្រដាសផ្តេក Landscape)
   // ----------------------------------------------------------------------------
   if (reportType === 'sortlist') {
+    let rowsAllHtml = '';
     let rowsPage1Html = '';
     let rowsPage2Html = '';
     ROLES_ORDER.forEach((role, rIdx) => {
       let roleHtml = `
         <tr class="category-row">
-          <td colspan="10" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; background: #fff; padding: 3px 8px; border: 1px solid #000; text-align: left;">
+          <td colspan="10" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; background: #fff; padding: 2px 6px; border: 1px solid #000; text-align: left;">
             - មុខតំណែង ៖ ${role}
           </td>
         </tr>
@@ -3104,20 +3105,21 @@ async function renderReportPreview() {
 
         roleHtml += `
           <tr class="${isEmpty ? 'empty-candidate-row' : ''}">
-            <td class="center" style="width: 38px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${khmerIdx}</td>
-            <td style="font-weight: 600; min-width: 160px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cName}</td>
-            <td class="center" style="width: 42px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
-            <td class="center" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
-            <td style="width: 230px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cDegree}</td>
-            <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreDeg}</td>
-            <td style="width: 300px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cExp}</td>
-            <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreExp}</td>
-            <td class="center" style="font-weight: 700; width: 85px; min-width: 85px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${scoreTot}</td>
-            <td style="width: 70px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${cNotes}</td>
+            <td class="center" style="width: 34px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${khmerIdx}</td>
+            <td style="font-weight: 600; width: 145px; min-width: 145px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cName}</td>
+            <td class="center" style="width: 35px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${c ? (c.gender || '') : ''}</td>
+            <td class="center" style="width: 120px; min-width: 120px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${dobKhmer}</td>
+            <td style="width: 200px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cDegree}</td>
+            <td class="center" style="width: 35px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${scoreDeg}</td>
+            <td style="width: 255px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cExp}</td>
+            <td class="center" style="width: 35px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${scoreExp}</td>
+            <td class="center" style="font-weight: 700; width: 78px; min-width: 78px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${scoreTot}</td>
+            <td style="width: 60px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cNotes}</td>
           </tr>
         `;
       }
 
+      rowsAllHtml += roleHtml;
       if (rIdx < 3) {
         rowsPage1Html += roleHtml;
       } else {
@@ -3127,39 +3129,39 @@ async function renderReportPreview() {
 
     const tableColgroupHtml = `
       <colgroup>
-        <col style="width: 38px;">
-        <col style="min-width: 160px;">
-        <col style="width: 42px;">
-        <col style="width: 125px;">
-        <col style="width: 230px;">
-        <col style="width: 40px;">
-        <col style="width: 300px;">
-        <col style="width: 40px;">
-        <col style="width: 85px;">
-        <col style="width: 70px;">
+        <col style="width: 34px;">
+        <col style="width: 145px;">
+        <col style="width: 35px;">
+        <col style="width: 120px;">
+        <col style="width: 200px;">
+        <col style="width: 35px;">
+        <col style="width: 255px;">
+        <col style="width: 35px;">
+        <col style="width: 78px;">
+        <col style="width: 60px;">
       </colgroup>
     `;
 
     const tableHeaderHtml = `
             <tr>
-              <th rowspan="2" style="width: 38px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
-              <th rowspan="2" style="min-width: 160px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
-              <th rowspan="2" style="width: 42px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
-              <th rowspan="2" class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
-              <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">កម្រិតសញ្ញាបត្រ</th>
-              <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">បទពិសោធន៍</th>
-              <th rowspan="2" class="th-total-score" style="width: 85px; min-width: 85px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
-              <th rowspan="2" style="width: 70px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+              <th rowspan="2" style="width: 34px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ល.រ</th>
+              <th rowspan="2" style="width: 145px; min-width: 145px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">គោត្តនាម-នាម</th>
+              <th rowspan="2" style="width: 35px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ភេទ</th>
+              <th rowspan="2" class="th-dob" style="width: 120px; min-width: 120px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
+              <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">កម្រិតសញ្ញាបត្រ</th>
+              <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">បទពិសោធន៍</th>
+              <th rowspan="2" class="th-total-score" style="width: 78px; min-width: 78px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
+              <th rowspan="2" style="width: 60px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
             <tr>
-              <th class="th-criteria text-left" style="font-size: 8pt; font-weight: normal; text-align: left !important; padding: 3px 5px; line-height: 1.3; width: 230px;">
+              <th class="th-criteria text-left" style="font-size: 7.2pt; font-weight: normal; text-align: left !important; padding: 2px 3px; line-height: 1.25; width: 200px;">
                 <div style="text-align: left !important;">-សញ្ញាបត្រទុតិយភូមិ ឬបទពិសោធន៍ស្របនឹងមុខតំណែង<br>
                 ចាប់ពី១ឆ្នាំ/ដង ដល់២ឆ្នាំ/ដង=៥ពិន្ទុ<br>
                 -សញ្ញាបត្រខ្ពស់ជាង ឬបទពិសោធន៍ស្របនឹងមុខតំណែង<br>
                 ចាប់ពី៣ឆ្នាំ/ដង ឡើង =៨ពិន្ទុ</div>
               </th>
-              <th style="width: 40px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុ</th>
-              <th class="th-criteria text-left" style="font-size: 7.2pt; font-weight: normal; text-align: left !important; padding: 3px 5px; line-height: 1.25; width: 310px;">
+              <th style="width: 35px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ពិន្ទុ</th>
+              <th class="th-criteria text-left" style="font-size: 7pt; font-weight: normal; text-align: left !important; padding: 2px 3px; line-height: 1.2; width: 255px;">
                 <div style="text-align: left !important;">+ បទពិសោធន៍ស្របមុខតំណែង និងមានសញ្ញាបត្រ<br>
                 -១ឆ្នាំ/ដង ដល់២ឆ្នាំ/ដង =៤ពិន្ទុ, ៣ឆ្នាំ/ដង ដល់៤ឆ្នាំ/ដង=៨ពិន្ទុ<br>
                 ៥ឆ្នាំ/ដងឡើង =១២ពិន្ទុ<br>
@@ -3169,48 +3171,67 @@ async function renderReportPreview() {
                 + សមាជិកទី១,សមាជិកទី២,សមាជិកទី៣<br>
                 -២ឆ្នាំ=៨ពិន្ទុ ,ចាប់ពី៣ឆ្នាំឡើង=១២ពិន្ទុ</div>
               </th>
-              <th style="width: 40px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុ</th>
+              <th style="width: 35px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ពិន្ទុ</th>
             </tr>
     `;
 
     reportContentHtml = `
       <div class="print-paper-sheet landscape">
-        <!-- PAGE 1 : Roles 1 to 3 (ប្រធាន, អនុប្រធាន, លេខាធិការ) -->
-        <div class="report-print-page report-print-page-1">
-          <div class="report-page-body">
-            ${buildReportLetterheadHtml(ps)}
-            ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
-            <table class="official-print-table" style="margin-top: 4px; margin-bottom: 0;">
-              ${tableColgroupHtml}
-              <thead>
-                ${tableHeaderHtml}
-              </thead>
-              <tbody>
-                ${rowsPage1Html}
-              </tbody>
-            </table>
-          </div>
-          <div class="report-page-footer">
-            - ១ -
-          </div>
+        <!-- SCREEN VIEW: Single continuous sheet (shown only on screen) -->
+        <div class="report-screen-view no-print">
+          ${buildReportLetterheadHtml(ps)}
+          ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
+          <table class="official-print-table" style="margin-top: 4px; margin-bottom: 0;">
+            ${tableColgroupHtml}
+            <thead>
+              ${tableHeaderHtml}
+            </thead>
+            <tbody>
+              ${rowsAllHtml}
+            </tbody>
+          </table>
+          ${getOfficialSignatureBlock(ps, 'sortlist')}
         </div>
 
-        <!-- PAGE 2 : Roles 4 to 6 (សមាជិកទី១, សមាជិកទី២, សមាជិកទី៣) + Signatures -->
-        <div class="report-print-page report-print-page-2">
-          <div class="report-page-body">
-            <table class="official-print-table" style="margin-top: 0;">
-              ${tableColgroupHtml}
-              <thead>
-                ${tableHeaderHtml}
-              </thead>
-              <tbody>
-                ${rowsPage2Html}
-              </tbody>
-            </table>
-            ${getOfficialSignatureBlock(ps, 'sortlist')}
+        <!-- PRINT VIEW: Exactly 2 pages (hidden on screen, visible only when printing) -->
+        <div class="report-print-view print-only">
+          <!-- PAGE 1 : Roles 1 to 3 (ប្រធាន, អនុប្រធាន, លេខាធិការ) -->
+          <div class="report-print-page report-print-page-1">
+            <div class="report-page-body">
+              ${buildReportLetterheadHtml(ps)}
+              ${buildReportTitleBoxHtml(ps, 'តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប')}
+              <table class="official-print-table" style="margin-top: 4px; margin-bottom: 0;">
+                ${tableColgroupHtml}
+                <thead>
+                  ${tableHeaderHtml}
+                </thead>
+                <tbody>
+                  ${rowsPage1Html}
+                </tbody>
+              </table>
+            </div>
+            <div class="report-page-footer">
+              - ១ -
+            </div>
           </div>
-          <div class="report-page-footer">
-            - ២ -
+
+          <!-- PAGE 2 : Roles 4 to 6 (សមាជិកទី១, សមាជិកទី២, សមាជិកទី៣) + Signatures -->
+          <div class="report-print-page report-print-page-2">
+            <div class="report-page-body">
+              <table class="official-print-table" style="margin-top: 0;">
+                ${tableColgroupHtml}
+                <thead>
+                  ${tableHeaderHtml}
+                </thead>
+                <tbody>
+                  ${rowsPage2Html}
+                </tbody>
+              </table>
+              ${getOfficialSignatureBlock(ps, 'sortlist')}
+            </div>
+            <div class="report-page-footer">
+              - ២ -
+            </div>
           </div>
         </div>
       </div>
@@ -3727,10 +3748,10 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
     return `
       <div class="signature-section" style="margin-top: 8px; width: 100%; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid;">
         <div class="signature-box signature-box-right" style="width: auto; min-width: 380px; margin-left: auto; margin-right: 0; text-align: center; color: #000; font-family: var(--font-body);">
-          <div id="sigLunarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center;">
+          <div class="editable-sig-date sig-lunar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center;">
             ${dateCfg.lunar}
           </div>
-          <div id="sigSolarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
+          <div class="editable-sig-date sig-solar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
             ${dateCfg.solar}
           </div>
           ${signatureContent}
@@ -3743,10 +3764,10 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
   return `
     <div class="signature-section" style="margin-top: 8px; width: 100%; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid;">
       <div class="signature-box signature-box-right" style="width: auto; min-width: 290px; max-width: 350px; margin-left: auto; margin-right: 0; text-align: center; color: #000; font-family: var(--font-body);">
-        <div id="sigLunarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center; white-space: nowrap;">
+        <div class="editable-sig-date sig-lunar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center; white-space: nowrap;">
           ${dateCfg.lunar}
         </div>
-        <div id="sigSolarDate" class="editable-sig-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
+        <div class="editable-sig-date sig-solar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
           ${dateCfg.solar}
         </div>
         ${signatureContent}
@@ -3776,8 +3797,9 @@ function setupReportDateInteractions() {
   const lunarInput = document.getElementById('reportLunarDateInput');
   const solarInput = document.getElementById('reportSolarDateInput');
   const btnAuto = document.getElementById('btnAutoFillDate');
-  const sigLunar = document.getElementById('sigLunarDate');
-  const sigSolar = document.getElementById('sigSolarDate');
+
+  const getAllLunarDates = () => document.querySelectorAll('.sig-lunar-date-val, #sigLunarDate');
+  const getAllSolarDates = () => document.querySelectorAll('.sig-solar-date-val, #sigSolarDate');
 
   const dateCfg = getReportDateConfig();
   if (lunarInput) lunarInput.value = dateCfg.lunar;
@@ -3788,8 +3810,8 @@ function setupReportDateInteractions() {
     if (lunarInput) lunarInput.value = auto.lunar;
     if (solarInput) solarInput.value = auto.solar;
     setReportDateConfig(auto.lunar, auto.solar);
-    if (sigLunar) sigLunar.textContent = auto.lunar;
-    if (sigSolar) sigSolar.textContent = auto.solar;
+    getAllLunarDates().forEach(el => el.textContent = auto.lunar);
+    getAllSolarDates().forEach(el => el.textContent = auto.solar);
     if (solarPicker && auto.isoDate) solarPicker.value = auto.isoDate;
   };
 
@@ -3808,14 +3830,14 @@ function setupReportDateInteractions() {
   if (lunarInput) {
     lunarInput.oninput = (e) => {
       setReportDateConfig(e.target.value, undefined);
-      if (sigLunar) sigLunar.textContent = e.target.value;
+      getAllLunarDates().forEach(el => el.textContent = e.target.value);
     };
   }
 
   if (solarInput) {
     solarInput.oninput = (e) => {
       setReportDateConfig(undefined, e.target.value);
-      if (sigSolar) sigSolar.textContent = e.target.value;
+      getAllSolarDates().forEach(el => el.textContent = e.target.value);
     };
   }
 
@@ -3825,21 +3847,23 @@ function setupReportDateInteractions() {
     };
   }
 
-  if (sigLunar) {
-    sigLunar.onblur = () => {
-      const val = sigLunar.textContent.trim();
+  getAllLunarDates().forEach(el => {
+    el.onblur = () => {
+      const val = el.textContent.trim();
       setReportDateConfig(val, undefined);
       if (lunarInput) lunarInput.value = val;
+      getAllLunarDates().forEach(targetEl => targetEl.textContent = val);
     };
-  }
+  });
 
-  if (sigSolar) {
-    sigSolar.onblur = () => {
-      const val = sigSolar.textContent.trim();
+  getAllSolarDates().forEach(el => {
+    el.onblur = () => {
+      const val = el.textContent.trim();
       setReportDateConfig(undefined, val);
       if (solarInput) solarInput.value = val;
+      getAllSolarDates().forEach(targetEl => targetEl.textContent = val);
     };
-  }
+  });
 }
 
 function exportCurrentReportToExcel() {
