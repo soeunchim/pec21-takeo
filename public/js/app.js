@@ -2651,14 +2651,14 @@ async function renderScoringTableForActiveStation() {
             <td>
               <input type="text" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="វាយបញ្ចូលកម្រិតវប្បធម៌" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
             </td>
-            <td>
-              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-degree" value="${toKhmerNum(degScoreVal)}" style="text-align: center;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
+            <td style="width: 70px; min-width: 70px; text-align: center;">
+              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-degree" value="${toKhmerNum(degScoreVal)}" style="text-align: center; padding: 4px 2px;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
               <input type="text" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="វាយបញ្ចូលបទពិសោធន៍" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
             </td>
-            <td>
-              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-exp" value="${toKhmerNum(expScoreVal)}" style="text-align: center;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
+            <td style="width: 70px; min-width: 70px; text-align: center;">
+              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-exp" value="${toKhmerNum(expScoreVal)}" style="text-align: center; padding: 4px 2px;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td class="excel-calc-shortlist cand-shortlist-display">
               ${toKhmerNum(shortlistVal)}
