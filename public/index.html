@@ -6,7 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261016_commune_schedule_v1">
+  <link rel="stylesheet" href="css/style.css?v=20261016_badge_nowrap_v2">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗳️</text></svg>">
 </head>
 <body>
@@ -332,7 +332,7 @@
                 </tr>
                 <tr class="excel-header-sub">
                   <th style="min-width: 170px;">គោត្តនាម-នាម</th>
-                  <th style="width: 50px;">ភេទ</th>
+                  <th style="min-width: 65px; width: 65px; text-align: center;">ភេទ</th>
                   <th style="min-width: 115px;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
                   <th style="min-width: 145px;">លេខទូរសព្ទ</th>
                   <th style="min-width: 125px;">កម្រិតសញ្ញាបត្រ</th>
@@ -343,7 +343,7 @@
                   <th style="min-width: 125px; background: #fef3c7; color: #92400e;">សម្ភាសន៍ (០-២០)</th>
                   <th style="min-width: 80px; background: #dbeafe; color: #1e40af;">សរុបពិន្ទុ</th>
                   <th style="min-width: 80px; background: #f3e8ff; color: #6b21a8;">ចំណាត់ថ្នាក់</th>
-                  <th style="min-width: 95px;">និទ្ទេស</th>
+                  <th style="min-width: 125px; text-align: center;">និទ្ទេស</th>
                 </tr>
               </thead>
               <tbody id="scoringTableBody">
@@ -741,7 +741,12 @@
           </div>
           <div class="form-group" style="margin-bottom: 12px;">
             <label class="form-label" style="font-weight: 700;">📅 កាលបរិច្ឆេទសម្ភាសន៍</label>
-            <input type="date" id="modalInterviewDatePicker" class="form-control" required>
+            <div style="display: flex; gap: 8px;">
+              <input type="date" id="modalInterviewDatePicker" class="form-control" style="cursor: pointer; font-weight: 600; font-size: 14px;" onclick="if(typeof this.showPicker === 'function') this.showPicker();" required>
+              <button type="button" class="btn btn-outline" style="padding: 6px 14px; font-size: 14px; border: 1.5px solid #94a3b8; background: #f8fafc; font-weight: 700; color: #1e3a8a;" onclick="const d = document.getElementById('modalInterviewDatePicker'); if(d && typeof d.showPicker === 'function') d.showPicker();" title="ចុចដើម្បីជ្រើសរើសថ្ងៃខែឆ្នាំ (Calendar Picker)">
+                📅 ជ្រើសរើស
+              </button>
+            </div>
           </div>
           <div class="form-group" style="margin-bottom: 12px;">
             <label class="form-label" style="font-weight: 700;">⏰ ម៉ោងសម្ភាសន៍</label>
@@ -990,6 +995,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261016_khmer_name_only_v5"></script>
+  <script src="js/app.js?v=20261016_ranks_datepicker_v6"></script>
 </body>
 </html>

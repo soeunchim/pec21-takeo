@@ -2598,11 +2598,7 @@ async function renderScoringTableForActiveStation() {
         }
 
         const isAbsent = cand.scoreInterview === 'អវត្តមាន' || cand.status === 'អវត្តមាន';
-        let badgeHtml = '<span class="badge badge-reserve">---</span>';
-        if (cand.status === 'A-ជាប់') badgeHtml = '<span class="badge badge-passed">A-ជាប់</span>';
-        else if (cand.status === 'B-បម្រុង') badgeHtml = '<span class="badge badge-reserve">B-បម្រុង</span>';
-        else if (cand.status === 'C-បម្រុងបន្ទាប់') badgeHtml = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
-        else if (cand.status === 'អវត្តមាន') badgeHtml = '<span class="badge badge-absent">អវត្តមាន</span>';
+        const hasCompletedTotal = isAbsent || (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' && cand.scoreTotal !== undefined && cand.scoreTotal !== null && cand.scoreTotal !== '' && cand.scoreTotal !== '---');
 
         const degScoreVal = cand.scoreDegree !== undefined && cand.scoreDegree !== null ? cand.scoreDegree : 0;
         const expScoreVal = cand.scoreExp !== undefined && cand.scoreExp !== null ? cand.scoreExp : 0;
@@ -2611,8 +2607,16 @@ async function renderScoringTableForActiveStation() {
         let totalDisplay = '---';
         if (cand.scoreTotal === 'អវត្តមាន' || isAbsent) {
           totalDisplay = 'អវត្តមាន';
-        } else if (cand.scoreTotal !== undefined && cand.scoreTotal !== null && cand.scoreTotal !== '') {
+        } else if (hasCompletedTotal) {
           totalDisplay = toKhmerNum(cand.scoreTotal);
+        }
+
+        let badgeHtml = '<span class="badge badge-reserve">---</span>';
+        if (hasCompletedTotal && cand.name && cand.name.trim()) {
+          if (cand.status === 'A-ជាប់') badgeHtml = '<span class="badge badge-passed">A-ជាប់</span>';
+          else if (cand.status === 'B-បម្រុង') badgeHtml = '<span class="badge badge-reserve">B-បម្រុង</span>';
+          else if (cand.status === 'C-បម្រុងបន្ទាប់') badgeHtml = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
+          else if (cand.status === 'អវត្តមាន') badgeHtml = '<span class="badge badge-absent">អវត្តមាន</span>';
         }
 
         const hasData = !!(
@@ -2632,8 +2636,8 @@ async function renderScoringTableForActiveStation() {
             <td>
               <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
             </td>
-            <td style="text-align: center;">
-              <select class="excel-cell-select cand-gender" onchange="onCandidateRowChange(this)">
+            <td style="text-align: center; width: 65px; min-width: 65px;">
+              <select class="excel-cell-select cand-gender" style="text-align: center; text-align-last: center;" onchange="onCandidateRowChange(this)">
                 <option value="ប" ${cand.gender === 'ប' ? 'selected' : ''}>ប</option>
                 <option value="ស" ${cand.gender === 'ស' ? 'selected' : ''}>ស</option>
               </select>
@@ -2666,9 +2670,9 @@ async function renderScoringTableForActiveStation() {
               ${totalDisplay}
             </td>
             <td class="excel-calc-rank cand-rank-display">
-              ${toKhmerNum(cand.rank || order)}
+              ${toKhmerNum(hasCompletedTotal ? (cand.rank || order) : order)}
             </td>
-            <td class="excel-calc-status cand-status-display">
+            <td class="excel-calc-status cand-status-display" style="text-align: center; min-width: 125px; white-space: nowrap;">
               ${badgeHtml}
             </td>
             <td style="text-align: center;">
@@ -2719,12 +2723,12 @@ window.onCandidateRowChange = function(inputElem) {
   const shortlist = scoreDeg + scoreExp;
   tr.querySelector('.cand-shortlist-display').textContent = toKhmerNum(shortlist);
 
-  let total = shortlist;
+  let total = '';
   let isAbsent = false;
   if (interviewRaw.includes('អវត្តមាន') || interviewRaw.startsWith('អ')) {
     isAbsent = true;
     total = 'អវត្តមាន';
-  } else {
+  } else if (interviewRaw !== '') {
     const interviewNum = parseFloat(fromKhmerNum(interviewRaw));
     if (!isNaN(interviewNum)) {
       total = shortlist + interviewNum;
@@ -2762,42 +2766,63 @@ function recalculateUIRanksForRole(roleName) {
     const name = r.querySelector('.cand-name').value.trim();
     const totalText = r.querySelector('.cand-total-display').textContent.trim();
     const isAbsent = totalText === 'អវត្តមាន';
-    const totalNum = parseFloat(fromKhmerNum(totalText)) || 0;
+    const hasTotal = isAbsent || (totalText !== '---' && totalText !== '');
+    const totalNum = hasTotal && !isAbsent ? (parseFloat(fromKhmerNum(totalText)) || 0) : 0;
     const order = parseInt(r.getAttribute('data-order')) || 1;
-    return { row: r, hasName: !!name, isAbsent, totalNum, order };
+    return { row: r, hasName: !!name, hasTotal, isAbsent, totalNum, order };
   });
 
-  // Filter with name
-  const activeRows = rowData.filter(d => d.hasName);
+  // Only rank active rows that have a name AND a completed total score!
+  const rankedRows = rowData.filter(d => d.hasName && d.hasTotal);
+  const unrankedActiveRows = rowData.filter(d => d.hasName && !d.hasTotal);
   const inactiveRows = rowData.filter(d => !d.hasName);
 
-  activeRows.sort((a, b) => {
+  rankedRows.sort((a, b) => {
     if (a.isAbsent && !b.isAbsent) return 1;
     if (!a.isAbsent && b.isAbsent) return -1;
     return b.totalNum - a.totalNum;
   });
 
-  activeRows.forEach((d, idx) => {
+  rankedRows.forEach((d, idx) => {
     const rankElem = d.row.querySelector('.cand-rank-display');
     const statusElem = d.row.querySelector('.cand-status-display');
+    const candId = d.row.getAttribute('data-cand-id');
+    let cand = currentCandidates.find(c => c.id === candId);
+
     if (d.isAbsent) {
-      rankElem.textContent = toKhmerNum(activeRows.length);
+      rankElem.textContent = toKhmerNum(rankedRows.length);
       statusElem.innerHTML = '<span class="badge badge-absent">អវត្តមាន</span>';
+      if (cand) { cand.rank = rankedRows.length; cand.status = 'អវត្តមាន'; }
     } else {
       const r = idx + 1;
       rankElem.textContent = toKhmerNum(r);
-      if (r === 1) statusElem.innerHTML = '<span class="badge badge-passed">A-ជាប់</span>';
-      else if (r === 2) statusElem.innerHTML = '<span class="badge badge-reserve">B-បម្រុង</span>';
-      else if (r === 3) statusElem.innerHTML = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
-      else statusElem.innerHTML = `<span class="badge badge-reserve">បម្រុង ${toKhmerNum(r - 1)}</span>`;
+      let st = '';
+      if (r === 1) { st = 'A-ជាប់'; statusElem.innerHTML = '<span class="badge badge-passed">A-ជាប់</span>'; }
+      else if (r === 2) { st = 'B-បម្រុង'; statusElem.innerHTML = '<span class="badge badge-reserve">B-បម្រុង</span>'; }
+      else if (r === 3) { st = 'C-បម្រុងបន្ទាប់'; statusElem.innerHTML = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>'; }
+      else { st = `បម្រុង ${toKhmerNum(r - 1)}`; statusElem.innerHTML = `<span class="badge badge-reserve">បម្រុង ${toKhmerNum(r - 1)}</span>`; }
+      if (cand) { cand.rank = r; cand.status = st; }
     }
+  });
+
+  unrankedActiveRows.forEach(d => {
+    const rankElem = d.row.querySelector('.cand-rank-display');
+    const statusElem = d.row.querySelector('.cand-status-display');
+    const candId = d.row.getAttribute('data-cand-id');
+    let cand = currentCandidates.find(c => c.id === candId);
+    rankElem.textContent = toKhmerNum(d.order);
+    statusElem.innerHTML = '<span class="badge badge-reserve">---</span>';
+    if (cand) { cand.rank = d.order; cand.status = ''; }
   });
 
   inactiveRows.forEach(d => {
     const rankElem = d.row.querySelector('.cand-rank-display');
     const statusElem = d.row.querySelector('.cand-status-display');
+    const candId = d.row.getAttribute('data-cand-id');
+    let cand = currentCandidates.find(c => c.id === candId);
     rankElem.textContent = toKhmerNum(d.order);
     statusElem.innerHTML = '<span class="badge badge-reserve">---</span>';
+    if (cand) { cand.rank = d.order; cand.status = ''; }
   });
 }
 

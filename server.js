@@ -494,23 +494,34 @@ function recalculatePollingStationRanks(pollingStationId) {
       c.scoreShortlist = deg + exp;
 
       // Check interview score
+      const hasInterviewInput = c.scoreInterview !== undefined && c.scoreInterview !== null && String(c.scoreInterview).trim() !== '';
       const isAbsent = String(c.scoreInterview).trim() === 'អវត្តមាន' || String(c.scoreTotal).trim() === 'អវត្តមាន';
       if (isAbsent) {
         c.scoreInterview = 'អវត្តមាន';
         c.scoreTotal = 'អវត្តមាន';
-      } else {
+        c.hasCompletedScore = true;
+      } else if (hasInterviewInput) {
         const interview = parseFloat(fromKhmerNum(c.scoreInterview));
         if (!isNaN(interview)) {
           c.scoreInterview = interview;
           c.scoreTotal = c.scoreShortlist + interview;
+          c.hasCompletedScore = true;
         } else {
-          c.scoreTotal = c.scoreShortlist;
+          c.scoreTotal = '';
+          c.hasCompletedScore = false;
         }
+      } else {
+        c.scoreTotal = '';
+        c.hasCompletedScore = false;
       }
     });
 
-    // Sort by Total Score descending (Absents at bottom)
-    const sorted = [...list].sort((a, b) => {
+    // Only rank candidates who have a completed score (interview scored or absent)
+    const completedList = list.filter(c => c.hasCompletedScore);
+    const pendingList = list.filter(c => !c.hasCompletedScore);
+
+    // Sort completed candidates by Total Score descending (Absents at bottom)
+    const sorted = [...completedList].sort((a, b) => {
       const aAbs = a.scoreTotal === 'អវត្តមាន';
       const bAbs = b.scoreTotal === 'អវត្តមាន';
       if (aAbs && !bAbs) return 1;
@@ -523,11 +534,11 @@ function recalculatePollingStationRanks(pollingStationId) {
       return (a.orderInRole || 0) - (b.orderInRole || 0);
     });
 
-    // Assign rank and status
+    // Assign rank and status only to completed candidates
     let rankCounter = 1;
     sorted.forEach(c => {
       if (c.scoreTotal === 'អវត្តមាន') {
-        c.rank = list.length; // rank last
+        c.rank = completedList.length;
         c.status = 'អវត្តមាន';
       } else {
         c.rank = rankCounter;
@@ -537,6 +548,12 @@ function recalculatePollingStationRanks(pollingStationId) {
         else c.status = `បម្រុង ${rankCounter - 1}`;
         rankCounter++;
       }
+    });
+
+    // For pending candidates who haven't completed interview yet:
+    pendingList.forEach(c => {
+      c.rank = c.orderInRole || 1;
+      c.status = '';
     });
   });
 }

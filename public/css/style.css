@@ -647,6 +647,7 @@ textarea,
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap !important;
 }
 
 .badge-passed {
@@ -1108,15 +1109,26 @@ input[type="number"] {
   -moz-appearance: textfield !important;
 }
 
-/* Hide datalist dropdown arrow indicator across all browsers */
+/* Hide datalist dropdown arrow indicator across Excel text inputs */
 .excel-cell-input::-webkit-calendar-picker-indicator,
-input::-webkit-calendar-picker-indicator {
+input[list]::-webkit-calendar-picker-indicator {
   display: none !important;
   -webkit-appearance: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+/* Ensure native date inputs show their calendar picker clearly */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: block !important;
+  -webkit-appearance: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 20px !important;
+  height: 20px !important;
+  cursor: pointer !important;
 }
 
 .excel-cell-select {
