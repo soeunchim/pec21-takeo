@@ -39,7 +39,6 @@ function ensureModernPopupDOM() {
     overlay.className = 'modern-popup-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:9999999;display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
     overlay.innerHTML = `
       <div class="modern-popup-card">
         <div class="modern-popup-icon-wrapper" id="modernPopupIcon"></div>
@@ -56,6 +55,8 @@ function ensureModernPopupDOM() {
       </div>
     `;
     document.body.appendChild(overlay);
+  } else if (overlay.parentElement !== document.body) {
+    document.body.appendChild(overlay);
   }
   return overlay;
 }
@@ -64,7 +65,7 @@ function closeModernPopup(result = false) {
   const overlay = document.getElementById('modernPopupOverlay');
   if (overlay) {
     overlay.classList.remove('active');
-    overlay.style.display = 'none';
+    overlay.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; z-index: -1 !important;';
   }
   if (modernPopupResolver) {
     const resolver = modernPopupResolver;
@@ -171,8 +172,8 @@ function showModernPopup({
         }
       };
 
-      // Show immediately
-      overlay.style.display = 'flex';
+      // Show immediately directly in body with top-level z-index
+      overlay.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: rgba(15, 23, 42, 0.75) !important; backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; z-index: 2147483647 !important; display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; align-items: center !important; justify-content: center !important; padding: 20px !important; box-sizing: border-box !important;';
       overlay.classList.add('active');
 
       setTimeout(() => {
