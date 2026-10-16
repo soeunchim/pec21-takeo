@@ -1005,7 +1005,8 @@ textarea,
   width: 100%;
   border: 2px solid #64748b !important;
   background: #ffffff;
-  font-family: 'Khmer OS Siemreap', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
   margin-top: 10px;
 }
 
@@ -1015,18 +1016,27 @@ textarea,
   padding: 0 !important;
   vertical-align: middle;
   height: 38px;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
 }
 
-/* Two-tier Excel Header */
+/* Two-tier Excel Header - Font Khmer OS Muol Light Size 11 */
+.excel-header-group th,
+.excel-header-sub th,
+.excel-scoring-table thead th {
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', var(--font-heading) !important;
+  font-size: 11pt !important;
+  font-weight: normal !important;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+}
+
 .excel-header-group th {
   background: #1e293b;
   color: #f8fafc;
-  font-size: 13px;
-  font-weight: 700;
   text-align: center;
   padding: 7px 8px !important;
   border-bottom: 1px solid #475569 !important;
-  letter-spacing: 0.3px;
 }
 
 .excel-header-group .th-group-shortlist {
@@ -1047,23 +1057,21 @@ textarea,
 .excel-header-sub th {
   background: #f1f5f9;
   color: #334155;
-  font-size: 12px;
-  font-weight: 700;
   padding: 6px 6px !important;
   text-align: center;
   border-bottom: 2px solid #64748b !important;
 }
 
-/* Excel Flat Cell Inputs */
+/* Excel Flat Cell Inputs - Font Khmer OS Siemreap Size 11 */
 .excel-cell-input {
   width: 100%;
   height: 38px;
   border: none !important;
   border-radius: 0 !important;
   background: transparent;
-  padding: 6px 8px;
-  font-size: 13px;
-  font-family: inherit;
+  padding: 4px 8px;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
   color: #0f172a;
   box-shadow: none !important;
   outline: none !important;
@@ -1085,9 +1093,9 @@ textarea,
   border: none !important;
   border-radius: 0 !important;
   background: transparent;
-  padding: 6px 4px;
-  font-size: 13px;
-  font-family: inherit;
+  padding: 4px 4px;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
   color: #0f172a;
   outline: none !important;
   box-sizing: border-box;
@@ -1102,47 +1110,64 @@ textarea,
   position: relative;
 }
 
-/* Position Section Banner (Header row for each of the 6 roles) */
-.excel-position-banner {
+/* Position Section Banner (Header row for each of the 6 roles) - Font Khmer OS Muol Light Size 11 */
+.excel-position-banner,
+.excel-position-banner td,
+.excel-position-banner strong {
   background: #e8f5e9 !important;
   color: #166534 !important;
-  font-weight: 700;
-  font-size: 13.5px;
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', var(--font-heading) !important;
+  font-size: 11pt !important;
+  font-weight: normal !important;
   border-top: 2px solid #2e7d32 !important;
   border-bottom: 1px solid #81c784 !important;
+  padding: 7px 12px !important;
+  letter-spacing: 0.2px;
 }
 
-.excel-position-banner td {
-  padding: 7px 12px !important;
-  background: #e8f5e9 !important;
+/* Active Row Highlight (Excel-like subtle green row shading) */
+tr.excel-row-active td {
+  background-color: #f0fdf4 !important;
+}
+
+tr.excel-row-active td.excel-calc-shortlist {
+  background-color: #dcfce7 !important;
+}
+
+tr.excel-row-active td.excel-calc-total {
+  background-color: #dbeafe !important;
+}
+
+tr.excel-row-active td.excel-calc-rank {
+  background-color: #f3e8ff !important;
 }
 
 /* Excel Slot & Order Column */
-.excel-col-slot {
-  background: #f8fafc;
-  font-weight: 700;
-  color: #334155;
-  text-align: center;
-  font-size: 13px;
-  user-select: none;
-}
-
+.excel-col-slot,
 .excel-col-order {
   background: #f8fafc;
-  font-weight: 600;
-  color: #64748b;
+  color: #334155;
   text-align: center;
-  font-size: 12px;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
+  font-weight: 600;
   user-select: none;
 }
 
 /* Calculated Formula-Like Shaded Cells */
+.excel-calc-shortlist,
+.excel-calc-total,
+.excel-calc-rank,
+.excel-calc-status {
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
+}
+
 .excel-calc-shortlist {
   background: #f0fdf4 !important;
   color: #15803d !important;
   font-weight: 700;
   text-align: center;
-  font-size: 14px;
 }
 
 .excel-calc-total {
@@ -1150,7 +1175,6 @@ textarea,
   color: #1d4ed8 !important;
   font-weight: 700;
   text-align: center;
-  font-size: 14px;
 }
 
 .excel-calc-rank {
@@ -1158,13 +1182,17 @@ textarea,
   color: #7e22ce !important;
   font-weight: 700;
   text-align: center;
-  font-size: 13px;
 }
 
 .excel-calc-status {
   background: #ffffff;
   text-align: center;
   padding: 3px 6px !important;
+}
+
+.excel-calc-status .badge {
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
 }
 
 /* Buttons for Excel Operations */

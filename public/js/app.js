@@ -303,6 +303,9 @@ function setupEventListeners() {
     btnResetLogoDefault.addEventListener('click', handleResetLogoDefault);
   }
 
+  // Initialize Excel Spreadsheet Engine (Arrows, Enter, Copy/Paste)
+  initScoringTableExcelEngine();
+
   // Delete All Stations Button
   const btnDeleteAllStations = document.getElementById('btnDeleteAllStations');
   if (btnDeleteAllStations) {
@@ -1632,17 +1635,263 @@ window.selectStationForScoring = function(stationId) {
   setScoringStationById(ps.id, 'external');
 };
 
-window.onCandidateNameKeyDown = function(e, input) {
+// ==============================================================================
+// EXCEL-LIKE SPREADSHEET ENGINE FOR SCORING TABLE (Arrows, Enter, Copy & Paste)
+// ==============================================================================
+
+const EXCEL_SCORING_COLS = [
+  '.cand-name',         // Col 0: គោត្តនាម-នាម
+  '.cand-gender',       // Col 1: ភេទ
+  '.cand-dob',          // Col 2: ថ្ងៃ ខែ ឆ្នាំកំណើត
+  '.cand-phone',        // Col 3: លេខទូរសព្ទ
+  '.cand-degree',       // Col 4: កម្រិតសញ្ញាបត្រ
+  '.cand-score-degree', // Col 5: ពិន្ទុសម្រាំង
+  '.cand-exp',          // Col 6: បទពិសោធន៍
+  '.cand-score-exp',    // Col 7: ពិន្ទុបទពិសោធន៍
+  '.cand-interview'     // Col 8: សម្ភាសន៍ (0-20 ឬ អវត្តមាន)
+];
+
+function initScoringTableExcelEngine() {
+  const table = document.getElementById('scoringTable');
+  if (!table || table.hasAttribute('data-excel-engine-init')) return;
+  table.setAttribute('data-excel-engine-init', 'true');
+
+  // 1. Keyboard Navigation (Enter, Shift+Enter, Tab, Shift+Tab, ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+  table.addEventListener('keydown', handleScoringTableKeyDown);
+
+  // 2. Excel TSV Copy & Paste handler
+  table.addEventListener('paste', handleScoringTablePaste);
+
+  // 3. Highlight active row when focusing inside table
+  table.addEventListener('focusin', (e) => {
+    const target = e.target.closest('.excel-cell-input, .excel-cell-select');
+    if (target) {
+      const tr = target.closest('tr[data-cand-id]');
+      highlightActiveScoringRow(tr);
+    }
+  });
+
+  // 4. Auto select text on focus for quick typing
+  table.addEventListener('focus', (e) => {
+    const target = e.target.closest('.excel-cell-input');
+    if (target && typeof target.select === 'function') {
+      setTimeout(() => {
+        try { target.select(); } catch (err) {}
+      }, 10);
+    }
+  }, true);
+}
+
+function highlightActiveScoringRow(tr) {
+  document.querySelectorAll('#scoringTableBody tr.excel-row-active').forEach(r => r.classList.remove('excel-row-active'));
+  if (tr) tr.classList.add('excel-row-active');
+}
+
+function isCaretAtStart(input) {
+  try {
+    if (input.tagName === 'SELECT') return true;
+    if (input.selectionStart !== null && input.selectionStart !== undefined) {
+      return input.selectionStart === 0;
+    }
+  } catch (e) {}
+  return true;
+}
+
+function isCaretAtEnd(input) {
+  try {
+    if (input.tagName === 'SELECT') return true;
+    if (input.selectionEnd !== null && input.selectionEnd !== undefined) {
+      return input.selectionEnd === String(input.value || '').length;
+    }
+  } catch (e) {}
+  return true;
+}
+
+function handleScoringTableKeyDown(e) {
+  const target = e.target.closest('.excel-cell-input, .excel-cell-select');
+  if (!target) return;
+
+  const currentTr = target.closest('tr[data-cand-id]');
+  if (!currentTr) return;
+
+  const allRows = Array.from(document.querySelectorAll('#scoringTableBody tr[data-cand-id]'));
+  const rowIdx = allRows.indexOf(currentTr);
+  const colIdx = EXCEL_SCORING_COLS.findIndex(sel => target.matches(sel));
+  if (rowIdx === -1 || colIdx === -1) return;
+
+  const focusCell = (r, c) => {
+    if (r < 0 || r >= allRows.length || c < 0 || c >= EXCEL_SCORING_COLS.length) return false;
+    const targetRow = allRows[r];
+    const targetEl = targetRow.querySelector(EXCEL_SCORING_COLS[c]);
+    if (targetEl) {
+      targetEl.focus();
+      if (typeof targetEl.select === 'function') {
+        try { targetEl.select(); } catch (err) {}
+      }
+      highlightActiveScoringRow(targetRow);
+      return true;
+    }
+    return false;
+  };
+
+  // 1. Enter key -> Moves row DOWN (or UP with Shift)
   if (e.key === 'Enter') {
     e.preventDefault();
-    const allNameInputs = Array.from(document.querySelectorAll('#scoringTableBody tr[data-cand-id] .cand-name'));
-    const currentIndex = allNameInputs.indexOf(input);
-    if (currentIndex !== -1 && currentIndex + 1 < allNameInputs.length) {
-      allNameInputs[currentIndex + 1].focus();
-      allNameInputs[currentIndex + 1].select();
+    if (e.shiftKey) {
+      focusCell(rowIdx - 1, colIdx);
+    } else {
+      focusCell(rowIdx + 1, colIdx);
+    }
+    return;
+  }
+
+  // 2. Tab key -> Moves column RIGHT (or LEFT with Shift)
+  if (e.key === 'Tab') {
+    if (e.shiftKey) {
+      if (colIdx === 0 && rowIdx > 0) {
+        e.preventDefault();
+        focusCell(rowIdx - 1, EXCEL_SCORING_COLS.length - 1);
+      }
+    } else {
+      if (colIdx === EXCEL_SCORING_COLS.length - 1 && rowIdx < allRows.length - 1) {
+        e.preventDefault();
+        focusCell(rowIdx + 1, 0);
+      }
+    }
+    return;
+  }
+
+  // 3. ArrowUp -> Moves row UP
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    focusCell(rowIdx - 1, colIdx);
+    return;
+  }
+
+  // 4. ArrowDown -> Moves row DOWN
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    focusCell(rowIdx + 1, colIdx);
+    return;
+  }
+
+  // 5. ArrowLeft -> Moves column LEFT if at start of text or select
+  if (e.key === 'ArrowLeft') {
+    if (isCaretAtStart(target)) {
+      e.preventDefault();
+      focusCell(rowIdx, colIdx - 1);
+    }
+    return;
+  }
+
+  // 6. ArrowRight -> Moves column RIGHT if at end of text or select
+  if (e.key === 'ArrowRight') {
+    if (isCaretAtEnd(target)) {
+      e.preventDefault();
+      focusCell(rowIdx, colIdx + 1);
+    }
+    return;
+  }
+}
+
+window.onCandidateNameKeyDown = function(e, input) {
+  handleScoringTableKeyDown(e);
+};
+
+function handleScoringTablePaste(e) {
+  const target = e.target.closest('.excel-cell-input, .excel-cell-select');
+  if (!target) return;
+
+  const currentTr = target.closest('tr[data-cand-id]');
+  if (!currentTr) return;
+
+  const allRows = Array.from(document.querySelectorAll('#scoringTableBody tr[data-cand-id]'));
+  const startRowIdx = allRows.indexOf(currentTr);
+  const startColIdx = EXCEL_SCORING_COLS.findIndex(sel => target.matches(sel));
+  if (startRowIdx === -1 || startColIdx === -1) return;
+
+  const text = (e.clipboardData || window.clipboardData)?.getData('text');
+  if (!text) return;
+
+  // Intercept TSV / Multi-line data copied from Excel or Google Sheets
+  if (text.includes('\t') || text.includes('\n') || text.includes('\r')) {
+    e.preventDefault();
+
+    const rawLines = text.split(/\r\n|\n|\r/);
+    while (rawLines.length && rawLines[rawLines.length - 1].trim() === '') {
+      rawLines.pop();
+    }
+    if (!rawLines.length) return;
+
+    for (let r = 0; r < rawLines.length; r++) {
+      const rowIdx = startRowIdx + r;
+      if (rowIdx >= allRows.length) break;
+
+      const tr = allRows[rowIdx];
+      const cells = rawLines[r].split('\t');
+
+      for (let c = 0; c < cells.length; c++) {
+        const colIdx = startColIdx + c;
+        if (colIdx >= EXCEL_SCORING_COLS.length) break;
+
+        const inputEl = tr.querySelector(EXCEL_SCORING_COLS[colIdx]);
+        if (!inputEl) continue;
+
+        let rawVal = cells[c].trim();
+
+        if (inputEl.classList.contains('cand-gender')) {
+          const lower = rawVal.toLowerCase();
+          if (rawVal.includes('ស') || lower === 'f' || lower === 'female' || rawVal.includes('ស្រី')) {
+            inputEl.value = 'ស';
+          } else {
+            inputEl.value = 'ប';
+          }
+        } else if (inputEl.classList.contains('cand-score-degree') || inputEl.classList.contains('cand-score-exp')) {
+          const num = parseFloat(rawVal);
+          inputEl.value = isNaN(num) ? 0 : num;
+        } else {
+          inputEl.value = rawVal;
+        }
+
+        // Auto preset score if degree/exp text was pasted without score column
+        if (inputEl.classList.contains('cand-degree') && (!cells[c + 1] || isNaN(parseFloat(cells[c + 1])))) {
+          const degScoreInput = tr.querySelector('.cand-score-degree');
+          if (degScoreInput) {
+            if (rawVal.includes('បរិញ្ញាបត្រ')) degScoreInput.value = 12;
+            else if (rawVal.includes('ជាន់ខ្ពស់')) degScoreInput.value = 8;
+            else if (rawVal.includes('បាក់ឌុប')) degScoreInput.value = 5;
+            else if (rawVal.includes('ក្រោម') || rawVal.includes('គ្មាន')) degScoreInput.value = 0;
+          }
+        }
+        if (inputEl.classList.contains('cand-exp') && (!cells[c + 1] || isNaN(parseFloat(cells[c + 1])))) {
+          const expScoreInput = tr.querySelector('.cand-score-exp');
+          if (expScoreInput) {
+            if (rawVal.includes('២ដង') || rawVal.includes('2ដង') || rawVal.includes('2 ដង')) expScoreInput.value = 12;
+            else if (rawVal.includes('១ដង') || rawVal.includes('1ដង') || rawVal.includes('1 ដង')) expScoreInput.value = 8;
+            else if (rawVal.includes('ស្ទង់មតិ')) expScoreInput.value = 4;
+            else if (rawVal.includes('គ្មាន')) expScoreInput.value = 0;
+          }
+        }
+      }
+
+      // Trigger change and recalculation for this row
+      const nameInput = tr.querySelector('.cand-name');
+      if (nameInput) onCandidateRowChange(nameInput);
+    }
+
+    // Update candidate count badge
+    const countBadge = document.getElementById('stationCandidateCountBadge');
+    if (countBadge) {
+      const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
+      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} / ១៨ នាក់`;
+    }
+
+    const stationId = document.getElementById('scoringStationSelect').value;
+    if (stationId) {
+      backupStationCandidatesToLocalStorage(stationId, currentCandidates);
     }
   }
-};
+}
 
 // ==============================================================================
 // TAB 3: CANDIDATE SCORING & LIVE RANKING TABLE
@@ -1783,6 +2032,7 @@ async function renderScoringTableForActiveStation() {
       }
     });
 
+    initScoringTableExcelEngine();
   } catch (err) {
     console.error('Error rendering scoring table:', err);
   }
