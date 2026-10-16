@@ -3255,7 +3255,7 @@ async function renderReportPreview() {
     document.body.classList.remove('report-landscape-active');
   }
 
-  const isMultiPage = (reportType === 'sortlist' || reportType === 'final_roster' || (reportType === 'results' && isAllStations));
+  const isMultiPage = (reportType === 'sortlist' || (reportType === 'final_roster' && isAllStations) || (reportType === 'results' && isAllStations));
   if (isMultiPage) {
     document.body.classList.add('report-multipage-active');
   } else {
@@ -3961,7 +3961,10 @@ async function renderReportPreview() {
     let targetStations = [];
     let apiUrl = '';
 
-    if (selDist === 'all' && selCommuneCode === 'all') {
+    if (!isAllStations && ps) {
+      targetStations = [ps];
+      apiUrl = `/api/candidates?pollingStationId=${ps.id}`;
+    } else if (selDist === 'all' && selCommuneCode === 'all') {
       targetStations = [...(allPollingStations || [])];
       apiUrl = '/api/candidates?district=all&communeCode=all';
     } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
@@ -4512,14 +4515,24 @@ function exportCurrentReportToExcel() {
 async function exportFinalRosterToExcel(ps) {
   const distSelect = document.getElementById('reportDistrictFilter');
   const comSelect = document.getElementById('reportCommuneFilter');
+  const codeSelect = document.getElementById('reportCodeSelect');
+  const hiddenStation = document.getElementById('reportStationSelect');
+  const stationId = hiddenStation ? hiddenStation.value : '';
   const selDist = distSelect ? distSelect.value : '';
   const selCommuneCode = comSelect ? comSelect.value : '';
+
+  const isAllStations = (stationId === 'all' || (codeSelect && codeSelect.value === 'all'));
 
   let targetStations = [];
   let apiUrl = '';
   let fileName = '';
 
-  if (selDist === 'all' && selCommuneCode === 'all') {
+  if (!isAllStations && ps) {
+    targetStations = [ps];
+    apiUrl = `/api/candidates?pollingStationId=${ps.id}`;
+    const code4 = String(ps.code || '').padStart(4, '0');
+    fileName = `បញ្ជីរាយនាម_គ.ក.ប_2027_កូដ_${code4}.xlsx`;
+  } else if (selDist === 'all' && selCommuneCode === 'all') {
     targetStations = [...(allPollingStations || [])];
     apiUrl = '/api/candidates?district=all&communeCode=all';
     fileName = 'បញ្ជីរាយនាម_គ.ក.ប_2027_ទូទាំងខេត្តតាកែវ.xlsx';
