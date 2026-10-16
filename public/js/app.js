@@ -493,9 +493,12 @@ function setupEventListeners() {
   });
 
   // Save Batch Scores
-  document.getElementById('btnSaveBatchScores').addEventListener('click', async () => {
-    await saveBatchScores();
-  });
+  const btnSaveScores = document.getElementById('btnSaveBatchScores');
+  if (btnSaveScores) {
+    btnSaveScores.addEventListener('click', async () => {
+      await saveBatchScores();
+    });
+  }
 
   // Excel Export
   const btnExport = document.getElementById('btnExportExcel');
@@ -4301,41 +4304,55 @@ async function saveCommuneInterviewSchedule(source = 'reports') {
 }
 
 window.openCommuneScheduleModal = function() {
-  const comSelect = document.getElementById('scoringCommuneFilter');
-  let comCode = comSelect ? comSelect.value : '';
-  if (currentUser && currentUser.role === 'Commune') {
-    comCode = String(currentUser.communeCode).padStart(3, '0');
+  try {
+    const comSelect = document.getElementById('scoringCommuneFilter');
+    let comCode = comSelect ? comSelect.value : '';
+    if (currentUser && currentUser.role === 'Commune') {
+      comCode = String(currentUser.communeCode).padStart(3, '0');
+    }
+    if (!comCode) {
+      const stationId = document.getElementById('scoringStationSelect')?.value;
+      const ps = allPollingStations.find(p => p.id === stationId);
+      if (ps) comCode = String(ps.communeCode).padStart(3, '0');
+    }
+
+    if (!comCode) {
+      if (allPollingStations && allPollingStations.length > 0) {
+        comCode = String(allPollingStations[0].communeCode).padStart(3, '0');
+      }
+    }
+
+    if (!comCode) {
+      showModernAlert('សូមជ្រើសរើសឃុំ/សង្កាត់ជាមុនសិន!');
+      return;
+    }
+
+    const comObj = (allCommunes || []).find(c => String(c.code).padStart(3, '0') === String(comCode).padStart(3, '0'));
+    const comName = comObj ? comObj.name : '';
+    const comPrefix = comName ? getCommunePrefix(comName, comObj?.district) : 'ឃុំ';
+    const sampleStation = allPollingStations.find(s => String(s.communeCode).padStart(3, '0') === String(comCode).padStart(3, '0'));
+
+    const infoP = document.getElementById('modalScheduleCommuneInfo');
+    if (infoP) {
+      infoP.textContent = `🏛️ កាលវិភាគសម្ភាសន៍ ៖ ${comPrefix} ${comName} (${toKhmerNum(comCode)})`;
+    }
+
+    const placeInput = document.getElementById('modalInterviewPlaceInput');
+    const dateInput = document.getElementById('modalInterviewDatePicker');
+    const timeInput = document.getElementById('modalInterviewTimeInput');
+
+    if (placeInput) placeInput.value = sampleStation?.interviewPlace || (comName ? `សាលា${comPrefix}${comName}` : '');
+    if (dateInput) dateInput.value = toISODate(sampleStation?.interviewDate) || '2027-09-07';
+    if (timeInput) timeInput.value = sampleStation?.interviewTime || '០៧:០០ ព្រឹក';
+
+    const modal = document.getElementById('modalCommuneSchedule');
+    if (modal) {
+      modal.classList.add('active');
+    }
+  } catch (err) {
+    console.error('Error opening commune schedule modal:', err);
+    showModernAlert('មិនអាចបើកផ្ទាំងកាលវិភាគសម្ភាសន៍បានទេ៖ ' + err.message);
   }
-  if (!comCode) {
-    const stationId = document.getElementById('scoringStationSelect')?.value;
-    const ps = allPollingStations.find(p => p.id === stationId);
-    if (ps) comCode = String(ps.communeCode).padStart(3, '0');
-  }
-
-  if (!comCode) {
-    showModernAlert('សូមជ្រើសរើសឃុំ/សង្កាត់ជាមុនសិន!');
-    return;
-  }
-
-  const comObj = (allCommunes || []).find(c => String(c.code).padStart(3, '0') === String(comCode).padStart(3, '0'));
-  const comName = comObj ? comObj.name : '';
-  const comPrefix = comName ? getCommunePrefix(comName, comObj?.district) : 'ឃុំ';
-  const sampleStation = allPollingStations.find(s => String(s.communeCode).padStart(3, '0') === String(comCode).padStart(3, '0'));
-
-  const infoP = document.getElementById('modalScheduleCommuneInfo');
-  if (infoP) {
-    infoP.textContent = `🏛️ កាលវិភាគសម្ភាសន៍ ៖ ${comPrefix} (${toKhmerNum(comCode)})`;
-  }
-
-  const placeInput = document.getElementById('modalInterviewPlaceInput');
-  const dateInput = document.getElementById('modalInterviewDatePicker');
-  const timeInput = document.getElementById('modalInterviewTimeInput');
-
-  if (placeInput) placeInput.value = sampleStation?.interviewPlace || (comName ? `សាលា${comPrefix}` : '');
-  if (dateInput) dateInput.value = toISODate(sampleStation?.interviewDate) || '2027-09-07';
-  if (timeInput) timeInput.value = sampleStation?.interviewTime || '០៧:០០ ព្រឹក';
-
-  openModal('modalCommuneSchedule');
 };
 
 // ==============================================================================
@@ -6922,6 +6939,11 @@ async function handleCandidateSubmit(e) {
 }
 
 // Modal Utility
+window.openModal = function(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) el.classList.add('active');
+};
 window.closeModal = function(modalId) {
-  document.getElementById(modalId).classList.remove('active');
+  const el = document.getElementById(modalId);
+  if (el) el.classList.remove('active');
 };
