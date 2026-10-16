@@ -1104,6 +1104,17 @@ input[type="number"] {
   -moz-appearance: textfield !important;
 }
 
+/* Hide datalist dropdown arrow indicator across all browsers */
+.excel-cell-input::-webkit-calendar-picker-indicator,
+input::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .excel-cell-select {
   width: 100%;
   height: 38px;

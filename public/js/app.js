@@ -814,6 +814,25 @@ function formatKhmerPhoneNumber(val) {
   return toKhmerNum(formatted);
 }
 
+function formatKhmerDate(val) {
+  if (!val) return '';
+  let clean = String(val).replace(/\//g, '-');
+  clean = toKhmerNum(clean);
+  clean = clean.replace(/[^០-៩\-]/g, '').replace(/-{2,}/g, '-');
+  const digitsOnly = fromKhmerNum(clean).replace(/[^0-9]/g, '');
+  if (!clean.includes('-')) {
+    if (digitsOnly.length >= 8) {
+      clean = toKhmerNum(`${digitsOnly.slice(0, 2)}-${digitsOnly.slice(2, 4)}-${digitsOnly.slice(4, 8)}`);
+    }
+  } else {
+    const parts = clean.split('-');
+    if (parts.length > 3) {
+      clean = parts.slice(0, 3).join('-');
+    }
+  }
+  return clean;
+}
+
 function getDistrictPrefix(districtName) {
   if (!districtName) return '';
   const clean = String(districtName).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
@@ -2138,6 +2157,8 @@ function handleScoringTablePaste(e) {
           } else {
             inputEl.value = 'ប';
           }
+        } else if (inputEl.classList.contains('cand-dob')) {
+          inputEl.value = formatKhmerDate(rawVal);
         } else if (inputEl.classList.contains('cand-phone')) {
           inputEl.value = formatKhmerPhoneNumber(rawVal);
         } else if (inputEl.classList.contains('cand-score-degree') || inputEl.classList.contains('cand-score-exp')) {
@@ -2212,7 +2233,16 @@ function updateRowDeleteButtonState(tr) {
     const hasData = hasCandidateRowData(tr);
     btn.disabled = !hasData;
   }
-}
+window.onCandidateDobInput = function(input) {
+  const tr = input.closest('tr');
+  const prevVal = input.value;
+  const formatted = formatKhmerDate(prevVal);
+  if (formatted !== prevVal) {
+    input.value = formatted;
+  }
+  updateRowDeleteButtonState(tr);
+  onCandidateRowChange(input);
+};
 
 window.onCandidatePhoneInput = function(input) {
   const tr = input.closest('tr');
@@ -2355,19 +2385,19 @@ async function renderScoringTableForActiveStation() {
               </select>
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-dob" value="${cand.dob || ''}" placeholder="DD-MM-YYYY" style="text-align: center;" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))">
+              <input type="text" class="excel-cell-input cand-dob" value="${formatKhmerDate(cand.dob || '')}" placeholder="ថ្ងៃ-ខែ-ឆ្នាំ" style="text-align: center;" oninput="onCandidateDobInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-phone" value="${formatKhmerPhoneNumber(cand.phone || '')}" placeholder="០៨៧ ៤០០ ០៩០" oninput="onCandidatePhoneInput(this)" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-phone" value="${formatKhmerPhoneNumber(cand.phone || '')}" placeholder="០៨៧..." oninput="onCandidatePhoneInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" list="degreePresets" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))">
+              <input type="text" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="វាយបញ្ចូលកម្រិតវប្បធម៌" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
             </td>
             <td>
               <input type="text" inputmode="decimal" class="excel-cell-input cand-score-degree" value="${toKhmerNum(degScoreVal)}" style="text-align: center;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" list="expPresets" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))">
+              <input type="text" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="វាយបញ្ចូលបទពិសោធន៍" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
             </td>
             <td>
               <input type="text" inputmode="decimal" class="excel-cell-input cand-score-exp" value="${toKhmerNum(expScoreVal)}" style="text-align: center;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
@@ -2376,7 +2406,7 @@ async function renderScoringTableForActiveStation() {
               ${toKhmerNum(shortlistVal)}
             </td>
             <td>
-              <input type="text" list="interviewPresets" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" oninput="updateRowDeleteButtonState(this.closest('tr'))" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" oninput="onCandidateRowChange(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td class="excel-calc-total cand-total-display">
               ${totalDisplay}
