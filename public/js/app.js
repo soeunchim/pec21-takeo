@@ -2663,16 +2663,16 @@ async function renderScoringTableForActiveStation() {
             <td class="excel-calc-shortlist cand-shortlist-display">
               ${toKhmerNum(shortlistVal)}
             </td>
-            <td>
-              <input type="text" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" oninput="onCandidateInterviewInput(this)" onchange="onCandidateInterviewChange(this)">
+            <td style="width: 95px; min-width: 95px; text-align: center;">
+              <input type="text" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700; padding: 4px 2px;" oninput="onCandidateInterviewInput(this)" onchange="onCandidateInterviewChange(this)">
             </td>
-            <td class="excel-calc-total cand-total-display">
+            <td class="excel-calc-total cand-total-display" style="width: 65px; min-width: 65px; text-align: center;">
               ${totalDisplay}
             </td>
-            <td class="excel-calc-rank cand-rank-display">
+            <td class="excel-calc-rank cand-rank-display" style="width: 65px; min-width: 65px; text-align: center;">
               ${toKhmerNum(hasCompletedTotal ? (cand.rank || order) : order)}
             </td>
-            <td class="excel-calc-status cand-status-display" style="text-align: center; min-width: 125px; white-space: nowrap;">
+            <td class="excel-calc-status cand-status-display" style="text-align: left !important; padding-left: 10px !important; min-width: 110px; white-space: nowrap;">
               ${badgeHtml}
             </td>
             <td style="text-align: center;">

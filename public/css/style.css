@@ -1102,6 +1102,12 @@ textarea,
   font-weight: 600;
 }
 
+.cand-status-display {
+  text-align: left !important;
+  padding-left: 10px !important;
+  white-space: nowrap !important;
+}
+
 /* Remove number input spinner arrows (▲/▼) in Excel table & throughout */
 .excel-cell-input[type="number"]::-webkit-outer-spin-button,
 .excel-cell-input[type="number"]::-webkit-inner-spin-button,
