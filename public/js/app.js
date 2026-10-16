@@ -59,14 +59,27 @@ function showAppShell() {
   document.getElementById('loginSection').style.display = 'none';
   document.getElementById('appShell').style.display = 'block';
 
-  // Render header profile
+  // Render header profile with Khmer role names
+  const roleDisplayNames = {
+    'Trainer': 'គ្រូប្រចាំក្រុងស្រុក',
+    'Commune': 'ឃុំសង្កាត់',
+    'SuperAdmin': 'SuperAdmin',
+    'Admin': 'Admin',
+    'PEC21': 'PEC21'
+  };
+  const displayRole = roleDisplayNames[currentUser.role] || currentUser.role;
   document.getElementById('userFullName').textContent = currentUser.fullName || currentUser.username;
-  document.getElementById('userRoleTag').textContent = `${currentUser.role} ${currentUser.district !== 'all' ? '(' + currentUser.district + ')' : ''}`;
+  document.getElementById('userRoleTag').textContent = `${displayRole} ${currentUser.district !== 'all' ? '(' + currentUser.district + ')' : ''}`;
 
   // Role permissions UI adjustments
   const stationsNav = document.querySelector('[data-tab="tabPollingStations"]');
   const usersNav = document.getElementById('tabUsersNav');
   const settingsNav = document.getElementById('tabSettingsNav');
+
+  const btnDeleteAll = document.getElementById('btnDeleteAllStations');
+  const btnBatchAll = document.getElementById('btnBatchCreateAllStations');
+  const btnAddStation = document.getElementById('btnOpenAddStationModal');
+  const btnBatchCommune = document.getElementById('btnBatchCreateCommuneStations');
 
   if (currentUser.role === 'Commune') {
     if (stationsNav) stationsNav.style.display = 'none';
@@ -74,6 +87,10 @@ function showAppShell() {
     if (settingsNav) settingsNav.style.display = 'none';
     const filterBar = document.getElementById('stationFilterBar');
     if (filterBar) filterBar.style.display = 'none';
+    if (btnDeleteAll) btnDeleteAll.style.display = 'none';
+    if (btnBatchAll) btnBatchAll.style.display = 'none';
+    if (btnAddStation) btnAddStation.style.display = 'none';
+    if (btnBatchCommune) btnBatchCommune.style.display = 'none';
   } else if (currentUser.role === 'Trainer') {
     if (stationsNav) stationsNav.style.display = 'inline-flex';
     if (usersNav) {
@@ -81,10 +98,19 @@ function showAppShell() {
       usersNav.innerHTML = `👥 គណនីឃុំក្នុង ${currentUser.district}`;
     }
     if (settingsNav) settingsNav.style.display = 'none';
+    // Hide crossed-out buttons for Trainer
+    if (btnDeleteAll) btnDeleteAll.style.display = 'none';
+    if (btnBatchAll) btnBatchAll.style.display = 'none';
+    if (btnAddStation) btnAddStation.style.display = 'none';
+    if (btnBatchCommune) btnBatchCommune.style.display = 'inline-flex';
   } else {
     if (stationsNav) stationsNav.style.display = 'inline-flex';
     if (usersNav) usersNav.style.display = 'inline-flex';
     if (settingsNav) settingsNav.style.display = 'inline-flex';
+    if (btnDeleteAll) btnDeleteAll.style.display = 'inline-flex';
+    if (btnBatchAll) btnBatchAll.style.display = 'inline-flex';
+    if (btnAddStation) btnAddStation.style.display = 'inline-flex';
+    if (btnBatchCommune) btnBatchCommune.style.display = 'inline-flex';
   }
 }
 
@@ -561,6 +587,18 @@ function populateFilterDropdowns() {
       const cleanName = String(d.name).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
       distSelect.innerHTML += `<option value="${cleanName}">${getDistrictPrefix(cleanName)}</option>`;
     });
+
+    if (currentUser) {
+      if (currentUser.role === 'Trainer' && currentUser.district && currentUser.district !== 'all') {
+        const cleanUserDist = String(currentUser.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        distSelect.value = cleanUserDist;
+        distSelect.disabled = true;
+      } else if (currentUser.role === 'Commune' && currentUser.district && currentUser.district !== 'all') {
+        const cleanUserDist = String(currentUser.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        distSelect.value = cleanUserDist;
+        distSelect.disabled = true;
+      }
+    }
   }
 
   if (comSelect) {
@@ -1269,6 +1307,32 @@ async function batchCreateForSelectedCommune(forcedCommuneCode = null) {
   }
 
   if (!comCode) {
+    if (currentUser && currentUser.role === 'Trainer') {
+      const distName = getDistrictPrefix(currentUser.district);
+      if (!confirm(`លោកអ្នកមិនទាន់បានជ្រើសរើសឃុំ-សង្កាត់ជាក់លាក់ណាមួយឡើយ។\nតើលោកអ្នកពិតជាចង់បង្កើត/ស្តារការិយាល័យបោះឆ្នោតផ្លូវការទាំងអស់ក្នុង${distName} មែនទេ?`)) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/polling-stations/batch-create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ district: currentUser.district })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message);
+          const psRes = await fetch('/api/polling-stations').then(r => r.json());
+          allPollingStations = psRes.pollingStations || [];
+          populateStationSelectors();
+          renderPollingStationsTable();
+        } else {
+          alert('កំហុស៖ ' + data.message);
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+      return;
+    }
     alert('សូមជ្រើសរើសឃុំ-សង្កាត់ជាមុនសិន!');
     return;
   }
@@ -1312,6 +1376,11 @@ function renderPollingStationsTable() {
   const filterCom = document.getElementById('filterStationCommune')?.value;
   const searchKw = document.getElementById('searchStationKeyword')?.value?.trim()?.toLowerCase();
 
+  const isTrainer = currentUser && currentUser.role === 'Trainer';
+  const thActions = document.getElementById('thStationActions');
+  if (thActions) thActions.style.display = isTrainer ? 'none' : '';
+  const colSpan = isTrainer ? 6 : 7;
+
   let filtered = allPollingStations;
   if (filterDist) filtered = filtered.filter(p => p.district === filterDist);
   if (filterCom) {
@@ -1327,6 +1396,42 @@ function renderPollingStationsTable() {
     );
   }
 
+  // Dynamic Enable/Disable of btnBatchCreateCommuneStations
+  const btnBatchCommune = document.getElementById('btnBatchCreateCommuneStations');
+  if (btnBatchCommune) {
+    let isComplete = false;
+    let curStCount = 0;
+    let offStCount = 0;
+
+    if (filterCom) {
+      const paddedCom = String(filterCom).padStart(3, '0');
+      const comObj = allCommunes.find(c => String(c.code).padStart(3, '0') === paddedCom);
+      curStCount = allPollingStations.filter(p => String(p.communeCode).padStart(3, '0') === paddedCom).length;
+      offStCount = comObj?.officialStationCount || 0;
+      isComplete = (offStCount > 0 && curStCount >= offStCount);
+    } else if (currentUser && currentUser.role === 'Trainer') {
+      const uDistClean = String(currentUser.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      curStCount = allPollingStations.filter(p => String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean).length;
+      const distComs = allCommunes.filter(c => String(c.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
+      offStCount = distComs.reduce((sum, c) => sum + (c.officialStationCount || 0), 0);
+      isComplete = (offStCount > 0 && curStCount >= offStCount);
+    }
+
+    if (isComplete) {
+      btnBatchCommune.disabled = true;
+      btnBatchCommune.style.opacity = '0.55';
+      btnBatchCommune.style.cursor = 'not-allowed';
+      btnBatchCommune.title = `ការិយាល័យបោះឆ្នោតទាំងអស់មានគ្រប់ចំនួនរួចរាល់ហើយ (${toKhmerNum(curStCount)}/${toKhmerNum(offStCount)})`;
+      btnBatchCommune.innerHTML = `✅ មានការិយាល័យគ្រប់ចំនួន (${toKhmerNum(curStCount)})`;
+    } else {
+      btnBatchCommune.disabled = false;
+      btnBatchCommune.style.opacity = '1';
+      btnBatchCommune.style.cursor = 'pointer';
+      btnBatchCommune.title = 'បង្កើតការិយាល័យទាំងអស់ក្នុងឃុំដែលបានជ្រើសរើសដោយស្វ័យប្រវត្តិតាមស្ថិតិផ្លូវការ';
+      btnBatchCommune.innerHTML = '⚡ បង្កើតការិយាល័យទាំងអស់ក្នុងឃុំនេះ';
+    }
+  }
+
   // Counter badge
   const countSpan = document.getElementById('stationCountBadge');
   if (countSpan) {
@@ -1340,7 +1445,7 @@ function renderPollingStationsTable() {
       const comName = comObj ? comObj.name : filterCom;
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align: center; padding: 36px 16px;">
+          <td colspan="${colSpan}" style="text-align: center; padding: 36px 16px;">
             <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">
               🏛️ មិនទាន់ឃើញមានការិយាល័យបោះឆ្នោតក្នុងឃុំ <strong>${comName}</strong> ឡើយ។
             </p>
@@ -1354,7 +1459,7 @@ function renderPollingStationsTable() {
         </tr>
       `;
     } else {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">រកមិនឃើញការិយាល័យបោះឆ្នោតតាមលក្ខខណ្ឌស្វែងរកនេះឡើយ។</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; color: var(--text-muted); padding: 24px;">រកមិនឃើញការិយាល័យបោះឆ្នោតតាមលក្ខខណ្ឌស្វែងរកនេះឡើយ។</td></tr>`;
     }
     return;
   }
@@ -1367,6 +1472,16 @@ function renderPollingStationsTable() {
   displayList.forEach(ps => {
     const comLabel = getCommunePrefix(ps.communeName, ps.district);
     const distLabel = getDistrictPrefix(ps.district);
+    const actionsTd = isTrainer ? '' : `
+      <td style="text-align: center; white-space: nowrap;">
+        <div class="table-actions-nowrap" style="display: inline-flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; justify-content: center;">
+          <button class="btn btn-secondary btn-sm" onclick="selectStationForScoring('${ps.id}')" title="បញ្ចូលពិន្ទុ" style="white-space: nowrap; padding: 4px 8px; font-weight: 600;">📝 ពិន្ទុ</button>
+          <button class="btn btn-secondary btn-sm" onclick="editStation('${ps.id}')" title="កែប្រែ" style="padding: 4px 8px;">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteStation('${ps.id}')" title="លុប" style="padding: 4px 8px;">🗑️</button>
+        </div>
+      </td>
+    `;
+
     tbody.innerHTML += `
       <tr>
         <td style="text-align: center; font-weight: 700;">${String(ps.code || '').padStart(4, '0')}</td>
@@ -1375,13 +1490,7 @@ function renderPollingStationsTable() {
         <td>${distLabel}</td>
         <td>${ps.location || '---'}</td>
         <td style="text-align: center;"><span class="badge badge-passed">${ps.candidateCount || 0} នាក់</span></td>
-        <td style="text-align: center; white-space: nowrap;">
-          <div class="table-actions-nowrap" style="display: inline-flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; justify-content: center;">
-            <button class="btn btn-secondary btn-sm" onclick="selectStationForScoring('${ps.id}')" title="បញ្ចូលពិន្ទុ" style="white-space: nowrap; padding: 4px 8px; font-weight: 600;">📝 ពិន្ទុ</button>
-            <button class="btn btn-secondary btn-sm" onclick="editStation('${ps.id}')" title="កែប្រែ" style="padding: 4px 8px;">✏️</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteStation('${ps.id}')" title="លុប" style="padding: 4px 8px;">🗑️</button>
-          </div>
-        </td>
+        ${actionsTd}
       </tr>
     `;
   });
@@ -1389,7 +1498,7 @@ function renderPollingStationsTable() {
   if (filtered.length > displayLimit) {
     tbody.innerHTML += `
       <tr style="background: #f8fafc; font-style: italic; color: #64748b; text-align: center;">
-        <td colspan="7" style="padding: 12px;">
+        <td colspan="${colSpan}" style="padding: 12px;">
           ℹ️ បង្ហាញ ${displayLimit} ក្នុងចំណោម ${filtered.length.toLocaleString()} ការិយាល័យ។ សូមប្រើប្រអប់ស្វែងរក ឬជ្រើសរើសតម្រងក្រុង-ស្រុក/ឃុំ-សង្កាត់ ដើម្បីមើលចំការិយាល័យដែលត្រូវការ។
         </td>
       </tr>
@@ -5297,7 +5406,7 @@ function renderUsersTable() {
     if (u.role === 'SuperAdmin') roleBadge = `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-weight:700;">SuperAdmin</span>`;
     else if (u.role === 'Admin') roleBadge = `<span class="badge" style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-weight:700;">Admin</span>`;
     else if (u.role === 'PEC21') roleBadge = `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe; font-weight:700;">PEC21</span>`;
-    else if (u.role === 'Trainer') roleBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff; font-weight:700;">គ្រូបង្គោល</span>`;
+    else if (u.role === 'Trainer') roleBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff; font-weight:700;">គ្រូប្រចាំក្រុងស្រុក</span>`;
     else if (u.role === 'Commune') roleBadge = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-weight:700;">គប.ឃស</span>`;
 
     tbody.innerHTML += `

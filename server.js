@@ -690,7 +690,17 @@ const server = http.createServer(async (req, res) => {
         const uComCode = String(currentUser.communeCode || '').padStart(3, '0');
         filtered = filtered.filter(c => String(c.code).padStart(3, '0') === uComCode);
       }
-      return sendJSON(res, 200, { success: true, communes: filtered });
+      const enriched = filtered.map(c => {
+        const cCode = String(c.code).padStart(3, '0');
+        const offCount = (officialPollingStations || []).filter(s => String(s.communeCode).padStart(3, '0') === cCode).length;
+        const curCount = (db.pollingStations || []).filter(s => String(s.communeCode).padStart(3, '0') === cCode).length;
+        return {
+          ...c,
+          officialStationCount: offCount,
+          currentStationCount: curCount
+        };
+      });
+      return sendJSON(res, 200, { success: true, communes: enriched });
     }
 
     // 7. GET /api/polling-stations
@@ -738,6 +748,10 @@ const server = http.createServer(async (req, res) => {
         stationsToAdd = officialPollingStations;
       } else if (targetCommuneCode) {
         stationsToAdd = officialPollingStations.filter(s => String(s.communeCode).padStart(3, '0') === targetCommuneCode);
+      } else if (data.district || (currentUser.role === 'Trainer' && currentUser.district)) {
+        const targetDist = data.district || currentUser.district;
+        const cleanDist = String(targetDist).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        stationsToAdd = officialPollingStations.filter(s => String(s.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanDist);
       } else {
         return sendJSON(res, 400, { success: false, message: 'សូមជ្រើសរើសឃុំ-សង្កាត់' });
       }
