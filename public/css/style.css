@@ -954,6 +954,19 @@ textarea,
     padding-left: 10px !important;
   }
 
+  .station-banner-row td,
+  .official-print-table tr.station-banner-row td {
+    font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+    font-size: 11pt !important;
+    font-weight: normal !important;
+    background: #e2e8f0 !important;
+    padding: 4px 8px !important;
+    border: 1px solid #000 !important;
+    text-align: left !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
   /* Signature Footer */
   .signature-section {
     margin-top: 15px;
