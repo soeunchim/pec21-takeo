@@ -923,6 +923,10 @@ textarea,
     color: black !important;
   }
 
+  .official-print-table td {
+    font-weight: normal !important;
+  }
+
   .official-print-table th {
     background: #f1f5f9 !important;
     text-align: center;
@@ -1358,13 +1362,13 @@ tr.excel-row-active td.excel-calc-rank {
   max-width: 1040px;
   width: fit-content;
   margin: 10px auto;
-  padding: 5mm 6mm 6mm 6mm;
+  padding: 3mm 6mm 6mm 6mm;
   box-sizing: border-box;
   overflow-x: auto;
 }
 
 @page {
-  margin: 5mm 6mm;
+  margin: 4mm 6mm;
 }
 
 .committee-signatures {
@@ -1406,7 +1410,7 @@ tr.excel-row-active td.excel-calc-rank {
   font-size: 10.5pt !important;
   font-weight: normal !important;
   text-align: center !important;
-  padding: 2px 3px !important;
+  padding: 3px 3px !important;
   line-height: 1.25 !important;
 }
 .print-paper-sheet.landscape .official-print-table tr.category-row td {
@@ -1414,14 +1418,18 @@ tr.excel-row-active td.excel-calc-rank {
   font-size: 10.5pt !important;
   font-weight: normal !important;
   text-align: left !important;
-  padding: 2px 6px !important;
-  line-height: 1.25 !important;
+  padding: 5px 6px !important;
+  height: 29px !important;
+  line-height: 1.35 !important;
 }
 .print-paper-sheet.landscape .official-print-table td {
   font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
   font-size: 10.5pt !important;
-  padding: 2px 3px !important;
-  line-height: 1.25 !important;
+  font-weight: normal !important;
+  padding: 5px 4px !important;
+  height: 29px !important;
+  line-height: 1.35 !important;
+  vertical-align: middle !important;
 }
 .print-paper-sheet.landscape .th-criteria {
   font-size: 7.2pt !important;
