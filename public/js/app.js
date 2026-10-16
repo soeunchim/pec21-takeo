@@ -2200,6 +2200,8 @@ function handleScoringTablePaste(e) {
         } else if (inputEl.classList.contains('cand-score-degree') || inputEl.classList.contains('cand-score-exp')) {
           const num = parseFloat(fromKhmerNum(rawVal));
           inputEl.value = toKhmerNum(isNaN(num) ? 0 : num);
+        } else if (inputEl.classList.contains('cand-interview')) {
+          inputEl.value = sanitizeInterviewInput(rawVal);
         } else {
           inputEl.value = rawVal;
         }
@@ -2300,36 +2302,39 @@ window.onCandidateScoreInput = function(input) {
   onCandidateRowChange(input);
 };
 
-const ABSENT_PREFIXES = ['', 'អ', 'អវ', 'អវត', 'អវត្ត', 'អវត្តម', 'អវត្តមា', 'អវត្តមាន'];
-
 function sanitizeInterviewInput(val) {
   if (!val) return '';
-  let str = String(val).trim();
-  
-  if (/^ab(s|se|sen|sent)?$/i.test(str)) {
+  let str = String(val);
+
+  // If user pasted or typed 'absent' or 'ab', convert to 'អវត្តមាន'
+  if (/^ab(s|se|sen|sent)?$/i.test(str.trim())) {
     return 'អវត្តមាន';
   }
 
-  // Allow prefixes of អវត្តមាន or exactly អវត្តមាន
-  if (ABSENT_PREFIXES.includes(str)) {
-    return str;
-  }
+  // Convert any English digits to Khmer digits
+  let converted = toKhmerNum(str);
 
-  // Numeric score (Khmer or English digits)
-  let khmerStr = toKhmerNum(str).replace(/[^០-៩.]/g, '');
-  if (khmerStr) {
-    const parts = khmerStr.split('.');
-    if (parts.length > 2) {
-      khmerStr = parts[0] + '.' + parts.slice(1).join('');
+  // Allow ONLY Khmer characters (\u1780-\u17FF), spaces, and decimal dot
+  // This explicitly removes English letters (a-z, A-Z), Latin characters, and other symbols
+  let cleaned = converted.replace(/[^\u1780-\u17FF0-9.\s]/g, '');
+  cleaned = toKhmerNum(cleaned);
+
+  // If input is purely numeric (Khmer digits and decimal point)
+  const isPureNumber = /^[០-៩]+(?:\.[០-៩]*)?$/.test(cleaned.trim());
+  if (isPureNumber) {
+    const parts = cleaned.trim().split('.');
+    let numStr = parts[0];
+    if (parts.length > 1) {
+      numStr += '.' + parts.slice(1).join('');
     }
-    const engNum = parseFloat(fromKhmerNum(khmerStr));
+    const engNum = parseFloat(fromKhmerNum(numStr));
     if (!isNaN(engNum) && engNum > 20) {
-      khmerStr = toKhmerNum(20);
+      return toKhmerNum(20);
     }
-    return khmerStr;
+    return numStr;
   }
 
-  return '';
+  return cleaned;
 }
 
 window.onCandidateInterviewInput = function(input) {
@@ -2346,8 +2351,17 @@ window.onCandidateInterviewInput = function(input) {
 window.onCandidateInterviewChange = function(input) {
   const tr = input.closest('tr');
   let val = input.value.trim();
-  if (val.startsWith('អ')) {
+  if (val.startsWith('អ') || /^ab/i.test(val)) {
     input.value = 'អវត្តមាន';
+  } else if (/^[០-៩]+(?:\.[០-៩]+)?$/.test(val)) {
+    const eng = parseFloat(fromKhmerNum(val));
+    if (!isNaN(eng)) {
+      if (eng > 20) {
+        input.value = toKhmerNum(20);
+      } else {
+        input.value = toKhmerNum(val);
+      }
+    }
   }
   updateRowDeleteButtonState(tr);
   onCandidateRowChange(input);
@@ -2552,7 +2566,7 @@ window.onCandidateRowChange = function(inputElem) {
 
   let total = shortlist;
   let isAbsent = false;
-  if (interviewRaw.includes('អវត្តមាន')) {
+  if (interviewRaw.includes('អវត្តមាន') || interviewRaw.startsWith('អ')) {
     isAbsent = true;
     total = 'អវត្តមាន';
   } else {
@@ -2676,7 +2690,7 @@ async function saveBatchScores() {
     const name = nameInput ? nameInput.value.trim() : '';
 
     const rawInterview = tr.querySelector('.cand-interview') ? tr.querySelector('.cand-interview').value.trim() : '';
-    const cleanInterview = rawInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (fromKhmerNum(rawInterview));
+    const cleanInterview = (rawInterview === 'អវត្តមាន' || rawInterview.startsWith('អ')) ? 'អវត្តមាន' : (fromKhmerNum(rawInterview));
 
     candidatesPayload.push({
       id: candId.startsWith('temp_') ? undefined : candId,
