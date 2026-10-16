@@ -380,6 +380,12 @@ async function initCloudSync() {
 // Business Logic: គ.ក.ប Scoring and Ranking Engine
 // ==============================================================================
 
+function fromKhmerNum(str) {
+  if (str === null || str === undefined || str === '') return '';
+  const khmerDigits = { '០': '0', '១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9' };
+  return String(str).replace(/[០-៩]/g, d => khmerDigits[d]);
+}
+
 /**
  * Calculates rank and status for candidates in a polling station for each position:
  * - 6 positions: ប្រធាន (a), អនុប្រធាន (b), លេខាធិការ (c), សមាជិកទី១ (d), សមាជិកទី២ (e), សមាជិកទី៣ (f)
@@ -401,8 +407,8 @@ function recalculatePollingStationRanks(pollingStationId) {
     // Separate present vs absent candidates
     list.forEach(c => {
       // Calculate shortlist score
-      const deg = parseFloat(c.scoreDegree) || 0;
-      const exp = parseFloat(c.scoreExp) || 0;
+      const deg = parseFloat(fromKhmerNum(c.scoreDegree)) || 0;
+      const exp = parseFloat(fromKhmerNum(c.scoreExp)) || 0;
       c.scoreShortlist = deg + exp;
 
       // Check interview score
@@ -411,7 +417,7 @@ function recalculatePollingStationRanks(pollingStationId) {
         c.scoreInterview = 'អវត្តមាន';
         c.scoreTotal = 'អវត្តមាន';
       } else {
-        const interview = parseFloat(c.scoreInterview);
+        const interview = parseFloat(fromKhmerNum(c.scoreInterview));
         if (!isNaN(interview)) {
           c.scoreInterview = interview;
           c.scoreTotal = c.scoreShortlist + interview;

@@ -791,6 +791,29 @@ function toKhmerNum(num) {
   return String(num).replace(/[0-9]/g, d => khmerDigits[parseInt(d, 10)]);
 }
 
+function fromKhmerNum(str) {
+  if (str === null || str === undefined || str === '') return '';
+  const khmerDigits = { '០': '0', '១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9' };
+  return String(str).replace(/[០-៩]/g, d => khmerDigits[d]);
+}
+
+function formatKhmerPhoneNumber(val) {
+  if (!val) return '';
+  const eng = fromKhmerNum(String(val)).replace(/[^0-9]/g, '').slice(0, 10);
+  if (!eng) return '';
+  let formatted = '';
+  if (eng.length <= 3) {
+    formatted = eng;
+  } else if (eng.length <= 6) {
+    formatted = `${eng.slice(0, 3)} ${eng.slice(3)}`;
+  } else if (eng.length <= 9) {
+    formatted = `${eng.slice(0, 3)} ${eng.slice(3, 6)} ${eng.slice(6)}`;
+  } else {
+    formatted = `${eng.slice(0, 3)} ${eng.slice(3, 6)} ${eng.slice(6, 10)}`;
+  }
+  return toKhmerNum(formatted);
+}
+
 function getDistrictPrefix(districtName) {
   if (!districtName) return '';
   const clean = String(districtName).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
@@ -2115,30 +2138,32 @@ function handleScoringTablePaste(e) {
           } else {
             inputEl.value = 'ប';
           }
+        } else if (inputEl.classList.contains('cand-phone')) {
+          inputEl.value = formatKhmerPhoneNumber(rawVal);
         } else if (inputEl.classList.contains('cand-score-degree') || inputEl.classList.contains('cand-score-exp')) {
-          const num = parseFloat(rawVal);
-          inputEl.value = isNaN(num) ? 0 : num;
+          const num = parseFloat(fromKhmerNum(rawVal));
+          inputEl.value = toKhmerNum(isNaN(num) ? 0 : num);
         } else {
           inputEl.value = rawVal;
         }
 
         // Auto preset score if degree/exp text was pasted without score column
-        if (inputEl.classList.contains('cand-degree') && (!cells[c + 1] || isNaN(parseFloat(cells[c + 1])))) {
+        if (inputEl.classList.contains('cand-degree') && (!cells[c + 1] || isNaN(parseFloat(fromKhmerNum(cells[c + 1]))))) {
           const degScoreInput = tr.querySelector('.cand-score-degree');
           if (degScoreInput) {
-            if (rawVal.includes('បរិញ្ញាបត្រ')) degScoreInput.value = 12;
-            else if (rawVal.includes('ជាន់ខ្ពស់')) degScoreInput.value = 8;
-            else if (rawVal.includes('បាក់ឌុប')) degScoreInput.value = 5;
-            else if (rawVal.includes('ក្រោម') || rawVal.includes('គ្មាន')) degScoreInput.value = 0;
+            if (rawVal.includes('បរិញ្ញាបត្រ')) degScoreInput.value = toKhmerNum(12);
+            else if (rawVal.includes('ជាន់ខ្ពស់')) degScoreInput.value = toKhmerNum(8);
+            else if (rawVal.includes('បាក់ឌុប')) degScoreInput.value = toKhmerNum(5);
+            else if (rawVal.includes('ក្រោម') || rawVal.includes('គ្មាន')) degScoreInput.value = toKhmerNum(0);
           }
         }
-        if (inputEl.classList.contains('cand-exp') && (!cells[c + 1] || isNaN(parseFloat(cells[c + 1])))) {
+        if (inputEl.classList.contains('cand-exp') && (!cells[c + 1] || isNaN(parseFloat(fromKhmerNum(cells[c + 1]))))) {
           const expScoreInput = tr.querySelector('.cand-score-exp');
           if (expScoreInput) {
-            if (rawVal.includes('២ដង') || rawVal.includes('2ដង') || rawVal.includes('2 ដង')) expScoreInput.value = 12;
-            else if (rawVal.includes('១ដង') || rawVal.includes('1ដង') || rawVal.includes('1 ដង')) expScoreInput.value = 8;
-            else if (rawVal.includes('ស្ទង់មតិ')) expScoreInput.value = 4;
-            else if (rawVal.includes('គ្មាន')) expScoreInput.value = 0;
+            if (rawVal.includes('២ដង') || rawVal.includes('2ដង') || rawVal.includes('2 ដង')) expScoreInput.value = toKhmerNum(12);
+            else if (rawVal.includes('១ដង') || rawVal.includes('1ដង') || rawVal.includes('1 ដង')) expScoreInput.value = toKhmerNum(8);
+            else if (rawVal.includes('ស្ទង់មតិ')) expScoreInput.value = toKhmerNum(4);
+            else if (rawVal.includes('គ្មាន')) expScoreInput.value = toKhmerNum(0);
           }
         }
       }
@@ -2146,6 +2171,7 @@ function handleScoringTablePaste(e) {
       // Trigger change and recalculation for this row
       const nameInput = tr.querySelector('.cand-name');
       if (nameInput) onCandidateRowChange(nameInput);
+      updateRowDeleteButtonState(tr);
     }
 
     // Update candidate count badge
@@ -2166,6 +2192,52 @@ function handleScoringTablePaste(e) {
 // TAB 3: CANDIDATE SCORING & LIVE RANKING TABLE
 // ==============================================================================
 
+function hasCandidateRowData(tr) {
+  if (!tr) return false;
+  const name = tr.querySelector('.cand-name')?.value?.trim() || '';
+  const dob = tr.querySelector('.cand-dob')?.value?.trim() || '';
+  const phone = tr.querySelector('.cand-phone')?.value?.trim() || '';
+  const degree = tr.querySelector('.cand-degree')?.value?.trim() || '';
+  const scoreDeg = parseFloat(fromKhmerNum(tr.querySelector('.cand-score-degree')?.value)) || 0;
+  const exp = tr.querySelector('.cand-exp')?.value?.trim() || '';
+  const scoreExp = parseFloat(fromKhmerNum(tr.querySelector('.cand-score-exp')?.value)) || 0;
+  const interview = tr.querySelector('.cand-interview')?.value?.trim() || '';
+  return !!(name || dob || phone || degree || scoreDeg > 0 || exp || scoreExp > 0 || interview);
+}
+
+function updateRowDeleteButtonState(tr) {
+  if (!tr) return;
+  const btn = tr.querySelector('.cand-btn-delete');
+  if (btn) {
+    const hasData = hasCandidateRowData(tr);
+    btn.disabled = !hasData;
+  }
+}
+
+window.onCandidatePhoneInput = function(input) {
+  const tr = input.closest('tr');
+  const prevVal = input.value;
+  const formatted = formatKhmerPhoneNumber(prevVal);
+  if (formatted !== prevVal) {
+    input.value = formatted;
+  }
+  updateRowDeleteButtonState(tr);
+};
+
+window.onCandidateScoreInput = function(input) {
+  const tr = input.closest('tr');
+  const prevVal = input.value;
+  const engVal = fromKhmerNum(prevVal).replace(/[^0-9.]/g, '');
+  const parts = engVal.split('.');
+  const sanitizedEng = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : engVal;
+  const khmerVal = toKhmerNum(sanitizedEng);
+  if (khmerVal !== prevVal) {
+    input.value = khmerVal;
+  }
+  updateRowDeleteButtonState(tr);
+  onCandidateRowChange(input);
+};
+
 async function renderScoringTableForActiveStation() {
   const stationId = document.getElementById('scoringStationSelect').value;
   const tbody = document.getElementById('scoringTableBody');
@@ -2184,7 +2256,7 @@ async function renderScoringTableForActiveStation() {
     const c4 = String(ps.code || '').padStart(4, '0');
     const distPrefix = getDistrictPrefix(ps.district);
     const comPrefix = getCommunePrefix(ps.communeName, ps.district);
-    infoSpan.textContent = `📍 ${distPrefix} | ${comPrefix} | ${ps.name} [កូដ: ${c4}] | ទីតាំង: ${ps.location || 'គ្មាន'}`;
+    infoSpan.textContent = `📍 ${distPrefix} | ${comPrefix} | ${ps.name} [កូដ: ${toKhmerNum(c4)}] | ទីតាំង: ${ps.location || 'គ្មាន'}`;
   }
 
   try {
@@ -2195,7 +2267,7 @@ async function renderScoringTableForActiveStation() {
 
     if (countBadge) {
       const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
-      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${filledCount} / ១៨ នាក់`;
+      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} / ១៨ នាក់`;
     }
 
     tbody.innerHTML = '';
@@ -2248,11 +2320,33 @@ async function renderScoringTableForActiveStation() {
         else if (cand.status === 'C-បម្រុងបន្ទាប់') badgeHtml = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
         else if (cand.status === 'អវត្តមាន') badgeHtml = '<span class="badge badge-absent">អវត្តមាន</span>';
 
+        const degScoreVal = cand.scoreDegree !== undefined && cand.scoreDegree !== null ? cand.scoreDegree : 0;
+        const expScoreVal = cand.scoreExp !== undefined && cand.scoreExp !== null ? cand.scoreExp : 0;
+        const shortlistVal = cand.scoreShortlist !== undefined && cand.scoreShortlist !== null ? cand.scoreShortlist : (parseFloat(fromKhmerNum(degScoreVal)) || 0) + (parseFloat(fromKhmerNum(expScoreVal)) || 0);
+
+        let totalDisplay = '---';
+        if (cand.scoreTotal === 'អវត្តមាន' || isAbsent) {
+          totalDisplay = 'អវត្តមាន';
+        } else if (cand.scoreTotal !== undefined && cand.scoreTotal !== null && cand.scoreTotal !== '') {
+          totalDisplay = toKhmerNum(cand.scoreTotal);
+        }
+
+        const hasData = !!(
+          (cand.name && cand.name.trim()) ||
+          (cand.dob && cand.dob.trim()) ||
+          (cand.phone && cand.phone.trim()) ||
+          (cand.degree && cand.degree.trim()) ||
+          (parseFloat(fromKhmerNum(cand.scoreDegree)) > 0) ||
+          (cand.experience && cand.experience.trim()) ||
+          (parseFloat(fromKhmerNum(cand.scoreExp)) > 0) ||
+          (cand.scoreInterview !== undefined && cand.scoreInterview !== null && String(cand.scoreInterview).trim() !== '')
+        );
+
         tbody.innerHTML += `
           <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
-            <td class="excel-col-order">${order}</td>
+            <td class="excel-col-order">${toKhmerNum(order)}</td>
             <td>
-              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)" onkeydown="onCandidateNameKeyDown(event, this)">
+              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))" onkeydown="onCandidateNameKeyDown(event, this)">
             </td>
             <td style="text-align: center;">
               <select class="excel-cell-select cand-gender" onchange="onCandidateRowChange(this)">
@@ -2261,40 +2355,40 @@ async function renderScoringTableForActiveStation() {
               </select>
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-dob" value="${cand.dob || ''}" placeholder="DD-MM-YYYY" style="text-align: center;" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-dob" value="${cand.dob || ''}" placeholder="DD-MM-YYYY" style="text-align: center;" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))">
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-phone" value="${cand.phone || ''}" placeholder="012..." onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-phone" value="${formatKhmerPhoneNumber(cand.phone || '')}" placeholder="០៨៧ ៤០០ ០៩០" oninput="onCandidatePhoneInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" list="degreePresets" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)">
+              <input type="text" list="degreePresets" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))">
             </td>
             <td>
-              <input type="number" class="excel-cell-input cand-score-degree" value="${cand.scoreDegree || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
+              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-degree" value="${toKhmerNum(degScoreVal)}" style="text-align: center;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" list="expPresets" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)">
+              <input type="text" list="expPresets" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="ជ្រើសរើស/វាយបញ្ចូល" onchange="onCandidateRowChange(this)" oninput="updateRowDeleteButtonState(this.closest('tr'))">
             </td>
             <td>
-              <input type="number" class="excel-cell-input cand-score-exp" value="${cand.scoreExp || 0}" min="0" max="20" step="0.5" style="text-align: center;" onchange="onCandidateRowChange(this)">
+              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-exp" value="${toKhmerNum(expScoreVal)}" style="text-align: center;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td class="excel-calc-shortlist cand-shortlist-display">
-              ${cand.scoreShortlist || 0}
+              ${toKhmerNum(shortlistVal)}
             </td>
             <td>
-              <input type="text" list="interviewPresets" class="excel-cell-input cand-interview" value="${cand.scoreInterview !== undefined ? cand.scoreInterview : ''}" placeholder="0-20 ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" onchange="onCandidateRowChange(this)">
+              <input type="text" list="interviewPresets" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" oninput="updateRowDeleteButtonState(this.closest('tr'))" onchange="onCandidateRowChange(this)">
             </td>
             <td class="excel-calc-total cand-total-display">
-              ${cand.scoreTotal !== undefined && cand.scoreTotal !== null && cand.scoreTotal !== '' ? cand.scoreTotal : '---'}
+              ${totalDisplay}
             </td>
             <td class="excel-calc-rank cand-rank-display">
-              ${cand.rank || order}
+              ${toKhmerNum(cand.rank || order)}
             </td>
             <td class="excel-calc-status cand-status-display">
               ${badgeHtml}
             </td>
             <td style="text-align: center;">
-              <button class="btn btn-danger btn-sm" style="padding: 2px 7px; font-size: 11px;" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក">❌</button>
+              <button class="btn btn-danger btn-sm cand-btn-delete" style="padding: 2px 7px; font-size: 11px;" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក" ${hasData ? '' : 'disabled'}>❌</button>
             </td>
           </tr>
         `;
@@ -2321,19 +2415,19 @@ window.onCandidateRowChange = function(inputElem) {
   // Auto preset score when typing / selecting Degree
   if (inputElem === degInput) {
     const val = degInput.value.trim();
-    if (val.includes('បរិញ្ញាបត្រ')) degScoreInput.value = 12;
-    else if (val.includes('ជាន់ខ្ពស់')) degScoreInput.value = 8;
-    else if (val.includes('បាក់ឌុប')) degScoreInput.value = 5;
-    else if (val.includes('ក្រោម') || val.includes('គ្មាន')) degScoreInput.value = 0;
+    if (val.includes('បរិញ្ញាបត្រ')) degScoreInput.value = toKhmerNum(12);
+    else if (val.includes('ជាន់ខ្ពស់')) degScoreInput.value = toKhmerNum(8);
+    else if (val.includes('បាក់ឌុប')) degScoreInput.value = toKhmerNum(5);
+    else if (val.includes('ក្រោម') || val.includes('គ្មាន')) degScoreInput.value = toKhmerNum(0);
   }
 
   // Auto preset score when typing / selecting Experience
   if (inputElem === expInput) {
     const val = expInput.value.trim();
-    if (val.includes('២ដង') || val.includes('2ដង') || val.includes('2 ដង')) expScoreInput.value = 12;
-    else if (val.includes('១ដង') || val.includes('1ដង') || val.includes('1 ដង')) expScoreInput.value = 8;
-    else if (val.includes('ស្ទង់មតិ')) expScoreInput.value = 4;
-    else if (val.includes('គ្មាន')) expScoreInput.value = 0;
+    if (val.includes('២ដង') || val.includes('2ដង') || val.includes('2 ដង')) expScoreInput.value = toKhmerNum(12);
+    else if (val.includes('១ដង') || val.includes('1ដង') || val.includes('1 ដង')) expScoreInput.value = toKhmerNum(8);
+    else if (val.includes('ស្ទង់មតិ')) expScoreInput.value = toKhmerNum(4);
+    else if (val.includes('គ្មាន')) expScoreInput.value = toKhmerNum(0);
   }
 
   const name = tr.querySelector('.cand-name').value.trim();
@@ -2341,13 +2435,13 @@ window.onCandidateRowChange = function(inputElem) {
   const dob = tr.querySelector('.cand-dob').value.trim();
   const phone = tr.querySelector('.cand-phone').value.trim();
   const degree = degInput.value.trim();
-  const scoreDeg = parseFloat(degScoreInput.value) || 0;
+  const scoreDeg = parseFloat(fromKhmerNum(degScoreInput.value)) || 0;
   const exp = expInput.value.trim();
-  const scoreExp = parseFloat(expScoreInput.value) || 0;
+  const scoreExp = parseFloat(fromKhmerNum(expScoreInput.value)) || 0;
   const interviewRaw = tr.querySelector('.cand-interview').value.trim();
 
   const shortlist = scoreDeg + scoreExp;
-  tr.querySelector('.cand-shortlist-display').textContent = shortlist;
+  tr.querySelector('.cand-shortlist-display').textContent = toKhmerNum(shortlist);
 
   let total = shortlist;
   let isAbsent = false;
@@ -2355,13 +2449,13 @@ window.onCandidateRowChange = function(inputElem) {
     isAbsent = true;
     total = 'អវត្តមាន';
   } else {
-    const interviewNum = parseFloat(interviewRaw);
+    const interviewNum = parseFloat(fromKhmerNum(interviewRaw));
     if (!isNaN(interviewNum)) {
       total = shortlist + interviewNum;
     }
   }
 
-  tr.querySelector('.cand-total-display').textContent = total;
+  tr.querySelector('.cand-total-display').textContent = isAbsent ? 'អវត្តមាន' : (typeof total === 'number' ? toKhmerNum(total) : '---');
 
   // Update in memory array
   let cand = currentCandidates.find(c => c.id === candId);
@@ -2375,9 +2469,12 @@ window.onCandidateRowChange = function(inputElem) {
     cand.experience = exp;
     cand.scoreExp = scoreExp;
     cand.scoreShortlist = shortlist;
-    cand.scoreInterview = isAbsent ? 'អវត្តមាន' : (interviewRaw || '');
+    cand.scoreInterview = isAbsent ? 'អវត្តមាន' : (fromKhmerNum(interviewRaw) || '');
     cand.scoreTotal = total;
   }
+
+  // Update delete button state
+  updateRowDeleteButtonState(tr);
 
   // Recalculate rank for this role in UI
   recalculateUIRanksForRole(roleName);
@@ -2389,12 +2486,15 @@ function recalculateUIRanksForRole(roleName) {
     const name = r.querySelector('.cand-name').value.trim();
     const totalText = r.querySelector('.cand-total-display').textContent.trim();
     const isAbsent = totalText === 'អវត្តមាន';
-    const totalNum = parseFloat(totalText) || 0;
-    return { row: r, hasName: !!name, isAbsent, totalNum };
+    const totalNum = parseFloat(fromKhmerNum(totalText)) || 0;
+    const order = parseInt(r.getAttribute('data-order')) || 1;
+    return { row: r, hasName: !!name, isAbsent, totalNum, order };
   });
 
   // Filter with name
   const activeRows = rowData.filter(d => d.hasName);
+  const inactiveRows = rowData.filter(d => !d.hasName);
+
   activeRows.sort((a, b) => {
     if (a.isAbsent && !b.isAbsent) return 1;
     if (!a.isAbsent && b.isAbsent) return -1;
@@ -2405,16 +2505,23 @@ function recalculateUIRanksForRole(roleName) {
     const rankElem = d.row.querySelector('.cand-rank-display');
     const statusElem = d.row.querySelector('.cand-status-display');
     if (d.isAbsent) {
-      rankElem.textContent = activeRows.length;
+      rankElem.textContent = toKhmerNum(activeRows.length);
       statusElem.innerHTML = '<span class="badge badge-absent">អវត្តមាន</span>';
     } else {
       const r = idx + 1;
-      rankElem.textContent = r;
+      rankElem.textContent = toKhmerNum(r);
       if (r === 1) statusElem.innerHTML = '<span class="badge badge-passed">A-ជាប់</span>';
       else if (r === 2) statusElem.innerHTML = '<span class="badge badge-reserve">B-បម្រុង</span>';
       else if (r === 3) statusElem.innerHTML = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
-      else statusElem.innerHTML = `<span class="badge badge-reserve">បម្រុង ${r-1}</span>`;
+      else statusElem.innerHTML = `<span class="badge badge-reserve">បម្រុង ${toKhmerNum(r - 1)}</span>`;
     }
+  });
+
+  inactiveRows.forEach(d => {
+    const rankElem = d.row.querySelector('.cand-rank-display');
+    const statusElem = d.row.querySelector('.cand-status-display');
+    rankElem.textContent = toKhmerNum(d.order);
+    statusElem.innerHTML = '<span class="badge badge-reserve">---</span>';
   });
 }
 
@@ -2427,19 +2534,23 @@ window.clearCandidateRow = async function(btn) {
     isDanger: true
   });
   if (ok) {
+    const order = parseInt(tr.getAttribute('data-order')) || 1;
     tr.querySelector('.cand-name').value = '';
+    tr.querySelector('.cand-gender').value = 'ប';
     tr.querySelector('.cand-dob').value = '';
     tr.querySelector('.cand-phone').value = '';
     tr.querySelector('.cand-degree').value = '';
-    tr.querySelector('.cand-score-degree').value = 0;
+    tr.querySelector('.cand-score-degree').value = toKhmerNum(0);
     tr.querySelector('.cand-exp').value = '';
-    tr.querySelector('.cand-score-exp').value = 0;
-    tr.querySelector('.cand-shortlist-display').textContent = 0;
+    tr.querySelector('.cand-score-exp').value = toKhmerNum(0);
+    tr.querySelector('.cand-shortlist-display').textContent = toKhmerNum(0);
     tr.querySelector('.cand-interview').value = '';
     tr.querySelector('.cand-total-display').textContent = '---';
+    tr.querySelector('.cand-rank-display').textContent = toKhmerNum(order);
     tr.querySelector('.cand-status-display').innerHTML = '<span class="badge badge-reserve">---</span>';
 
     onCandidateRowChange(tr.querySelector('.cand-name'));
+    updateRowDeleteButtonState(tr);
   }
 };
 
@@ -2457,6 +2568,9 @@ async function saveBatchScores() {
     const nameInput = tr.querySelector('.cand-name');
     const name = nameInput ? nameInput.value.trim() : '';
 
+    const rawInterview = tr.querySelector('.cand-interview') ? tr.querySelector('.cand-interview').value.trim() : '';
+    const cleanInterview = rawInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (fromKhmerNum(rawInterview));
+
     candidatesPayload.push({
       id: candId.startsWith('temp_') ? undefined : candId,
       pollingStationId: stationId,
@@ -2467,10 +2581,10 @@ async function saveBatchScores() {
       dob: tr.querySelector('.cand-dob') ? tr.querySelector('.cand-dob').value.trim() : '',
       phone: tr.querySelector('.cand-phone') ? tr.querySelector('.cand-phone').value.trim() : '',
       degree: tr.querySelector('.cand-degree') ? tr.querySelector('.cand-degree').value.trim() : '',
-      scoreDegree: parseFloat(tr.querySelector('.cand-score-degree')?.value) || 0,
+      scoreDegree: parseFloat(fromKhmerNum(tr.querySelector('.cand-score-degree')?.value)) || 0,
       experience: tr.querySelector('.cand-exp') ? tr.querySelector('.cand-exp').value.trim() : '',
-      scoreExp: parseFloat(tr.querySelector('.cand-score-exp')?.value) || 0,
-      scoreInterview: tr.querySelector('.cand-interview') ? tr.querySelector('.cand-interview').value.trim() : ''
+      scoreExp: parseFloat(fromKhmerNum(tr.querySelector('.cand-score-exp')?.value)) || 0,
+      scoreInterview: cleanInterview
     });
   });
 

@@ -1090,6 +1090,20 @@ textarea,
   position: relative;
 }
 
+/* Remove number input spinner arrows (▲/▼) in Excel table & throughout */
+.excel-cell-input[type="number"]::-webkit-outer-spin-button,
+.excel-cell-input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+.excel-cell-input[type="number"],
+input[type="number"] {
+  -moz-appearance: textfield !important;
+}
+
 .excel-cell-select {
   width: 100%;
   height: 38px;
@@ -2062,4 +2076,16 @@ tr.excel-row-active td.excel-calc-rank {
   background: #e2e8f0;
   color: #1e293b;
 }
+
+/* Candidate Row Delete Button Disabled State */
+.cand-btn-delete:disabled {
+  opacity: 0.28 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  filter: grayscale(1) !important;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
 
