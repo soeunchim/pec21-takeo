@@ -1192,29 +1192,41 @@ textarea,
    ============================================================================== */
 .excel-sheets-nav-bar {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   background: #f1f5f9;
-  padding: 8px 12px 0 12px;
+  padding: 6px 8px 0 8px;
   border-radius: 8px 8px 0 0;
   border-bottom: 2px solid #cbd5e1;
-  overflow-x: auto;
+  overflow: hidden; /* Prevent horizontal and vertical scrollbars */
+  scrollbar-width: none;
+  align-items: stretch;
+}
+
+.excel-sheets-nav-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .excel-sheet-tab {
+  flex: 1 1 0;
+  min-width: 0;
   background: #e2e8f0;
   border: 1px solid #cbd5e1;
   border-bottom: none;
-  padding: 9px 16px;
-  font-size: 13.5px;
+  padding: 7px 4px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #475569;
-  border-radius: 6px 6px 0 0;
+  border-radius: 5px 5px 0 0;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 3px;
   transition: all 0.15s ease;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .excel-sheet-tab:hover {
@@ -1229,7 +1241,26 @@ textarea,
   border-top: 3px solid #16a34a;
   font-weight: 700;
   margin-bottom: -2px;
-  padding-bottom: 11px;
+  padding-bottom: 9px;
+}
+
+@media (max-width: 1200px) {
+  .excel-sheet-tab {
+    font-size: 11px;
+    padding: 6px 2px;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 992px) {
+  .excel-sheets-nav-bar {
+    overflow-x: auto;
+  }
+  .excel-sheet-tab {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
 }
 
 /* Official Print Paper Sheet (A4 Screen Preview & Print) */
