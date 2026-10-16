@@ -696,7 +696,8 @@ const server = http.createServer(async (req, res) => {
         const userComCode = String(currentUser.communeCode).padStart(3, '0');
         list = list.filter(p => String(p.communeCode).padStart(3, '0') === userComCode);
       } else if (currentUser.role === 'Trainer') {
-        list = list.filter(p => p.district === currentUser.district);
+        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        list = list.filter(p => (p.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
         if (filterCommune && filterCommune !== 'all') list = list.filter(p => String(p.communeCode).padStart(3, '0') === filterCommune);
       } else {
         if (filterDistrict && filterDistrict !== 'all') list = list.filter(p => p.district === filterDistrict);
@@ -935,7 +936,8 @@ const server = http.createServer(async (req, res) => {
       if (currentUser.role === 'Commune') {
         list = list.filter(c => c.communeCode === currentUser.communeCode);
       } else if (currentUser.role === 'Trainer') {
-        list = list.filter(c => c.district === currentUser.district);
+        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        list = list.filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
         if (cCode && cCode !== 'all') list = list.filter(c => String(c.communeCode).padStart(3, '0') === String(cCode).padStart(3, '0'));
       } else {
         if (dist && dist !== 'all') list = list.filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === dist.replace(/^(ស្រុក|ក្រុង)\s*/, ''));

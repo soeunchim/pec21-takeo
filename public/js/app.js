@@ -2723,8 +2723,16 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
     return;
   }
 
-  if (isSuperOrAdmin) {
-    comSelect.innerHTML += '<option value="all">⭐ គ្រប់ឃុំទាំងអស់ក្នុងស្រុក</option>';
+  const canSelectAllCommunes = currentUser && (
+    currentUser.role === 'SuperAdmin' ||
+    currentUser.role === 'Admin' ||
+    currentUser.role === 'PEC21' ||
+    currentUser.role === 'Trainer'
+  );
+
+  if (canSelectAllCommunes) {
+    const allLabel = isKrong ? '⭐ គ្រប់សង្កាត់ទាំងអស់ក្នុងក្រុង' : '⭐ គ្រប់ឃុំទាំងអស់នៅក្នុងស្រុក';
+    comSelect.innerHTML += `<option value="all">${allLabel}</option>`;
   }
 
   distCommunes.forEach(c => {
@@ -2790,7 +2798,7 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
   }
 
   if (selCommuneCode === 'all') {
-    const scopeLabel = (selDist === 'all') ? 'ទូទាំងខេត្ត' : `ស្រុក${selDist}`;
+    const scopeLabel = (selDist === 'all') ? 'ទូទាំងខេត្ត' : getDistrictPrefix(selDist);
     codeSelect.innerHTML = `<option value="all">⭐ គ្រប់ការិយាល័យ (${scopeLabel} ${toKhmerNum(stations.length)})</option>`;
     locSelect.innerHTML = `<option value="all">📍 គ្រប់ទីតាំងការិយាល័យ (${scopeLabel})</option>`;
     if (codeInput) {
