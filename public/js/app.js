@@ -66,6 +66,8 @@ function closeModernPopup(result = false) {
   if (overlay) {
     overlay.classList.remove('active');
     overlay.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; z-index: -1 !important;';
+    const cardEl = overlay.querySelector('.modern-popup-card');
+    if (cardEl) cardEl.classList.remove('wide-card');
   }
   if (modernPopupResolver) {
     const resolver = modernPopupResolver;
@@ -83,7 +85,8 @@ function showModernPopup({
   confirmText = 'យល់ព្រម',
   cancelText = 'បោះបង់',
   isDanger = false,
-  cancelIsDanger = false
+  cancelIsDanger = false,
+  isWide = false
 }) {
   return new Promise((resolve) => {
     try {
@@ -102,6 +105,15 @@ function showModernPopup({
           _nativeAlert(message);
         }
         return resolve(true);
+      }
+
+      const cardEl = overlay.querySelector('.modern-popup-card');
+      if (cardEl) {
+        if (isWide) {
+          cardEl.classList.add('wide-card');
+        } else {
+          cardEl.classList.remove('wide-card');
+        }
       }
 
       if (modernPopupResolver) {
@@ -2568,35 +2580,41 @@ async function checkCandidateDuplicateRow(tr) {
     if (duplicateFound) {
       const genderText = qGender === 'ប' ? 'ប្រុស (ប)' : 'ស្រី (ស)';
       const msgHtml = `
-<div style="text-align: left; font-size: 14px; line-height: 1.8;">
-  <div style="font-weight: 700; color: #b91c1c; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+<div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
+  <div style="font-weight: 700; color: #b91c1c; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
     <span>⚠️</span>
     <span>ឈ្មោះបេក្ខជននេះស្ទួនហើយ សូមជួយពិនិត្យ និងផ្ទៀងផ្ទាត់ឡើងវិញ!</span>
   </div>
 
-  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
-    <div style="font-weight: 700; color: #1e293b; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
-      📋 ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល ៖
+  <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 14px; margin-bottom: 12px; align-items: stretch;">
+    <!-- Column 1: ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល -->
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; box-sizing: border-box; display: flex; flex-direction: column;">
+      <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+        <span>📋</span> <span>ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; font-size: 13px; line-height: 1.6;">
+        <div>• <strong>គោត្តនាម-នាម ៖</strong> <span style="color:#0f172a; font-weight: 700;">${rawName}</span></div>
+        <div>• <strong>ភេទ ៖</strong> <span style="color:#0f172a;">${genderText}</span></div>
+        <div>• <strong>ថ្ងៃ ខែ ឆ្នាំកំណើត ៖</strong> <span style="color:#0f172a; font-weight: 700;">${rawDob}</span></div>
+      </div>
     </div>
-    <div>• <strong>គោត្តនាម-នាម ៖</strong> <span style="color:#0f172a; font-weight: 600;">${rawName}</span></div>
-    <div>• <strong>ភេទ ៖</strong> <span style="color:#0f172a;">${genderText}</span></div>
-    <div>• <strong>ថ្ងៃ ខែ ឆ្នាំកំណើត ៖</strong> <span style="color:#0f172a; font-weight: 600;">${rawDob}</span></div>
+
+    <!-- Column 2: ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ -->
+    <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 10px; padding: 12px 14px; box-sizing: border-box; display: flex; flex-direction: column;">
+      <div style="font-weight: 700; color: #991b1b; margin-bottom: 8px; border-bottom: 2px dashed #fecdd3; padding-bottom: 5px; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+        <span>🚨</span> <span>ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.6;">
+        <div>• <strong>ស្រុក/ក្រុង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.district}</span></div>
+        <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.commune}</span></div>
+        <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.station}</span></div>
+        <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.role}</span></div>
+      </div>
+    </div>
   </div>
 
-  <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
-    <div style="font-weight: 700; color: #991b1b; margin-bottom: 8px; border-bottom: 1px dashed #fecdd3; padding-bottom: 4px; font-size: 14px;">
-      🚨 ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ ៖
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr; gap: 4px;">
-      <div>• <strong>ស្រុក/ក្រុង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.district}</span></div>
-      <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.commune}</span></div>
-      <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.station}</span></div>
-      <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.role}</span></div>
-    </div>
-  </div>
-
-  <div style="font-size: 13px; color: #475569; background: #f1f5f9; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.7;">
-    <div style="margin-bottom: 4px;">👉 ប្រសិនបើអ្នកប្រាកដថា <strong>មិនស្ទួន</strong> សូមចុច <strong>(យល់ព្រម)</strong></div>
+  <div style="font-size: 12.5px; color: #475569; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.6; text-align: left;">
+    <div>👉 ប្រសិនបើអ្នកប្រាកដថា <strong>មិនស្ទួន</strong> សូមចុច <strong>(យល់ព្រម)</strong></div>
     <div>👉 ប្រសិនបើអ្នកប្រាកដថា <strong>ស្ទួន</strong> សូមចុច <strong>(ស្ទួន)</strong> ឈ្មោះបេក្ខជននេះមិនអាចបញ្ចូលបានទេ</div>
   </div>
 </div>
@@ -2610,7 +2628,8 @@ async function checkCandidateDuplicateRow(tr) {
         showCancel: true,
         confirmText: 'យល់ព្រម',
         cancelText: 'ស្ទួន',
-        cancelIsDanger: true
+        cancelIsDanger: true,
+        isWide: true
       });
 
       if (confirmedNotDuplicate) {
@@ -7298,35 +7317,41 @@ async function handleCandidateSubmit(e) {
         const ex = dupData.existing;
         const genderText = payload.gender === 'ប' ? 'ប្រុស (ប)' : 'ស្រី (ស)';
         const msgHtml = `
-<div style="text-align: left; font-size: 14px; line-height: 1.8;">
-  <div style="font-weight: 700; color: #b91c1c; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+<div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
+  <div style="font-weight: 700; color: #b91c1c; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
     <span>⚠️</span>
     <span>ឈ្មោះបេក្ខជននេះស្ទួនហើយ សូមជួយពិនិត្យ និងផ្ទៀងផ្ទាត់ឡើងវិញ!</span>
   </div>
 
-  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
-    <div style="font-weight: 700; color: #1e293b; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
-      📋 ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល ៖
+  <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 14px; margin-bottom: 12px; align-items: stretch;">
+    <!-- Column 1: ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល -->
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; box-sizing: border-box; display: flex; flex-direction: column;">
+      <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+        <span>📋</span> <span>ព័ត៌មានបេក្ខជនកំពុងបញ្ចូល</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; font-size: 13px; line-height: 1.6;">
+        <div>• <strong>គោត្តនាម-នាម ៖</strong> <span style="color:#0f172a; font-weight: 700;">${payload.name}</span></div>
+        <div>• <strong>ភេទ ៖</strong> <span style="color:#0f172a;">${genderText}</span></div>
+        <div>• <strong>ថ្ងៃ ខែ ឆ្នាំកំណើត ៖</strong> <span style="color:#0f172a; font-weight: 700;">${payload.dob}</span></div>
+      </div>
     </div>
-    <div>• <strong>គោត្តនាម-នាម ៖</strong> <span style="color:#0f172a; font-weight: 600;">${payload.name}</span></div>
-    <div>• <strong>ភេទ ៖</strong> <span style="color:#0f172a;">${genderText}</span></div>
-    <div>• <strong>ថ្ងៃ ខែ ឆ្នាំកំណើត ៖</strong> <span style="color:#0f172a; font-weight: 600;">${payload.dob}</span></div>
+
+    <!-- Column 2: ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ -->
+    <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 10px; padding: 12px 14px; box-sizing: border-box; display: flex; flex-direction: column;">
+      <div style="font-weight: 700; color: #991b1b; margin-bottom: 8px; border-bottom: 2px dashed #fecdd3; padding-bottom: 5px; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+        <span>🚨</span> <span>ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.6;">
+        <div>• <strong>ស្រុក/ក្រុង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.district || 'មិនបានបញ្ជាក់'}</span></div>
+        <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.communeName || 'មិនបានបញ្ជាក់'}</span></div>
+        <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.pollingStationName || (ex.pollingStationCode ? 'ការិយាល័យលេខ ' + ex.pollingStationCode : 'មិនបានបញ្ជាក់')}</span></div>
+        <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.role || 'មិនបានបញ្ជាក់'}</span></div>
+      </div>
+    </div>
   </div>
 
-  <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
-    <div style="font-weight: 700; color: #991b1b; margin-bottom: 8px; border-bottom: 1px dashed #fecdd3; padding-bottom: 4px; font-size: 14px;">
-      🚨 ស្ទួនជាមួយបេក្ខជនដែលមានក្នុងប្រព័ន្ធ ៖
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr; gap: 4px;">
-      <div>• <strong>ស្រុក/ក្រុង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.district || 'មិនបានបញ្ជាក់'}</span></div>
-      <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.communeName || 'មិនបានបញ្ជាក់'}</span></div>
-      <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.pollingStationName || (ex.pollingStationCode ? 'ការិយាល័យលេខ ' + ex.pollingStationCode : 'មិនបានបញ្ជាក់')}</span></div>
-      <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.role || 'មិនបានបញ្ជាក់'}</span></div>
-    </div>
-  </div>
-
-  <div style="font-size: 13px; color: #475569; background: #f1f5f9; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.7;">
-    <div style="margin-bottom: 4px;">👉 ប្រសិនបើអ្នកប្រាកដថា <strong>មិនស្ទួន</strong> សូមចុច <strong>(យល់ព្រម)</strong></div>
+  <div style="font-size: 12.5px; color: #475569; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.6; text-align: left;">
+    <div>👉 ប្រសិនបើអ្នកប្រាកដថា <strong>មិនស្ទួន</strong> សូមចុច <strong>(យល់ព្រម)</strong></div>
     <div>👉 ប្រសិនបើអ្នកប្រាកដថា <strong>ស្ទួន</strong> សូមចុច <strong>(ស្ទួន)</strong> ឈ្មោះបេក្ខជននេះមិនអាចបញ្ចូលបានទេ</div>
   </div>
 </div>
@@ -7340,7 +7365,8 @@ async function handleCandidateSubmit(e) {
           showCancel: true,
           confirmText: 'យល់ព្រម',
           cancelText: 'ស្ទួន',
-          cancelIsDanger: true
+          cancelIsDanger: true,
+          isWide: true
         });
 
         if (!ok) {
