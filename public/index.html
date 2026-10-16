@@ -901,6 +901,27 @@
     <option value="គ្មាន" label="ពិន្ទុ 0"></option>
   </datalist>
 
+  <!-- =========================================================================
+       MODERN ELEGANT POPUP DIALOG (Replaces native browser alert & confirm)
+       ========================================================================= -->
+  <div id="modernPopupOverlay" class="modern-popup-overlay" role="dialog" aria-modal="true">
+    <div class="modern-popup-card">
+      <div class="modern-popup-icon-wrapper" id="modernPopupIcon">
+        <!-- Dynamic modern icon -->
+      </div>
+      <h3 class="modern-popup-title" id="modernPopupTitle">សេចក្តីជូនដំណឹង</h3>
+      <div class="modern-popup-message" id="modernPopupMessage"></div>
+      <div class="modern-popup-actions" id="modernPopupActions">
+        <button type="button" class="modern-popup-btn modern-popup-btn-cancel" id="btnModernPopupCancel">
+          បោះបង់
+        </button>
+        <button type="button" class="modern-popup-btn modern-popup-btn-confirm" id="btnModernPopupConfirm">
+          យល់ព្រម
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- SheetJS Library for Standalone Client-side Excel Import/Export -->
   <script src="js/xlsx.full.min.js"></script>
   <script>

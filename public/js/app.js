@@ -23,10 +23,183 @@ const ROLE_CODES = {
 };
 
 // ==============================================================================
+// MODERN ELEGANT POPUP SYSTEM (Replaces native browser alert & confirm)
+// ==============================================================================
+
+let modernPopupResolver = null;
+
+function closeModernPopup(result = false) {
+  const overlay = document.getElementById('modernPopupOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  if (modernPopupResolver) {
+    const resolver = modernPopupResolver;
+    modernPopupResolver = null;
+    resolver(result);
+  }
+}
+
+function showModernPopup({
+  title = 'សេចក្តីជូនដំណឹង',
+  message = '',
+  type = 'info',
+  icon = '',
+  showCancel = false,
+  confirmText = 'យល់ព្រម',
+  cancelText = 'បោះបង់',
+  isDanger = false
+}) {
+  return new Promise((resolve) => {
+    if (modernPopupResolver) {
+      modernPopupResolver(false);
+      modernPopupResolver = null;
+    }
+    modernPopupResolver = resolve;
+
+    const overlay = document.getElementById('modernPopupOverlay');
+    const titleEl = document.getElementById('modernPopupTitle');
+    const msgEl = document.getElementById('modernPopupMessage');
+    const iconEl = document.getElementById('modernPopupIcon');
+    const btnCancel = document.getElementById('btnModernPopupCancel');
+    const btnConfirm = document.getElementById('btnModernPopupConfirm');
+
+    if (!overlay || !titleEl || !msgEl || !iconEl || !btnConfirm || !btnCancel) {
+      console.warn('Modern popup elements missing from DOM');
+      return resolve(false);
+    }
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+
+    // Reset styles
+    iconEl.className = 'modern-popup-icon-wrapper';
+    btnConfirm.className = 'modern-popup-btn modern-popup-btn-confirm';
+
+    let resolvedType = type;
+    let resolvedIcon = icon;
+
+    if (!resolvedIcon) {
+      const msgStr = String(message || '');
+      if (resolvedType === 'success' || msgStr.includes('ជោគជ័យ') || msgStr.includes('✅') || msgStr.includes('រួចរាល់')) {
+        resolvedType = 'success';
+        resolvedIcon = '✅';
+      } else if (resolvedType === 'danger' || isDanger || msgStr.includes('លុប') || msgStr.includes('បរាជ័យ') || msgStr.includes('❌') || msgStr.includes('គ្រោះថ្នាក់')) {
+        resolvedType = 'danger';
+        resolvedIcon = (isDanger || msgStr.includes('លុប')) ? '🗑️' : '❌';
+      } else if (resolvedType === 'warning' || msgStr.includes('⚠️') || msgStr.includes('សូមប្រយ័ត្ន') || msgStr.includes('មិនទាន់បាន')) {
+        resolvedType = 'warning';
+        resolvedIcon = '⚠️';
+      } else if (resolvedType === 'question' || showCancel) {
+        resolvedType = 'question';
+        resolvedIcon = '❓';
+      } else if (msgStr.includes('💻')) {
+        resolvedType = 'info';
+        resolvedIcon = '💻';
+      } else if (msgStr.includes('🌐')) {
+        resolvedType = 'info';
+        resolvedIcon = '🌐';
+      } else {
+        resolvedType = 'info';
+        resolvedIcon = 'ℹ️';
+      }
+    }
+
+    iconEl.classList.add(`icon-${resolvedType}`);
+    iconEl.textContent = resolvedIcon;
+
+    if (isDanger || resolvedType === 'danger') {
+      btnConfirm.classList.add('btn-danger-confirm');
+    }
+
+    btnConfirm.textContent = confirmText;
+    btnCancel.textContent = cancelText;
+    btnCancel.style.display = showCancel ? 'inline-flex' : 'none';
+
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      btnConfirm.focus();
+    }, 60);
+  });
+}
+
+function showModernAlert(message, options = {}) {
+  const opts = typeof options === 'string' ? { title: options } : (options || {});
+  return showModernPopup({
+    title: opts.title || 'សេចក្តីជូនដំណឹង',
+    message: String(message || ''),
+    type: opts.type || 'info',
+    icon: opts.icon,
+    showCancel: false,
+    confirmText: opts.confirmText || 'យល់ព្រម',
+    isDanger: opts.isDanger || false
+  });
+}
+
+function showModernConfirm(message, options = {}) {
+  const opts = typeof options === 'string' ? { title: options } : (options || {});
+  return showModernPopup({
+    title: opts.title || 'បញ្ជាក់ការយល់ព្រម',
+    message: String(message || ''),
+    type: opts.type || 'question',
+    icon: opts.icon,
+    showCancel: true,
+    confirmText: opts.confirmText || 'យល់ព្រម',
+    cancelText: opts.cancelText || 'បោះបង់',
+    isDanger: opts.isDanger || opts.type === 'danger' || false
+  });
+}
+
+// Override native window.alert to automatically use Modern Popup
+window.alert = function(msg, opts) {
+  return showModernAlert(msg, opts);
+};
+
+function initModernPopupEvents() {
+  const btnConfirm = document.getElementById('btnModernPopupConfirm');
+  const btnCancel = document.getElementById('btnModernPopupCancel');
+  const overlay = document.getElementById('modernPopupOverlay');
+
+  if (btnConfirm) {
+    btnConfirm.addEventListener('click', () => closeModernPopup(true));
+  }
+  if (btnCancel) {
+    btnCancel.addEventListener('click', () => closeModernPopup(false));
+  }
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target.id === 'modernPopupOverlay') {
+        closeModernPopup(false);
+      }
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    const ov = document.getElementById('modernPopupOverlay');
+    if (ov && ov.classList.contains('active')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeModernPopup(false);
+      } else if (e.key === 'Enter') {
+        const active = document.activeElement;
+        if (active && active.id === 'btnModernPopupCancel') {
+          e.preventDefault();
+          closeModernPopup(false);
+        } else {
+          e.preventDefault();
+          closeModernPopup(true);
+        }
+      }
+    }
+  });
+}
+
+// ==============================================================================
 // INITIALIZATION & AUTHENTICATION
 // ==============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initModernPopupEvents();
   setupEventListeners();
   await checkAuthStatus();
 });
@@ -149,7 +322,14 @@ function setupEventListeners() {
 
   // Logout
   document.getElementById('btnLogout').addEventListener('click', async () => {
-    if (confirm('តើលោកអ្នកពិតជាចង់ចាកចេញពីប្រព័ន្ធមែនទេ?')) {
+    const ok = await showModernConfirm('តើលោកអ្នកពិតជាចង់ចាកចេញពីប្រព័ន្ធមែនទេ?', {
+      title: 'បញ្ជាក់ការចាកចេញ',
+      confirmText: 'ចាកចេញ',
+      cancelText: 'បោះបង់',
+      type: 'warning',
+      icon: '🚪'
+    });
+    if (ok) {
       await fetch('/api/logout', { method: 'POST' });
       currentUser = null;
       showLoginScreen();
@@ -315,7 +495,12 @@ function setupEventListeners() {
         return;
       }
       const confirmMsg = '⚠️ តើលោកអ្នកពិតជាចង់លុបការិយាល័យបោះឆ្នោតទាំងអស់មែនទេ?\n\n(ទិន្នន័យបេក្ខជនទាំងអស់ដែលនៅក្នុងការិយាល័យទាំងនោះក៏នឹងត្រូវលុបចេញផងដែរ)';
-      if (!confirm(confirmMsg)) return;
+      if (!await showModernConfirm(confirmMsg, {
+        title: 'លុបការិយាល័យទាំងអស់',
+        confirmText: 'លុបទាំងអស់',
+        type: 'danger',
+        isDanger: true
+      })) return;
 
       btnDeleteAllStations.disabled = true;
       btnDeleteAllStations.textContent = 'កំពុងលុប...';
@@ -343,7 +528,12 @@ function setupEventListeners() {
   if (btnResetAll) {
     btnResetAll.addEventListener('click', async () => {
       const confirmMsg = '⚠️ តើលោកអ្នកពិតជាចង់ Reset សម្អាតទិន្នន័យទាំងអស់ (ការិយាល័យបោះឆ្នោត និងពិន្ទុបេក្ខជន) ឱ្យទទេស្អាតមែនទេ?\n\nសកម្មភាពនេះនឹងលុបការិយាល័យ និងបេក្ខជនទាំងអស់ចេញពីប្រព័ន្ធ រហូតទាល់តែលោកអ្នកបង្កើតថ្មី ឬចុចបង្កើតឡើងវិញ!';
-      if (!confirm(confirmMsg)) return;
+      if (!await showModernConfirm(confirmMsg, {
+        title: 'Reset សម្អាតទិន្នន័យទាំងអស់',
+        confirmText: 'Reset ទាំងអស់',
+        type: 'danger',
+        isDanger: true
+      })) return;
 
       btnResetAll.disabled = true;
       btnResetAll.textContent = 'កំពុង Reset...';
@@ -443,7 +633,12 @@ function setupEventListeners() {
   const btnBatchCreateAll = document.getElementById('btnBatchCreateAllStations');
   if (btnBatchCreateAll) {
     btnBatchCreateAll.addEventListener('click', async () => {
-      if (!confirm('តើលោកអ្នកពិតជាចង់បង្កើត/ស្តារការិយាល័យបោះឆ្នោតទាំងអស់ទាំង ១,៦០៣ ការិយាល័យក្នុងខេត្តតាកែវមែនទេ?')) {
+      if (!await showModernConfirm('តើលោកអ្នកពិតជាចង់បង្កើត/ស្តារការិយាល័យបោះឆ្នោតទាំងអស់ទាំង ១,៦០៣ ការិយាល័យក្នុងខេត្តតាកែវមែនទេ?', {
+        title: 'បង្កើតគ្រប់ការិយាល័យ',
+        confirmText: 'បង្កើតភ្លាមៗ',
+        type: 'info',
+        icon: '🌐'
+      })) {
         return;
       }
       try {
@@ -1032,7 +1227,12 @@ async function restoreAllCandidatesFromBrowser() {
     alert('មិនមានទិន្នន័យបម្រុងទុកនៅក្នុង Browser នេះឡើយ!');
     return;
   }
-  if (!confirm(`តើលោកអ្នកពិតជាចង់ស្ដារបេក្ខជនចំនួន ${localCandidates.length} នាក់ដែលបានរក្សាទុកក្នុង Browser នេះចូលក្នុងប្រព័ន្ធវិញមែនទេ?`)) {
+  if (!await showModernConfirm(`តើលោកអ្នកពិតជាចង់ស្ដារបេក្ខជនចំនួន ${localCandidates.length} នាក់ដែលបានរក្សាទុកក្នុង Browser នេះចូលក្នុងប្រព័ន្ធវិញមែនទេ?`, {
+    title: 'ស្ដារបេក្ខជនពី Browser',
+    confirmText: 'ស្ដារទិន្នន័យ',
+    type: 'info',
+    icon: '🔄'
+  })) {
     return;
   }
 
@@ -1312,7 +1512,12 @@ async function batchCreateForSelectedCommune(forcedCommuneCode = null) {
   if (!comCode) {
     if (currentUser && currentUser.role === 'Trainer') {
       const distName = getDistrictPrefix(currentUser.district);
-      if (!confirm(`លោកអ្នកមិនទាន់បានជ្រើសរើសឃុំ-សង្កាត់ជាក់លាក់ណាមួយឡើយ។\nតើលោកអ្នកពិតជាចង់បង្កើត/ស្តារការិយាល័យបោះឆ្នោតផ្លូវការទាំងអស់ក្នុង${distName} មែនទេ?`)) {
+      if (!await showModernConfirm(`លោកអ្នកមិនទាន់បានជ្រើសរើសឃុំ-សង្កាត់ជាក់លាក់ណាមួយឡើយ។\nតើលោកអ្នកពិតជាចង់បង្កើត/ស្តារការិយាល័យបោះឆ្នោតផ្លូវការទាំងអស់ក្នុង${distName} មែនទេ?`, {
+        title: `បង្កើតការិយាល័យក្នុង${distName}`,
+        confirmText: 'បង្កើតទាំងអស់',
+        type: 'info',
+        icon: '🏛️'
+      })) {
         return;
       }
       try {
@@ -1344,7 +1549,12 @@ async function batchCreateForSelectedCommune(forcedCommuneCode = null) {
   const comObj = allCommunes.find(c => String(c.code).padStart(3, '0') === paddedCom);
   const comName = comObj ? comObj.name : comCode;
 
-  if (!confirm(`តើលោកអ្នកពិតជាចង់បង្កើត/ទាញយកការិយាល័យបោះឆ្នោតទាំងអស់ក្នុងឃុំ «${comName}» ដោយស្វ័យប្រវត្តិតាមស្ថិតិផ្លូវការមែនទេ?`)) {
+  if (!await showModernConfirm(`តើលោកអ្នកពិតជាចង់បង្កើត/ទាញយកការិយាល័យបោះឆ្នោតទាំងអស់ក្នុងឃុំ «${comName}» ដោយស្វ័យប្រវត្តិតាមស្ថិតិផ្លូវការមែនទេ?`, {
+    title: `បង្កើតការិយាល័យឃុំ «${comName}»`,
+    confirmText: 'បង្កើតការិយាល័យ',
+    type: 'info',
+    icon: '🏛️'
+  })) {
     return;
   }
 
@@ -1601,7 +1811,13 @@ window.editStation = function(id) {
 window.deleteStation = async function(id) {
   const ps = allPollingStations.find(p => p.id === id);
   if (!ps) return;
-  if (confirm(`តើលោកអ្នកពិតជាចង់លុប "${ps.name}" និងទិន្នន័យបេក្ខជនទាំងអស់មែនទេ?`)) {
+  const ok = await showModernConfirm(`តើលោកអ្នកពិតជាចង់លុប "${ps.name}" និងទិន្នន័យបេក្ខជនទាំងអស់មែនទេ?`, {
+    title: 'លុបការិយាល័យបោះឆ្នោត',
+    confirmText: 'លុបការិយាល័យ',
+    type: 'danger',
+    isDanger: true
+  });
+  if (ok) {
     try {
       const res = await fetch(`/api/polling-stations/${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -2149,9 +2365,15 @@ function recalculateUIRanksForRole(roleName) {
   });
 }
 
-window.clearCandidateRow = function(btn) {
+window.clearCandidateRow = async function(btn) {
   const tr = btn.closest('tr');
-  if (confirm('តើលោកអ្នកពិតជាចង់លុបទិន្នន័យបេក្ខជនក្នុងជួរនេះមែនទេ?')) {
+  const ok = await showModernConfirm('តើលោកអ្នកពិតជាចង់លុបទិន្នន័យបេក្ខជនក្នុងជួរនេះមែនទេ?', {
+    title: 'លុបទិន្នន័យបេក្ខជន',
+    confirmText: 'លុបទិន្នន័យ',
+    type: 'danger',
+    isDanger: true
+  });
+  if (ok) {
     tr.querySelector('.cand-name').value = '';
     tr.querySelector('.cand-dob').value = '';
     tr.querySelector('.cand-phone').value = '';
@@ -5679,7 +5901,13 @@ function renderUsersTable() {
 }
 
 window.resetUserPassword = async function(id, username) {
-  if (confirm(`តើលោកអ្នកពិតជាចង់ Reset លេខសម្ងាត់របស់គណនី "${username}" ទៅជា "pec21" មែនទេ?`)) {
+  const ok = await showModernConfirm(`តើលោកអ្នកពិតជាចង់ Reset លេខសម្ងាត់របស់គណនី "${username}" ទៅជា "pec21" មែនទេ?`, {
+    title: 'Reset លេខសម្ងាត់',
+    confirmText: 'Reset ឥឡូវនេះ',
+    type: 'warning',
+    icon: '🔑'
+  });
+  if (ok) {
     try {
       const res = await fetch(`/api/users/${id}/reset`, { method: 'POST' });
       const data = await res.json();
@@ -5765,7 +5993,13 @@ async function handleLogoUpload(file) {
 }
 
 async function handleResetLogoDefault() {
-  if (confirm('តើលោកអ្នកពិតជាចង់កំណត់ប្រើប្រាស់ Logo គ.ជ.ប ដើមវិញមែនទេ?')) {
+  const ok = await showModernConfirm('តើលោកអ្នកពិតជាចង់កំណត់ប្រើប្រាស់ Logo គ.ជ.ប ដើមវិញមែនទេ?', {
+    title: 'កំណត់ Logo ដើម',
+    confirmText: 'កំណត់ Logo ដើម',
+    type: 'info',
+    icon: '🔄'
+  });
+  if (ok) {
     updateAppLogos('img/nec_logo.jpg');
     appSettings.logoUrl = '';
     try {
