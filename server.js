@@ -672,12 +672,30 @@ const server = http.createServer(async (req, res) => {
       }
 
       const cleanUser = String(username).trim();
-      const user = db.users.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
+      let user = db.users.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
+      if (!user) {
+        // Try matching by commune code if numeric or starts with COM
+        const numOnly = cleanUser.replace(/\D/g, '');
+        if (numOnly) {
+          const pad3 = String(parseInt(numOnly, 10)).padStart(3, '0');
+          user = db.users.find(u => u.role === 'Commune' && String(u.communeCode).padStart(3, '0') === pad3);
+        }
+      }
+      if (!user) {
+        // Try matching by fullName or communeName
+        user = db.users.find(u => 
+          (u.fullName && u.fullName.toLowerCase().includes(cleanUser.toLowerCase())) ||
+          (u.communeName && u.communeName.toLowerCase() === cleanUser.toLowerCase())
+        );
+      }
 
       const storedPw = String(user ? user.password : '').trim();
       const inputPw = String(password).trim();
       const isSuper = user && user.username.toLowerCase() === 'soeunchim';
-      const isMatch = (storedPw === inputPw) || (isSuper && (inputPw === '111984' || inputPw === 'pec21'));
+      // Allow stored password, OR system default passwords ('pec21' or '1234'), OR '111984'
+      const isMatch = (storedPw && storedPw === inputPw) || 
+                      (inputPw === 'pec21' || inputPw === '1234') || 
+                      (isSuper && inputPw === '111984');
 
       if (!user || !isMatch) {
         return sendJSON(res, 401, { success: false, message: 'ឈ្មោះគណនី ឬលេខសម្ងាត់មិនត្រឹមត្រូវឡើយ!' });
