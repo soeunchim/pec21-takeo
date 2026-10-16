@@ -697,10 +697,10 @@ const server = http.createServer(async (req, res) => {
         list = list.filter(p => String(p.communeCode).padStart(3, '0') === userComCode);
       } else if (currentUser.role === 'Trainer') {
         list = list.filter(p => p.district === currentUser.district);
-        if (filterCommune) list = list.filter(p => String(p.communeCode).padStart(3, '0') === filterCommune);
+        if (filterCommune && filterCommune !== 'all') list = list.filter(p => String(p.communeCode).padStart(3, '0') === filterCommune);
       } else {
-        if (filterDistrict) list = list.filter(p => p.district === filterDistrict);
-        if (filterCommune) list = list.filter(p => String(p.communeCode).padStart(3, '0') === filterCommune);
+        if (filterDistrict && filterDistrict !== 'all') list = list.filter(p => p.district === filterDistrict);
+        if (filterCommune && filterCommune !== 'all') list = list.filter(p => String(p.communeCode).padStart(3, '0') === filterCommune);
       }
 
       // Add candidate count for each polling station
@@ -936,10 +936,10 @@ const server = http.createServer(async (req, res) => {
         list = list.filter(c => c.communeCode === currentUser.communeCode);
       } else if (currentUser.role === 'Trainer') {
         list = list.filter(c => c.district === currentUser.district);
-        if (cCode) list = list.filter(c => c.communeCode === cCode);
+        if (cCode && cCode !== 'all') list = list.filter(c => String(c.communeCode).padStart(3, '0') === String(cCode).padStart(3, '0'));
       } else {
-        if (dist) list = list.filter(c => c.district === dist);
-        if (cCode) list = list.filter(c => c.communeCode === cCode);
+        if (dist && dist !== 'all') list = list.filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === dist.replace(/^(ស្រុក|ក្រុង)\s*/, ''));
+        if (cCode && cCode !== 'all') list = list.filter(c => String(c.communeCode).padStart(3, '0') === String(cCode).padStart(3, '0'));
       }
 
       if (psId) {

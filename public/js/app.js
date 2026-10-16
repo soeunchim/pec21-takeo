@@ -2470,7 +2470,12 @@ function initReportSelectorBar() {
 
   const distNames = [...new Set(rawDistNames.map(n => String(n).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '')))];
 
+  const isSuperOrAdmin = currentUser && (currentUser.role === 'SuperAdmin' || currentUser.role === 'Admin' || currentUser.role === 'PEC21');
+
   distSelect.innerHTML = '<option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>';
+  if (isSuperOrAdmin) {
+    distSelect.innerHTML += '<option value="all">⭐ គ្រប់ក្រុង-ស្រុក (ទូទាំងខេត្ត)</option>';
+  }
   distNames.forEach(name => {
     const label = getDistrictPrefix(name);
     distSelect.innerHTML += `<option value="${name}">${label}</option>`;
@@ -2634,15 +2639,32 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
 
   const selDist = distSelect.value;
   const isKrong = selDist === 'ដូនកែវ';
+  const isAllDistricts = (selDist === 'all');
+  const isSuperOrAdmin = currentUser && (currentUser.role === 'SuperAdmin' || currentUser.role === 'Admin' || currentUser.role === 'PEC21');
 
   if (distLabel) {
-    distLabel.innerHTML = isKrong ? '🏛️ ក្រុង (City / District)' : '🏛️ ស្រុក (District)';
+    distLabel.innerHTML = isAllDistricts ? '🏛️ វិសាលភាព (Scope)' : (isKrong ? '🏛️ ក្រុង (City / District)' : '🏛️ ស្រុក (District)');
   }
   if (comLabel) {
-    comLabel.innerHTML = isKrong ? '🏘️ សង្កាត់ (Sangkat / Commune)' : '🏘️ ឃុំ (Commune)';
+    comLabel.innerHTML = isAllDistricts ? '🏘️ ឃុំ/សង្កាត់ (Commune)' : (isKrong ? '🏘️ សង្កាត់ (Sangkat / Commune)' : '🏘️ ឃុំ (Commune)');
   }
 
   comSelect.innerHTML = '';
+
+  if (isAllDistricts) {
+    comSelect.innerHTML = '<option value="all">⭐ គ្រប់ឃុំ-សង្កាត់ (ទូទាំងខេត្ត)</option>';
+    allCommunes.forEach(c => {
+      const prefix = getCommunePrefix(c.name, c.district);
+      comSelect.innerHTML += `<option value="${c.code}">${prefix} (${c.code}) - ${c.district}</option>`;
+    });
+    if (targetCommuneCode) {
+      comSelect.value = String(targetCommuneCode).padStart(3, '0');
+    } else {
+      comSelect.value = 'all';
+    }
+    updateReportStationsForCommune(autoSelectFirst);
+    return;
+  }
 
   const matchedStations = allPollingStations.filter(p => {
     const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
@@ -2677,6 +2699,10 @@ function updateReportCommunes(autoSelectFirst = true, targetCommuneCode = null) 
     return;
   }
 
+  if (isSuperOrAdmin) {
+    comSelect.innerHTML += '<option value="all">⭐ គ្រប់ឃុំទាំងអស់ក្នុងស្រុក</option>';
+  }
+
   distCommunes.forEach(c => {
     const prefix = getCommunePrefix(c.name, c.district);
     comSelect.innerHTML += `<option value="${c.code}">${prefix} (${c.code})</option>`;
@@ -2704,13 +2730,25 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
 
   if (!comSelect || !codeSelect || !locSelect) return;
 
+  const distSelect = document.getElementById('reportDistrictFilter');
   const selCommuneCode = comSelect.value;
+  const selDist = distSelect ? distSelect.value : '';
   codeSelect.innerHTML = '';
   locSelect.innerHTML = '';
 
-  const stations = allPollingStations.filter(p => {
-    return String(p.communeCode).padStart(3, '0') === String(selCommuneCode).padStart(3, '0');
-  });
+  let stations = [];
+  if (selCommuneCode === 'all' && selDist === 'all') {
+    stations = [...allPollingStations];
+  } else if (selCommuneCode === 'all' && selDist && selDist !== 'all') {
+    stations = allPollingStations.filter(p => {
+      const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      return cleanDist === selDist;
+    });
+  } else {
+    stations = allPollingStations.filter(p => {
+      return String(p.communeCode).padStart(3, '0') === String(selCommuneCode).padStart(3, '0');
+    });
+  }
 
   stations.sort((a, b) => {
     const ca = parseInt(a.code, 10) || 0;
@@ -2723,6 +2761,21 @@ function updateReportStationsForCommune(autoSelectFirst = true, targetStationId 
     locSelect.innerHTML = '<option value="">-- គ្មានការិយាល័យក្នុងទីតាំងនេះ --</option>';
     if (codeInput) codeInput.value = '';
     if (hiddenStation) hiddenStation.value = '';
+    renderReportPreview();
+    return;
+  }
+
+  if (selCommuneCode === 'all') {
+    const scopeLabel = (selDist === 'all') ? 'ទូទាំងខេត្ត' : `ស្រុក${selDist}`;
+    codeSelect.innerHTML = `<option value="all">⭐ គ្រប់ការិយាល័យ (${scopeLabel} ${toKhmerNum(stations.length)})</option>`;
+    locSelect.innerHTML = `<option value="all">📍 គ្រប់ទីតាំងការិយាល័យ (${scopeLabel})</option>`;
+    if (codeInput) {
+      codeInput.value = '';
+      codeInput.placeholder = 'គ្រប់កូដ...';
+    }
+    if (hiddenStation && stations.length) {
+      hiddenStation.value = stations[0].id;
+    }
     renderReportPreview();
     return;
   }
@@ -2825,6 +2878,11 @@ function saveReportLogoConfig(cfg) {
 }
 
 function buildReportLetterheadHtml(ps) {
+  const distSelect = document.getElementById('reportDistrictFilter');
+  const comSelect = document.getElementById('reportCommuneFilter');
+  const selDist = distSelect ? distSelect.value : '';
+  const selCommuneCode = comSelect ? comSelect.value : '';
+
   const psCodeFormatted = String(ps.code || '').padStart(4, '0');
   const psCodeKhmer = toKhmerNum(psCodeFormatted);
   const communePrefix = getCommunePrefix(ps.communeName, ps.district);
@@ -2833,6 +2891,15 @@ function buildReportLetterheadHtml(ps) {
   const committeeTitle = ps.committeeName || 'គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប';
   const logoCfg = getReportLogoConfig();
   const currentLogoUrl = appSettings.logoUrl || 'img/nec_logo.jpg';
+
+  let jurisdictionLine = `${communePrefix}(${communeCodeKhmer})`;
+  if (selCommuneCode === 'all') {
+    if (selDist === 'all') {
+      jurisdictionLine = 'ទូទាំងខេត្តតាកែវ';
+    } else if (selDist) {
+      jurisdictionLine = getDistrictPrefix(selDist);
+    }
+  }
 
   return `
     <div class="letterhead" style="width: 100%; margin-bottom: 4px;">
@@ -2866,7 +2933,7 @@ function buildReportLetterheadHtml(ps) {
                 <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
                 <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
                 <div>${committeeTitle}</div>
-                <div>${communePrefix}(${communeCodeKhmer})</div>
+                <div>${jurisdictionLine}</div>
               </div>
             </div>
           </td>
@@ -3557,18 +3624,52 @@ async function renderReportPreview() {
   }
 
   // ----------------------------------------------------------------------------
-  // SHEET 6: លទ្ធផលតាមលំដាប់ (គ្រប់ការិយាល័យក្នុងឃុំ/សង្កាត់)
+  // SHEET 6: លទ្ធផលតាមលំដាប់ (គ្រប់ការិយាល័យក្នុងឃុំ/សង្កាត់ ឬទូទាំងខេត្ត)
   // ----------------------------------------------------------------------------
   else if (reportType === 'commune_results') {
-    // 1. Find all polling stations belonging to this commune, sorted by station code
-    const communeStations = (allPollingStations || [])
-      .filter(p => String(p.communeCode).padStart(3, '0') === String(ps.communeCode).padStart(3, '0'))
-      .sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+    const distSelect = document.getElementById('reportDistrictFilter');
+    const comSelect = document.getElementById('reportCommuneFilter');
+    const selDist = distSelect ? distSelect.value : '';
+    const selCommuneCode = comSelect ? comSelect.value : '';
 
-    // 2. Fetch all candidates in this commune
+    let communeStations = [];
+    let apiUrl = '';
+    let scopeBoxTitle = `${communePrefix} (${communeCodeKhmer})`;
+
+    if (selDist === 'all' && selCommuneCode === 'all') {
+      communeStations = [...(allPollingStations || [])];
+      apiUrl = '/api/candidates?district=all&communeCode=all';
+      scopeBoxTitle = 'ទូទាំងខេត្តតាកែវ';
+    } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
+      communeStations = (allPollingStations || []).filter(p => {
+        const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        return cleanDist === selDist;
+      });
+      apiUrl = `/api/candidates?district=${encodeURIComponent(selDist)}&communeCode=all`;
+      scopeBoxTitle = getDistrictPrefix(selDist);
+    } else {
+      const effectiveCommuneCode = (selCommuneCode && selCommuneCode !== 'all') ? selCommuneCode : ps.communeCode;
+      communeStations = (allPollingStations || []).filter(p => {
+        return String(p.communeCode).padStart(3, '0') === String(effectiveCommuneCode).padStart(3, '0');
+      });
+      apiUrl = `/api/candidates?communeCode=${effectiveCommuneCode}`;
+    }
+
+    communeStations.sort((a, b) => {
+      const da = String(a.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      const db = String(b.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      if (da !== db) return da.localeCompare(db, 'km');
+      const ca = parseInt(a.communeCode, 10) || 0;
+      const cb = parseInt(b.communeCode, 10) || 0;
+      if (ca !== cb) return ca - cb;
+      const sa = parseInt(a.code, 10) || 0;
+      const sb = parseInt(b.code, 10) || 0;
+      return sa - sb;
+    });
+
     let communeCandidates = [];
     try {
-      const res = await fetch(`/api/candidates?communeCode=${ps.communeCode}`);
+      const res = await fetch(apiUrl);
       const data = await res.json();
       communeCandidates = data.candidates || [];
     } catch (err) {
@@ -3576,8 +3677,32 @@ async function renderReportPreview() {
     }
 
     let rowsHtml = '';
+    let prevDist = null;
+    let prevCom = null;
 
     communeStations.forEach(st => {
+      const cleanDist = String(st.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      if ((selDist === 'all' || selCommuneCode === 'all') && cleanDist !== prevDist) {
+        prevDist = cleanDist;
+        rowsHtml += `
+          <tr class="district-banner-row">
+            <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
+              🏛️ ${getDistrictPrefix(st.district)}
+            </td>
+          </tr>
+        `;
+      }
+      if (selCommuneCode === 'all' && st.communeCode !== prevCom) {
+        prevCom = st.communeCode;
+        rowsHtml += `
+          <tr class="commune-banner-row">
+            <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; background: #f1f5f9; padding: 4px 8px; border: 1px solid #000; text-align: left; color: #334155;">
+              🏘️ ${getCommunePrefix(st.communeName, st.district)} (${toKhmerNum(st.communeCode)})
+            </td>
+          </tr>
+        `;
+      }
+
       const stCodeFormatted = String(st.code || '').padStart(4, '0');
       const stCodeKhmer = toKhmerNum(stCodeFormatted);
 
@@ -3671,7 +3796,7 @@ async function renderReportPreview() {
       <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 4px 0 6px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${communePrefix} (${communeCodeKhmer})</div>
+        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
       </div>
     `;
 
@@ -3704,13 +3829,46 @@ async function renderReportPreview() {
   // SHEET 7: បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ
   // ----------------------------------------------------------------------------
   else if (reportType === 'final_roster') {
-    const communeStations = (allPollingStations || [])
-      .filter(p => String(p.communeCode).padStart(3, '0') === String(ps.communeCode).padStart(3, '0'))
-      .sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+    const distSelect = document.getElementById('reportDistrictFilter');
+    const comSelect = document.getElementById('reportCommuneFilter');
+    const selDist = distSelect ? distSelect.value : '';
+    const selCommuneCode = comSelect ? comSelect.value : '';
+
+    let targetStations = [];
+    let apiUrl = '';
+
+    if (selDist === 'all' && selCommuneCode === 'all') {
+      targetStations = [...(allPollingStations || [])];
+      apiUrl = '/api/candidates?district=all&communeCode=all';
+    } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
+      targetStations = (allPollingStations || []).filter(p => {
+        const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        return cleanDist === selDist;
+      });
+      apiUrl = `/api/candidates?district=${encodeURIComponent(selDist)}&communeCode=all`;
+    } else {
+      const effectiveCommuneCode = (selCommuneCode && selCommuneCode !== 'all') ? selCommuneCode : ps.communeCode;
+      targetStations = (allPollingStations || []).filter(p => {
+        return String(p.communeCode).padStart(3, '0') === String(effectiveCommuneCode).padStart(3, '0');
+      });
+      apiUrl = `/api/candidates?communeCode=${effectiveCommuneCode}`;
+    }
+
+    targetStations.sort((a, b) => {
+      const da = String(a.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      const db = String(b.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      if (da !== db) return da.localeCompare(db, 'km');
+      const ca = parseInt(a.communeCode, 10) || 0;
+      const cb = parseInt(b.communeCode, 10) || 0;
+      if (ca !== cb) return ca - cb;
+      const sa = parseInt(a.code, 10) || 0;
+      const sb = parseInt(b.code, 10) || 0;
+      return sa - sb;
+    });
 
     let communeCandidates = [];
     try {
-      const res = await fetch(`/api/candidates?communeCode=${ps.communeCode}`);
+      const res = await fetch(apiUrl);
       const data = await res.json();
       communeCandidates = data.candidates || [];
     } catch (err) {
@@ -3739,11 +3897,23 @@ async function renderReportPreview() {
 
     let rowsHtml = '';
     let globalRowIdx = 0;
+    let prevDistrict = null;
+    let prevCommuneCode = null;
 
-    communeStations.forEach((st, stIdx) => {
+    targetStations.forEach((st) => {
+      const cleanCurDist = String(st.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      const isFirstStOfDistrict = (cleanCurDist !== prevDistrict);
+      if (isFirstStOfDistrict) {
+        prevDistrict = cleanCurDist;
+      }
+
+      const curCommuneCode = String(st.communeCode || '').padStart(3, '0');
+      const isFirstStOfCommune = (curCommuneCode !== prevCommuneCode);
+      if (isFirstStOfCommune) {
+        prevCommuneCode = curCommuneCode;
+      }
+
       const stCands = communeCandidates.filter(c => c.pollingStationId === st.id);
-      const isFirstStOfCommune = (stIdx === 0);
-      const isFirstStOfDistrict = (stIdx === 0);
 
       ROSTER_ROLES.forEach((role, roleIdx) => {
         globalRowIdx++;
@@ -4190,9 +4360,21 @@ function exportCurrentReportToExcel() {
     }
   }
 
-  const fileName = reportType === 'commune_results'
-    ? `គ.ក.ប_2027_${sheetName}_ឃុំ_${ps ? ps.communeName : ''}_${ps ? ps.communeCode : ''}.xlsx`
-    : `គ.ក.ប_2027_${sheetName}_កូដ_${code4}.xlsx`;
+  const distSelect = document.getElementById('reportDistrictFilter');
+  const comSelect = document.getElementById('reportCommuneFilter');
+  const selDist = distSelect ? distSelect.value : '';
+  const selCommuneCode = comSelect ? comSelect.value : '';
+
+  let fileName = `គ.ក.ប_2027_${sheetName}_កូដ_${code4}.xlsx`;
+  if (reportType === 'commune_results') {
+    if (selDist === 'all' && selCommuneCode === 'all') {
+      fileName = `គ.ក.ប_2027_${sheetName}_ទូទាំងខេត្តតាកែវ.xlsx`;
+    } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
+      fileName = `គ.ក.ប_2027_${sheetName}_ស្រុក_${selDist}.xlsx`;
+    } else {
+      fileName = `គ.ក.ប_2027_${sheetName}_ឃុំ_${ps ? ps.communeName : ''}_${ps ? ps.communeCode : ''}.xlsx`;
+    }
+  }
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.table_to_sheet(exportTable, { raw: true });
@@ -4201,18 +4383,55 @@ function exportCurrentReportToExcel() {
 }
 
 async function exportFinalRosterToExcel(ps) {
-  if (!ps) {
-    alert('សូមជ្រើសរើសការិយាល័យ ឬឃុំ/សង្កាត់ជាមុនសិន!');
-    return;
+  const distSelect = document.getElementById('reportDistrictFilter');
+  const comSelect = document.getElementById('reportCommuneFilter');
+  const selDist = distSelect ? distSelect.value : '';
+  const selCommuneCode = comSelect ? comSelect.value : '';
+
+  let targetStations = [];
+  let apiUrl = '';
+  let fileName = '';
+
+  if (selDist === 'all' && selCommuneCode === 'all') {
+    targetStations = [...(allPollingStations || [])];
+    apiUrl = '/api/candidates?district=all&communeCode=all';
+    fileName = 'បញ្ជីរាយនាម_គ.ក.ប_2027_ទូទាំងខេត្តតាកែវ.xlsx';
+  } else if (selDist && selDist !== 'all' && selCommuneCode === 'all') {
+    targetStations = (allPollingStations || []).filter(p => {
+      const cleanDist = String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      return cleanDist === selDist;
+    });
+    apiUrl = `/api/candidates?district=${encodeURIComponent(selDist)}&communeCode=all`;
+    fileName = `បញ្ជីរាយនាម_គ.ក.ប_2027_ស្រុក_${selDist}.xlsx`;
+  } else {
+    const effectiveCommuneCode = (selCommuneCode && selCommuneCode !== 'all') ? selCommuneCode : (ps ? ps.communeCode : null);
+    if (!effectiveCommuneCode) {
+      alert('សូមជ្រើសរើសការិយាល័យ ឬឃុំ/សង្កាត់ជាមុនសិន!');
+      return;
+    }
+    targetStations = (allPollingStations || []).filter(p => {
+      return String(p.communeCode).padStart(3, '0') === String(effectiveCommuneCode).padStart(3, '0');
+    });
+    apiUrl = `/api/candidates?communeCode=${effectiveCommuneCode}`;
+    const cName = (ps && ps.communeName) || '';
+    fileName = `បញ្ជីរាយនាម_គ.ក.ប_2027_ឃុំ_${cName}_${effectiveCommuneCode}.xlsx`;
   }
 
-  const communeStations = (allPollingStations || [])
-    .filter(p => String(p.communeCode).padStart(3, '0') === String(ps.communeCode).padStart(3, '0'))
-    .sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+  targetStations.sort((a, b) => {
+    const da = String(a.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    const db = String(b.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    if (da !== db) return da.localeCompare(db, 'km');
+    const ca = parseInt(a.communeCode, 10) || 0;
+    const cb = parseInt(b.communeCode, 10) || 0;
+    if (ca !== cb) return ca - cb;
+    const sa = parseInt(a.code, 10) || 0;
+    const sb = parseInt(b.code, 10) || 0;
+    return sa - sb;
+  });
 
   let communeCandidates = [];
   try {
-    const res = await fetch(`/api/candidates?communeCode=${ps.communeCode}`);
+    const res = await fetch(apiUrl);
     const data = await res.json();
     communeCandidates = data.candidates || [];
   } catch (err) {
@@ -4241,11 +4460,23 @@ async function exportFinalRosterToExcel(ps) {
 
   const candidateRows = [];
   let globalRowIdx = 0;
+  let prevDistrict = null;
+  let prevCommuneCode = null;
 
-  communeStations.forEach((st, stIdx) => {
+  targetStations.forEach((st) => {
+    const cleanCurDist = String(st.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    const isFirstStOfDistrict = (cleanCurDist !== prevDistrict);
+    if (isFirstStOfDistrict) {
+      prevDistrict = cleanCurDist;
+    }
+
+    const curCommuneCode = String(st.communeCode || '').padStart(3, '0');
+    const isFirstStOfCommune = (curCommuneCode !== prevCommuneCode);
+    if (isFirstStOfCommune) {
+      prevCommuneCode = curCommuneCode;
+    }
+
     const stCands = communeCandidates.filter(c => c.pollingStationId === st.id);
-    const isFirstStOfCommune = (stIdx === 0);
-    const isFirstStOfDistrict = (stIdx === 0);
 
     ROSTER_ROLES.forEach((role, roleIdx) => {
       globalRowIdx++;
@@ -4291,7 +4522,7 @@ async function exportFinalRosterToExcel(ps) {
 
   const mandateText = (appSettings && appSettings.mandate)
     ? appSettings.mandate
-    : (ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧');
+    : ((ps && ps.mandate) || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧');
 
   const aoa = [];
   // Rows 0 to 5 (Excel rows 1 to 6): empty
@@ -4340,7 +4571,6 @@ async function exportFinalRosterToExcel(ps) {
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '21-TAKEO');
-  const fileName = `បញ្ជីរាយនាម_គ.ក.ប_2027_ឃុំ_${ps.communeName || ''}_${ps.communeCode || ''}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
 
