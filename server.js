@@ -1308,6 +1308,21 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { success: true, isDuplicate: false });
     }
 
+    // 11.2 POST /api/candidates/mark-duplicate (Mark candidate as duplicate)
+    if (pathname === '/api/candidates/mark-duplicate' && req.method === 'POST') {
+      const data = await parseBody(req);
+      const { id, isDuplicate } = data;
+      if (id && db.candidates) {
+        const cand = db.candidates.find(c => c.id === id);
+        if (cand) {
+          cand.isDuplicate = isDuplicate !== undefined ? !!isDuplicate : true;
+          cand.updatedAt = new Date().toISOString();
+          saveLocalDatabase(true);
+        }
+      }
+      return sendJSON(res, 200, { success: true });
+    }
+
     // 12. POST /api/candidates (Add / Upsert Candidate)
     if (pathname === '/api/candidates' && req.method === 'POST') {
       const data = await parseBody(req);
@@ -1482,6 +1497,7 @@ const server = http.createServer(async (req, res) => {
             existingCand.scoreExp = expSc;
             if (item.scoreInterview !== undefined) existingCand.scoreInterview = item.scoreInterview;
             existingCand.scoreShortlist = degSc + expSc;
+            existingCand.isDuplicate = item.isDuplicate !== undefined ? !!item.isDuplicate : false;
             existingCand.updatedAt = new Date().toISOString();
           } else {
             const newId = `cand_${station.id}_${roleCode}${order}_${Date.now()}`;
@@ -1508,6 +1524,7 @@ const server = http.createServer(async (req, res) => {
               rank: order,
               status: '',
               notes: item.notes || '',
+              isDuplicate: item.isDuplicate !== undefined ? !!item.isDuplicate : false,
               updatedAt: new Date().toISOString()
             };
             db.candidates.push(newCand);

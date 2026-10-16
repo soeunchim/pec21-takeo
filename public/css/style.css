@@ -1213,6 +1213,37 @@ tr.excel-row-active td.excel-calc-total {
   background-color: #dbeafe !important;
 }
 
+/* Duplicate Candidate Row Highlight in Red */
+tr.duplicate-highlight-row,
+tr.duplicate-highlight-row td {
+  background-color: #fee2e2 !important; /* Soft distinct red */
+  color: #7f1d1d !important;
+}
+
+tr.duplicate-highlight-row td.excel-col-order,
+tr.duplicate-highlight-row td.excel-calc-shortlist,
+tr.duplicate-highlight-row td.excel-calc-total,
+tr.duplicate-highlight-row td.cand-rank-display,
+tr.duplicate-highlight-row td.cand-status-display {
+  background-color: #fecaca !important;
+  color: #7f1d1d !important;
+  font-weight: 700 !important;
+}
+
+tr.duplicate-highlight-row .excel-cell-input,
+tr.duplicate-highlight-row .excel-cell-select {
+  background: transparent !important;
+  color: #991b1b !important;
+  font-weight: 700 !important;
+}
+
+tr.duplicate-highlight-row .excel-cell-input:focus,
+tr.duplicate-highlight-row .excel-cell-select:focus {
+  background: #ffffff !important;
+  outline: 2px solid #dc2626 !important;
+  outline-offset: -2px;
+}
+
 tr.excel-row-active td.excel-calc-rank {
   background-color: #f3e8ff !important;
 }

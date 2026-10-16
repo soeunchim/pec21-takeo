@@ -2436,7 +2436,9 @@ function clearCandidateRowInputs(tr) {
   const status = tr.querySelector('.cand-status-display');
   if (status) status.innerHTML = '<span class="badge badge-reserve">---</span>';
 
+  tr.classList.remove('duplicate-highlight-row');
   delete tr.dataset.dupConfirmedSig;
+  delete tr.dataset.isDuplicate;
 
   if (candId) {
     let cand = currentCandidates.find(c => c.id === candId);
@@ -2454,6 +2456,7 @@ function clearCandidateRowInputs(tr) {
       cand.scoreTotal = '';
       cand.rank = order;
       cand.status = '';
+      cand.isDuplicate = false;
     }
   }
 
@@ -2534,8 +2537,12 @@ async function checkCandidateDuplicateRow(tr) {
         const curCommune = currStation.communeName || '';
         const curStationName = currStation.name || (currStation.code ? `ការិយាល័យលេខ ${currStation.code}` : 'ការិយាល័យបច្ចុប្បន្ន');
 
+        const otherId = otherTr.getAttribute('data-cand-id');
+
         duplicateFound = {
           source: 'table',
+          otherTr: otherTr,
+          otherId: otherId && !otherId.startsWith('temp_') ? otherId : null,
           district: curDistrict || 'ការិយាល័យបច្ចុប្បន្ន',
           commune: curCommune || 'ការិយាល័យបច្ចុប្បន្ន',
           station: curStationName,
@@ -2567,6 +2574,7 @@ async function checkCandidateDuplicateRow(tr) {
           const ex = data.existing;
           duplicateFound = {
             source: 'server',
+            otherId: ex.id || null,
             district: ex.district || 'មិនបានបញ្ជាក់',
             commune: ex.communeName || 'មិនបានបញ្ជាក់',
             station: ex.pollingStationName || (ex.pollingStationCode ? `ការិយាល័យលេខ ${ex.pollingStationCode}` : 'មិនបានបញ្ជាក់'),
@@ -2633,8 +2641,37 @@ async function checkCandidateDuplicateRow(tr) {
       });
 
       if (confirmedNotDuplicate) {
-        // User confirmed NOT duplicate
+        // User confirmed NOT duplicate -> Highlight BOTH rows in RED!
         tr.dataset.dupConfirmedSig = currentSig;
+        tr.dataset.isDuplicate = "true";
+        tr.classList.add('duplicate-highlight-row');
+
+        const candId = tr.getAttribute('data-cand-id');
+        let cand = currentCandidates.find(c => c.id === candId);
+        if (cand) cand.isDuplicate = true;
+
+        // Highlight the matched duplicate row in current table if present
+        if (duplicateFound.otherTr) {
+          duplicateFound.otherTr.classList.add('duplicate-highlight-row');
+          duplicateFound.otherTr.dataset.isDuplicate = "true";
+          const otherId = duplicateFound.otherTr.getAttribute('data-cand-id');
+          let otherCand = currentCandidates.find(c => c.id === otherId);
+          if (otherCand) otherCand.isDuplicate = true;
+        }
+
+        // If duplicate was from server DB, mark it as duplicate on server as well
+        if (duplicateFound.otherId) {
+          try {
+            fetch('/api/candidates/mark-duplicate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: duplicateFound.otherId, isDuplicate: true })
+            });
+          } catch (e) {
+            console.error('Error marking duplicate candidate in DB:', e);
+          }
+        }
+
         return true;
       } else {
         // User clicked "ស្ទួន" (or cancelled) -> Candidate cannot be entered
@@ -2690,6 +2727,11 @@ window.onCandidateNameInput = function(input) {
   const tr = input.closest('tr');
   if (tr) {
     delete tr.dataset.dupConfirmedSig;
+    delete tr.dataset.isDuplicate;
+    tr.classList.remove('duplicate-highlight-row');
+    const candId = tr.getAttribute('data-cand-id');
+    let cand = currentCandidates.find(c => c.id === candId);
+    if (cand) cand.isDuplicate = false;
     updateRowDeleteButtonState(tr);
     onCandidateRowChange(input);
   }
@@ -2697,7 +2739,14 @@ window.onCandidateNameInput = function(input) {
 
 window.onCandidateDobInput = function(input) {
   const tr = input.closest('tr');
-  if (tr) delete tr.dataset.dupConfirmedSig;
+  if (tr) {
+    delete tr.dataset.dupConfirmedSig;
+    delete tr.dataset.isDuplicate;
+    tr.classList.remove('duplicate-highlight-row');
+    const candId = tr.getAttribute('data-cand-id');
+    let cand = currentCandidates.find(c => c.id === candId);
+    if (cand) cand.isDuplicate = false;
+  }
   const prevVal = input.value;
   const formatted = formatKhmerDate(prevVal);
   if (formatted !== prevVal) {
@@ -2951,8 +3000,9 @@ async function renderScoringTableForActiveStation() {
           (cand.scoreInterview !== undefined && cand.scoreInterview !== null && String(cand.scoreInterview).trim() !== '')
         );
 
+        const isDup = !!(cand.isDuplicate);
         tbody.innerHTML += `
-          <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}">
+          <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}" class="${isDup ? 'duplicate-highlight-row' : ''}" data-is-duplicate="${isDup ? 'true' : 'false'}">
             <td class="excel-col-order">${toKhmerNum(order)}</td>
             <td>
               <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
@@ -3157,6 +3207,13 @@ window.clearCandidateRow = async function(btn) {
   });
   if (ok) {
     const order = parseInt(tr.getAttribute('data-order')) || 1;
+    tr.classList.remove('duplicate-highlight-row');
+    delete tr.dataset.dupConfirmedSig;
+    delete tr.dataset.isDuplicate;
+    const candId = tr.getAttribute('data-cand-id');
+    let cand = currentCandidates.find(c => c.id === candId);
+    if (cand) cand.isDuplicate = false;
+
     tr.querySelector('.cand-name').value = '';
     tr.querySelector('.cand-gender').value = 'ប';
     tr.querySelector('.cand-dob').value = '';
@@ -3221,7 +3278,8 @@ async function saveBatchScores() {
       scoreDegree: parseFloat(fromKhmerNum(tr.querySelector('.cand-score-degree')?.value)) || 0,
       experience: tr.querySelector('.cand-exp') ? tr.querySelector('.cand-exp').value.trim() : '',
       scoreExp: parseFloat(fromKhmerNum(tr.querySelector('.cand-score-exp')?.value)) || 0,
-      scoreInterview: cleanInterview
+      scoreInterview: cleanInterview,
+      isDuplicate: tr.classList.contains('duplicate-highlight-row') || tr.dataset.isDuplicate === "true"
     });
   });
 
