@@ -2810,7 +2810,7 @@
   ],
   "pollingStations": [
     {
-      "id": "ps_001_001",
+      "id": "ps_001_0001",
       "communeCode": "001",
       "communeName": "អង្គរបូរី",
       "district": "អង្គរបូរី",
@@ -2827,7 +2827,7 @@
       "createdAt": "2026-10-14T08:26:03.372Z"
     },
     {
-      "id": "ps_001_2_1791898901666",
+      "id": "ps_001_0002",
       "communeCode": "001",
       "communeName": "អង្គរបូរី",
       "district": "អង្គរបូរី",
@@ -2844,7 +2844,7 @@
       "createdAt": "2026-10-13T13:41:41.666Z"
     },
     {
-      "id": "ps_001_0003_1791899953981",
+      "id": "ps_001_0003",
       "communeCode": "001",
       "communeName": "អង្គរបូរី",
       "district": "អង្គរបូរី",
@@ -2861,7 +2861,7 @@
       "createdAt": "2026-10-13T13:59:13.981Z"
     },
     {
-      "id": "ps_001_0004_1791899953982",
+      "id": "ps_001_0004",
       "communeCode": "001",
       "communeName": "អង្គរបូរី",
       "district": "អង្គរបូរី",
@@ -30061,5 +30061,31 @@
       "createdAt": "2026-10-14T08:26:03.374Z"
     }
   ],
-  "candidates": []
+  "candidates": [
+    {
+      "id": "cand_ps_001_0001_a1_user",
+      "pollingStationId": "ps_001_0001",
+      "communeCode": "001",
+      "communeName": "អង្គរបូរី",
+      "district": "អង្គរបូរី",
+      "role": "ប្រធាន",
+      "roleCode": "a",
+      "orderInRole": 1,
+      "name": "ជីម សឿន",
+      "gender": "ប",
+      "dob": "11-04-1984",
+      "phone": "097 885 3337",
+      "degree": "បរិញ្ញាបត្រ",
+      "scoreDegree": 8,
+      "experience": "ការិយាល័យ 3 ដង",
+      "scoreExp": 12,
+      "scoreShortlist": 20,
+      "scoreInterview": "",
+      "scoreTotal": 20,
+      "rank": 1,
+      "status": "A-ជាប់",
+      "notes": "",
+      "updatedAt": "2026-10-16T13:25:28.905Z"
+    }
+  ]
 }

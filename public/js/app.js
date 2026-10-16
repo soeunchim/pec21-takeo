@@ -415,7 +415,7 @@ function setupEventListeners() {
 
       if (targetId === 'tabDashboard') loadDashboardStats();
       if (targetId === 'tabPollingStations') renderPollingStationsTable();
-      if (targetId === 'tabScoring') renderScoringView();
+      if (targetId === 'tabScoring') renderScoringTableForActiveStation();
       if (targetId === 'tabReports') {
         syncScoringStationToReports();
         renderReportPreview();
@@ -518,7 +518,38 @@ function setupEventListeners() {
       e.preventDefault();
       saveCommuneInterviewSchedule('modal');
     });
+  // Manual Scoring Sync Button
+  const btnManualSyncScoring = document.getElementById('btnManualScoringSync');
+  if (btnManualSyncScoring) {
+    btnManualSyncScoring.addEventListener('click', async () => {
+      const orig = btnManualSyncScoring.innerHTML;
+      btnManualSyncScoring.disabled = true;
+      btnManualSyncScoring.innerHTML = '⏳ កំពុង Sync...';
+      try {
+        await renderScoringTableForActiveStation();
+        showModernAlert('បានធ្វើសមកាលកម្មទិន្នន័យ (Sync) ពី Server ជោគជ័យ!');
+      } catch (err) {
+        showModernAlert('មិនអាច Sync បានទេ៖ ' + err.message);
+      } finally {
+        btnManualSyncScoring.disabled = false;
+        btnManualSyncScoring.innerHTML = orig;
+      }
+    });
   }
+
+  // Window focus listener to auto-sync latest data when user returns to this browser tab
+  window.addEventListener('focus', () => {
+    const tabScoring = document.getElementById('tabScoring');
+    if (tabScoring && tabScoring.classList.contains('active')) {
+      const active = document.activeElement;
+      if (!active || (active.tagName !== 'INPUT' && active.tagName !== 'SELECT' && active.tagName !== 'TEXTAREA')) {
+        renderScoringTableForActiveStation();
+      }
+    }
+  });
+
+  // Start periodic background auto-sync
+  startScoringAutoSync();
 
   // Settings Save & Google Sync
   const btnSaveSettings = document.getElementById('btnSaveSettings');
@@ -2383,6 +2414,48 @@ window.onCandidateInterviewChange = function(input) {
   updateRowDeleteButtonState(tr);
   onCandidateRowChange(input);
 };
+
+let scoringAutoSyncInterval = null;
+let isScoringAutoSyncing = false;
+
+function startScoringAutoSync() {
+  if (scoringAutoSyncInterval) clearInterval(scoringAutoSyncInterval);
+  scoringAutoSyncInterval = setInterval(async () => {
+    const tabScoring = document.getElementById('tabScoring');
+    if (!tabScoring || !tabScoring.classList.contains('active')) return;
+    const stationId = document.getElementById('scoringStationSelect')?.value;
+    if (!stationId) return;
+
+    // Do NOT refresh if user is currently typing in an input
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA')) {
+      return;
+    }
+
+    if (isScoringAutoSyncing) return;
+    isScoringAutoSyncing = true;
+    try {
+      const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const serverCands = (data.candidates || []).filter(c => c && c.name && c.name.trim());
+        const localCands = (currentCandidates || []).filter(c => c && c.name && c.name.trim());
+
+        const serverSignature = serverCands.map(c => `${c.role}_${c.orderInRole}_${c.name}_${c.scoreShortlist}_${c.scoreInterview}`).sort().join('|');
+        const localSignature = localCands.map(c => `${c.role}_${c.orderInRole}_${c.name}_${c.scoreShortlist}_${c.scoreInterview}`).sort().join('|');
+
+        if (serverSignature !== localSignature) {
+          console.log('[AutoSync] Server candidates updated, refreshing view...');
+          await renderScoringTableForActiveStation();
+        }
+      }
+    } catch (e) {
+      // Ignore background network glitch
+    } finally {
+      isScoringAutoSyncing = false;
+    }
+  }, 8000); // Poll every 8 seconds
+}
 
 async function renderScoringTableForActiveStation() {
   const stationId = document.getElementById('scoringStationSelect').value;

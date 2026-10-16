@@ -77,14 +77,27 @@ function loadLocalDatabase() {
     if (!db.candidates) {
       db.candidates = [];
     }
+    normalizeDatabase();
   } catch (err) {
     console.error('[DB] Load error:', err.message);
   }
 }
 
 let saveTimer = null;
-function saveLocalDatabase() {
-  if (saveTimer) clearTimeout(saveTimer);
+function saveLocalDatabase(immediate = false) {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  if (immediate) {
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8');
+      console.log('[DB] Local database persisted immediately.');
+    } catch (err) {
+      console.error('[DB] Immediate save error:', err.message);
+    }
+    return;
+  }
   saveTimer = setTimeout(() => {
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8');
@@ -93,6 +106,75 @@ function saveLocalDatabase() {
       console.error('[DB] Save error:', err.message);
     }
   }, 200);
+}
+
+function findPollingStation(query) {
+  if (!query || !db || !db.pollingStations) return null;
+  const qStr = String(query).trim();
+  // 1. Direct ID match
+  let st = db.pollingStations.find(p => p.id === qStr);
+  if (st) return st;
+
+  // 2. ID pattern match (e.g. 'ps_001_0001' vs 'ps_001_001' or timestamped)
+  const idParts = qStr.split('_');
+  if (idParts.length >= 3) {
+    const cCode = String(idParts[1]).padStart(3, '0');
+    const sCode = String(parseInt(idParts[2], 10)).padStart(4, '0');
+    st = db.pollingStations.find(p => {
+      const pCCode = String(p.communeCode || '').padStart(3, '0');
+      const pSCode = String(parseInt(p.code || '', 10)).padStart(4, '0');
+      return pCCode === cCode && pSCode === sCode;
+    });
+    if (st) return st;
+  }
+
+  // 3. Direct code match (e.g. '0001' or '1')
+  const qNum = parseInt(qStr, 10);
+  if (!isNaN(qNum)) {
+    const qCode4 = String(qNum).padStart(4, '0');
+    st = db.pollingStations.find(p => String(p.code || '').padStart(4, '0') === qCode4 || String(p.displayCode || '').padStart(4, '0') === qCode4);
+    if (st) return st;
+  }
+
+  return null;
+}
+
+function normalizeDatabase() {
+  if (!db) return;
+  if (!db.pollingStations) db.pollingStations = [];
+  if (!db.candidates) db.candidates = [];
+
+  const idMap = new Map();
+
+  db.pollingStations.forEach(s => {
+    const com3 = String(s.communeCode || '').padStart(3, '0');
+    const codeNum = parseInt(s.code, 10);
+    const code4 = !isNaN(codeNum) ? String(codeNum).padStart(4, '0') : String(s.code || '').padStart(4, '0');
+    const canonicalId = `ps_${com3}_${code4}`;
+
+    if (s.id && s.id !== canonicalId) {
+      idMap.set(s.id, canonicalId);
+      s.id = canonicalId;
+    } else if (!s.id) {
+      s.id = canonicalId;
+    }
+    s.code = code4;
+    s.displayCode = code4;
+    s.communeCode = com3;
+  });
+
+  db.candidates.forEach(c => {
+    if (idMap.has(c.pollingStationId)) {
+      c.pollingStationId = idMap.get(c.pollingStationId);
+    }
+    const st = findPollingStation(c.pollingStationId);
+    if (st) {
+      c.pollingStationId = st.id;
+      if (!c.communeCode) c.communeCode = st.communeCode;
+      if (!c.communeName) c.communeName = st.communeName;
+      if (!c.district) c.district = st.district;
+    }
+  });
 }
 
 // Google Sheets Sync Functions
@@ -1021,20 +1103,91 @@ const server = http.createServer(async (req, res) => {
       const cCode = parsedUrl.query.communeCode;
       const dist = parsedUrl.query.district;
 
-      if (currentUser.role === 'Commune') {
-        const uComCode = String(currentUser.communeCode || '').padStart(3, '0');
-        list = list.filter(c => String(c.communeCode).padStart(3, '0') === uComCode);
-      } else if (currentUser.role === 'Trainer') {
-        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
-        list = list.filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
-        if (cCode && cCode !== 'all') list = list.filter(c => String(c.communeCode).padStart(3, '0') === String(cCode).padStart(3, '0'));
-      } else {
-        if (dist && dist !== 'all') list = list.filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') === dist.replace(/^(ស្រុក|ក្រុង)\s*/, ''));
-        if (cCode && cCode !== 'all') list = list.filter(c => String(c.communeCode).padStart(3, '0') === String(cCode).padStart(3, '0'));
+      // 1. If a specific station is queried
+      if (psId) {
+        const station = findPollingStation(psId);
+        const effectiveId = station ? station.id : psId;
+        const stationComCode = station ? String(station.communeCode).padStart(3, '0') : null;
+        const stationCode4 = station ? String(parseInt(station.code, 10)).padStart(4, '0') : null;
+
+        // Security / Scope checks
+        if (currentUser.role === 'Commune') {
+          const uComCode = String(currentUser.communeCode || '').padStart(3, '0');
+          if (stationComCode && stationComCode !== uComCode) {
+            return sendJSON(res, 403, { success: false, message: 'អ្នកគ្មានសិទ្ធិមើលការិយាល័យក្រៅឃុំឡើយ', candidates: [] });
+          }
+        } else if (currentUser.role === 'Trainer') {
+          const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+          const stDistClean = station ? String(station.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '') : '';
+          if (stDistClean && stDistClean !== uDistClean) {
+            return sendJSON(res, 403, { success: false, message: 'អ្នកគ្មានសិទ្ធិមើលការិយាល័យក្រៅស្រុកឡើយ', candidates: [] });
+          }
+        }
+
+        // Return candidates belonging to this station
+        const stationCandidates = list.filter(c => {
+          if (c.pollingStationId === effectiveId || c.pollingStationId === psId) return true;
+          if (station) {
+            const cSt = findPollingStation(c.pollingStationId);
+            if (cSt && cSt.id === station.id) return true;
+            if (c.communeCode && String(c.communeCode).padStart(3, '0') === stationComCode) {
+              const cParts = String(c.pollingStationId || '').split('_');
+              if (cParts.length >= 3 && String(parseInt(cParts[2], 10)).padStart(4, '0') === stationCode4) {
+                return true;
+              }
+            }
+          }
+          return false;
+        });
+
+        // Ensure commune metadata is present on every returned candidate
+        stationCandidates.forEach(c => {
+          if (station) {
+            c.pollingStationId = station.id;
+            if (!c.communeCode) c.communeCode = station.communeCode;
+            if (!c.communeName) c.communeName = station.communeName;
+            if (!c.district) c.district = station.district;
+          }
+        });
+
+        return sendJSON(res, 200, { success: true, candidates: stationCandidates });
       }
 
-      if (psId) {
-        list = list.filter(c => c.pollingStationId === psId);
+      // 2. Commune/District/All queries
+      if (currentUser.role === 'Commune') {
+        const uComCode = String(currentUser.communeCode || '').padStart(3, '0');
+        list = list.filter(c => {
+          const com = c.communeCode ? String(c.communeCode).padStart(3, '0') : (findPollingStation(c.pollingStationId)?.communeCode);
+          return String(com || '').padStart(3, '0') === uComCode;
+        });
+      } else if (currentUser.role === 'Trainer') {
+        const uDistClean = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '');
+        list = list.filter(c => {
+          const d = c.district ? String(c.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') : (findPollingStation(c.pollingStationId)?.district?.replace(/^(ស្រុក|ក្រុង)\s*/, ''));
+          return d === uDistClean;
+        });
+        if (cCode && cCode !== 'all') {
+          const targetCom = String(cCode).padStart(3, '0');
+          list = list.filter(c => {
+            const com = c.communeCode ? String(c.communeCode).padStart(3, '0') : (findPollingStation(c.pollingStationId)?.communeCode);
+            return String(com || '').padStart(3, '0') === targetCom;
+          });
+        }
+      } else {
+        if (dist && dist !== 'all') {
+          const cleanDist = dist.replace(/^(ស្រុក|ក្រុង)\s*/, '');
+          list = list.filter(c => {
+            const d = c.district ? String(c.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') : (findPollingStation(c.pollingStationId)?.district?.replace(/^(ស្រុក|ក្រុង)\s*/, ''));
+            return d === cleanDist;
+          });
+        }
+        if (cCode && cCode !== 'all') {
+          const targetCom = String(cCode).padStart(3, '0');
+          list = list.filter(c => {
+            const com = c.communeCode ? String(c.communeCode).padStart(3, '0') : (findPollingStation(c.pollingStationId)?.communeCode);
+            return String(com || '').padStart(3, '0') === targetCom;
+          });
+        }
       }
 
       return sendJSON(res, 200, { success: true, candidates: list });
@@ -1047,10 +1200,10 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, 400, { success: false, message: 'សូមបំពេញព័ត៌មានការិយាល័យ មុខតំណែង និងឈ្មោះបេក្ខជន' });
       }
 
-      const station = db.pollingStations.find(p => p.id === data.pollingStationId);
+      const station = findPollingStation(data.pollingStationId);
       if (!station) return sendJSON(res, 404, { success: false, message: 'រកមិនឃើញការិយាល័យបោះឆ្នោត' });
 
-      if (currentUser.role === 'Commune' && station.communeCode !== currentUser.communeCode) {
+      if (currentUser.role === 'Commune' && String(station.communeCode).padStart(3, '0') !== String(currentUser.communeCode).padStart(3, '0')) {
         return sendJSON(res, 403, { success: false, message: 'អ្នកគ្មានសិទ្ធិបញ្ចូលបេក្ខជនក្នុងការិយាល័យនេះឡើយ' });
       }
 
@@ -1065,6 +1218,8 @@ const server = http.createServer(async (req, res) => {
 
       const roleCode = roleCodeMap[data.role] || 'a';
       const order = parseInt(data.orderInRole) || 1;
+      const degSc = parseFloat(data.scoreDegree) || 0;
+      const expSc = parseFloat(data.scoreExp) || 0;
 
       const newCand = {
         id: data.id || `cand_${station.id}_${roleCode}${order}_${Date.now()}`,
@@ -1080,10 +1235,10 @@ const server = http.createServer(async (req, res) => {
         dob: data.dob || '',
         phone: data.phone || '',
         degree: data.degree || '',
-        scoreDegree: parseFloat(data.scoreDegree) || 0,
+        scoreDegree: degSc,
         experience: data.experience || '',
-        scoreExp: parseFloat(data.scoreExp) || 0,
-        scoreShortlist: (parseFloat(data.scoreDegree) || 0) + (parseFloat(data.scoreExp) || 0),
+        scoreExp: expSc,
+        scoreShortlist: degSc + expSc,
         scoreInterview: data.scoreInterview !== undefined ? data.scoreInterview : '',
         scoreTotal: '',
         rank: 1,
@@ -1093,7 +1248,7 @@ const server = http.createServer(async (req, res) => {
       };
 
       // Check if existing candidate for this slot
-      const existingIdx = db.candidates.findIndex(c => c.pollingStationId === station.id && c.role === data.role && c.orderInRole === order);
+      const existingIdx = db.candidates.findIndex(c => (c.pollingStationId === station.id || findPollingStation(c.pollingStationId)?.id === station.id) && c.role === data.role && c.orderInRole === order);
       if (existingIdx !== -1) {
         db.candidates[existingIdx] = { ...db.candidates[existingIdx], ...newCand };
       } else {
@@ -1101,7 +1256,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       recalculatePollingStationRanks(station.id);
-      saveLocalDatabase();
+      saveLocalDatabase(true);
       syncToGoogleSheet('sync_all', { user: currentUser.username });
 
       return sendJSON(res, 201, { success: true, message: 'រក្សាទុកព័ត៌មានបេក្ខជនជោគជ័យ!', candidate: newCand });
@@ -1114,10 +1269,10 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, 400, { success: false, message: 'ទិន្នន័យមិនត្រឹមត្រូវ' });
       }
 
-      const station = db.pollingStations.find(p => p.id === pollingStationId);
+      const station = findPollingStation(pollingStationId);
       if (!station) return sendJSON(res, 404, { success: false, message: 'រកមិនឃើញការិយាល័យ' });
 
-      if (currentUser.role === 'Commune' && station.communeCode !== currentUser.communeCode) {
+      if (currentUser.role === 'Commune' && String(station.communeCode).padStart(3, '0') !== String(currentUser.communeCode).padStart(3, '0')) {
         return sendJSON(res, 403, { success: false, message: 'គ្មានសិទ្ធិ' });
       }
 
@@ -1134,11 +1289,17 @@ const server = http.createServer(async (req, res) => {
           if (item.scoreExp !== undefined) cand.scoreExp = parseFloat(item.scoreExp) || 0;
           if (item.scoreInterview !== undefined) cand.scoreInterview = item.scoreInterview;
           if (item.notes !== undefined) cand.notes = item.notes;
+          cand.scoreShortlist = (cand.scoreDegree || 0) + (cand.scoreExp || 0);
+          cand.pollingStationId = station.id;
+          cand.communeCode = station.communeCode;
+          cand.communeName = station.communeName;
+          cand.district = station.district;
+          cand.updatedAt = new Date().toISOString();
         }
       });
 
       recalculatePollingStationRanks(station.id);
-      saveLocalDatabase();
+      saveLocalDatabase(true);
       syncToGoogleSheet('sync_all', { user: currentUser.username });
 
       return sendJSON(res, 200, { success: true, message: 'បានរក្សាទុកពិន្ទុ និងគណនាចំណាត់ថ្នាក់ជោគជ័យ!' });
@@ -1151,7 +1312,7 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, 400, { success: false, message: 'ទិន្នន័យមិនត្រឹមត្រូវ' });
       }
 
-      const station = db.pollingStations.find(p => p.id === pollingStationId);
+      const station = findPollingStation(pollingStationId);
       if (!station) return sendJSON(res, 404, { success: false, message: 'រកមិនឃើញការិយាល័យបោះឆ្នោត' });
 
       if (currentUser.role === 'Commune' && String(station.communeCode).padStart(3, '0') !== String(currentUser.communeCode).padStart(3, '0')) {
@@ -1182,20 +1343,30 @@ const server = http.createServer(async (req, res) => {
           existingCand = db.candidates.find(c => c.id === item.id);
         }
         if (!existingCand) {
-          existingCand = db.candidates.find(c => c.pollingStationId === station.id && c.role === role && c.orderInRole === order);
+          existingCand = db.candidates.find(c => {
+            const isSameStation = (c.pollingStationId === station.id || findPollingStation(c.pollingStationId)?.id === station.id);
+            return isSameStation && c.role === role && c.orderInRole === order;
+          });
         }
 
         if (name) {
+          const degSc = parseFloat(item.scoreDegree) || 0;
+          const expSc = parseFloat(item.scoreExp) || 0;
           if (existingCand) {
             existingCand.name = name;
+            existingCand.pollingStationId = station.id;
+            existingCand.communeCode = station.communeCode;
+            existingCand.communeName = station.communeName;
+            existingCand.district = station.district;
             if (item.gender !== undefined) existingCand.gender = item.gender;
             if (item.dob !== undefined) existingCand.dob = item.dob;
             if (item.phone !== undefined) existingCand.phone = item.phone;
             if (item.degree !== undefined) existingCand.degree = item.degree;
-            if (item.scoreDegree !== undefined) existingCand.scoreDegree = parseFloat(item.scoreDegree) || 0;
+            existingCand.scoreDegree = degSc;
             if (item.experience !== undefined) existingCand.experience = item.experience;
-            if (item.scoreExp !== undefined) existingCand.scoreExp = parseFloat(item.scoreExp) || 0;
+            existingCand.scoreExp = expSc;
             if (item.scoreInterview !== undefined) existingCand.scoreInterview = item.scoreInterview;
+            existingCand.scoreShortlist = degSc + expSc;
             existingCand.updatedAt = new Date().toISOString();
           } else {
             const newId = `cand_${station.id}_${roleCode}${order}_${Date.now()}`;
@@ -1213,10 +1384,10 @@ const server = http.createServer(async (req, res) => {
               dob: item.dob || '',
               phone: item.phone || '',
               degree: item.degree || '',
-              scoreDegree: parseFloat(item.scoreDegree) || 0,
+              scoreDegree: degSc,
               experience: item.experience || '',
-              scoreExp: parseFloat(item.scoreExp) || 0,
-              scoreShortlist: (parseFloat(item.scoreDegree) || 0) + (parseFloat(item.scoreExp) || 0),
+              scoreExp: expSc,
+              scoreShortlist: degSc + expSc,
               scoreInterview: item.scoreInterview !== undefined ? item.scoreInterview : '',
               scoreTotal: '',
               rank: order,
@@ -1234,10 +1405,10 @@ const server = http.createServer(async (req, res) => {
       });
 
       recalculatePollingStationRanks(station.id);
-      saveLocalDatabase();
+      saveLocalDatabase(true);
       syncToGoogleSheet('sync_all', { user: currentUser.username });
 
-      const updatedCands = db.candidates.filter(c => c.pollingStationId === station.id);
+      const updatedCands = db.candidates.filter(c => c.pollingStationId === station.id || findPollingStation(c.pollingStationId)?.id === station.id);
       return sendJSON(res, 200, {
         success: true,
         message: 'បានរក្សាទុកព័ត៌មាន និងពិន្ទុបេក្ខជនដោយជោគជ័យ!',
