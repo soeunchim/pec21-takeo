@@ -2270,6 +2270,59 @@ window.onCandidateScoreInput = function(input) {
   onCandidateRowChange(input);
 };
 
+const ABSENT_PREFIXES = ['', 'អ', 'អវ', 'អវត', 'អវត្ត', 'អវត្តម', 'អវត្តមា', 'អវត្តមាន'];
+
+function sanitizeInterviewInput(val) {
+  if (!val) return '';
+  let str = String(val).trim();
+  
+  if (/^ab(s|se|sen|sent)?$/i.test(str)) {
+    return 'អវត្តមាន';
+  }
+
+  // Allow prefixes of អវត្តមាន or exactly អវត្តមាន
+  if (ABSENT_PREFIXES.includes(str)) {
+    return str;
+  }
+
+  // Numeric score (Khmer or English digits)
+  let khmerStr = toKhmerNum(str).replace(/[^០-៩.]/g, '');
+  if (khmerStr) {
+    const parts = khmerStr.split('.');
+    if (parts.length > 2) {
+      khmerStr = parts[0] + '.' + parts.slice(1).join('');
+    }
+    const engNum = parseFloat(fromKhmerNum(khmerStr));
+    if (!isNaN(engNum) && engNum > 20) {
+      khmerStr = toKhmerNum(20);
+    }
+    return khmerStr;
+  }
+
+  return '';
+}
+
+window.onCandidateInterviewInput = function(input) {
+  const tr = input.closest('tr');
+  const prevVal = input.value;
+  const sanitized = sanitizeInterviewInput(prevVal);
+  if (sanitized !== prevVal) {
+    input.value = sanitized;
+  }
+  updateRowDeleteButtonState(tr);
+  onCandidateRowChange(input);
+};
+
+window.onCandidateInterviewChange = function(input) {
+  const tr = input.closest('tr');
+  let val = input.value.trim();
+  if (val.startsWith('អ')) {
+    input.value = 'អវត្តមាន';
+  }
+  updateRowDeleteButtonState(tr);
+  onCandidateRowChange(input);
+};
+
 async function renderScoringTableForActiveStation() {
   const stationId = document.getElementById('scoringStationSelect').value;
   const tbody = document.getElementById('scoringTableBody');
@@ -2408,7 +2461,7 @@ async function renderScoringTableForActiveStation() {
               ${toKhmerNum(shortlistVal)}
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" oninput="onCandidateRowChange(this)" onchange="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700;" oninput="onCandidateInterviewInput(this)" onchange="onCandidateInterviewChange(this)">
             </td>
             <td class="excel-calc-total cand-total-display">
               ${totalDisplay}
