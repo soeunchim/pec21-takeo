@@ -2233,6 +2233,8 @@ function updateRowDeleteButtonState(tr) {
     const hasData = hasCandidateRowData(tr);
     btn.disabled = !hasData;
   }
+}
+
 window.onCandidateDobInput = function(input) {
   const tr = input.closest('tr');
   const prevVal = input.value;
