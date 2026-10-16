@@ -1531,13 +1531,23 @@ textarea,
   }
 
   /* Portrait reports (Reports 2-5): Strict 1-page fit */
-  body:not(.report-landscape-active) .print-paper-sheet {
+  body:not(.report-landscape-active):not(.report-multipage-active) .print-paper-sheet {
     max-height: 288mm !important;
     overflow: hidden !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
+  }
+
+  body.report-multipage-active .print-paper-sheet {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
 
   body:not(.report-landscape-active) .official-print-table {
@@ -1714,3 +1724,77 @@ textarea,
 .report-logo-toolbar {
   transition: opacity 0.2s ease;
 }
+
+/* ==============================================================================
+   Report 7: Official គ.ក.ប Final Roster (បញ្ជីរាយនាម គ.ក.ប ផ្លូវការ)
+   ============================================================================== */
+.final-roster-summary-box {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.final-roster-summary-table {
+  border-collapse: collapse;
+  border: 1px solid #000;
+  font-size: 9.5pt;
+  text-align: center;
+}
+
+.final-roster-summary-table th {
+  border: 1px solid #000;
+  padding: 2px 6px;
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 9pt !important;
+  font-weight: normal !important;
+  background: #f8fafc;
+}
+
+.final-roster-summary-table td {
+  border: 1px solid #000;
+  padding: 2px 6px;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 9.5pt !important;
+}
+
+.final-roster-summary-table tr.total-row td {
+  font-weight: 700;
+  background: #f1f5f9;
+}
+
+.final-roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #000;
+  margin-top: 4px;
+}
+
+.final-roster-table th {
+  border: 1px solid #000;
+  padding: 3px 4px;
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+  font-size: 11pt !important;
+  font-weight: normal !important;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.final-roster-table td {
+  border: 1px solid #000;
+  padding: 3px 4px;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
+  line-height: 1.35;
+}
+
+.final-roster-table tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.final-roster-bottom-breakdown {
+  margin-top: 10px;
+  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+  font-size: 11pt !important;
+}
+

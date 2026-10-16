@@ -2587,7 +2587,8 @@ function initReportSelectorBar() {
           'attendance': '✍️ សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ជ្រើសរើស គ.ក.ប (Attendance)',
           'scoresheet': '📝 សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប (Score Sheet)',
           'results': '🏆 សន្លឹក ៥ ៖ លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប តាមលំដាប់ពិន្ទុ (Ranked Results)',
-          'commune_results': '🏛️ សន្លឹក ៦ ៖ លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប តាមលំដាប់ពិន្ទុ (គ្រប់ការិយាល័យក្នុងឃុំ/សង្កាត់)'
+          'commune_results': '🏛️ សន្លឹក ៦ ៖ លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប តាមលំដាប់ពិន្ទុ (គ្រប់ការិយាល័យក្នុងឃុំ/សង្កាត់)',
+          'final_roster': '📜 សន្លឹក ៧ ៖ បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ'
         };
         titleEl.textContent = titles[repType] || '';
       }
@@ -3061,6 +3062,13 @@ async function renderReportPreview() {
     document.body.classList.add('report-landscape-active');
   } else {
     document.body.classList.remove('report-landscape-active');
+  }
+
+  const isMultiPage = (reportType === 'sortlist' || reportType === 'commune_results' || reportType === 'final_roster');
+  if (isMultiPage) {
+    document.body.classList.add('report-multipage-active');
+  } else {
+    document.body.classList.remove('report-multipage-active');
   }
 
   // Dynamically set browser print dialog page orientation (Landscape for Report 1, Portrait for Reports 2-5)
@@ -3692,6 +3700,213 @@ async function renderReportPreview() {
     `;
   }
 
+  // ----------------------------------------------------------------------------
+  // SHEET 7: បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ
+  // ----------------------------------------------------------------------------
+  else if (reportType === 'final_roster') {
+    const communeStations = (allPollingStations || [])
+      .filter(p => String(p.communeCode).padStart(3, '0') === String(ps.communeCode).padStart(3, '0'))
+      .sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+
+    let communeCandidates = [];
+    try {
+      const res = await fetch(`/api/candidates?communeCode=${ps.communeCode}`);
+      const data = await res.json();
+      communeCandidates = data.candidates || [];
+    } catch (err) {
+      console.error('Error fetching commune candidates:', err);
+    }
+
+    const ROSTER_ROLES = [
+      'ប្រធាន',
+      'អនុប្រធាន',
+      'លេខាធិការ',
+      'សមាជិកទី១',
+      'សមាជិកទី២',
+      'សមាជិកទី៣'
+    ];
+
+    const stats = {
+      'ប្រធាន': { total: 0, female: 0 },
+      'អនុប្រធាន': { total: 0, female: 0 },
+      'លេខាធិការ': { total: 0, female: 0 },
+      'សមាជិកទី១': { total: 0, female: 0 },
+      'សមាជិកទី២': { total: 0, female: 0 },
+      'សមាជិកទី៣': { total: 0, female: 0 },
+      grandTotal: 0,
+      grandFemale: 0
+    };
+
+    let rowsHtml = '';
+    let globalRowIdx = 0;
+
+    communeStations.forEach((st, stIdx) => {
+      const stCands = communeCandidates.filter(c => c.pollingStationId === st.id);
+      const isFirstStOfCommune = (stIdx === 0);
+      const isFirstStOfDistrict = (stIdx === 0);
+
+      ROSTER_ROLES.forEach((role, roleIdx) => {
+        globalRowIdx++;
+        const khmerRowIdx = toKhmerNum(globalRowIdx);
+
+        // Find candidate for this role with status 'A-ជាប់'
+        let c = stCands.find(x => x.role === role && x.status === 'A-ជាប់');
+        if (!c) {
+          const roleCands = stCands.filter(x => x.role === role);
+          roleCands.sort((a, b) => {
+            if (a.rank && b.rank) return a.rank - b.rank;
+            const at = parseFloat(a.scoreTotal) || 0;
+            const bt = parseFloat(b.scoreTotal) || 0;
+            return bt - at;
+          });
+          c = roleCands[0];
+        }
+
+        const isFemale = c && (c.gender === 'ស' || c.gender === 'ស្រី');
+        stats[role].total++;
+        stats.grandTotal++;
+        if (isFemale) {
+          stats[role].female++;
+          stats.grandFemale++;
+        }
+
+        const candName = c ? (c.name || '') : '';
+        const candGender = c ? (c.gender || '') : '';
+
+        const communeCol = (roleIdx === 0 && isFirstStOfCommune) ? (st.communeName || '') : ' -';
+        const districtCol = (roleIdx === 0 && isFirstStOfDistrict) ? (st.district || '') : ' -';
+        const stCodeNum = parseInt(st.code, 10);
+        const stCodeCol = (roleIdx === 0) ? (toKhmerNum(stCodeNum) || toKhmerNum(st.code)) : ' -';
+
+        rowsHtml += `
+          <tr>
+            <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${khmerRowIdx}</td>
+            <td style="min-width: 170px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; border: 1px solid #000; padding: 3px 6px; font-weight: 600;">${candName}</td>
+            <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${candGender}</td>
+            <td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${role}</td>
+            <td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${communeCol}</td>
+            <td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${districtCol}</td>
+            <td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${stCodeCol}</td>
+          </tr>
+        `;
+      });
+    });
+
+    const summaryBoxHtml = `
+      <div class="final-roster-summary-box" style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
+        <table class="final-roster-summary-table" style="border-collapse: collapse; border: 1px solid #000; font-size: 9.5pt; text-align: center;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #000; padding: 2px 8px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; background: #f8fafc; min-width: 85px;"></th>
+              <th style="border: 1px solid #000; padding: 2px 8px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; background: #f8fafc; width: 55px;">សរុប</th>
+              <th style="border: 1px solid #000; padding: 2px 8px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; background: #f8fafc; width: 55px;">ស្រី</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">ប្រធាន</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['ប្រធាន'].total)}</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['ប្រធាន'].female)}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">អនុប្រធាន</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['អនុប្រធាន'].total)}</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['អនុប្រធាន'].female)}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">លេខាធិការ</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['លេខាធិការ'].total)}</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['លេខាធិការ'].female)}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">សមាជិកទី១</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី១'].total)}</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី១'].female)}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">សមាជិកទី២</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី២'].total)}</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី២'].female)}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; text-align: left; font-weight: 600;">សមាជិកទី៣</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី៣'].total)}</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif;">${toKhmerNum(stats['សមាជិកទី៣'].female)}</td>
+            </tr>
+            <tr class="total-row" style="background: #f1f5f9; font-weight: 700;">
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Muol Light', serif; font-size: 9pt; font-weight: normal; text-align: center;">សរុប</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; font-weight: 700;">${toKhmerNum(stats.grandTotal)}</td>
+              <td style="border: 1px solid #000; padding: 2px 6px; font-family: 'Khmer OS Siemreap', sans-serif; font-weight: 700;">${toKhmerNum(stats.grandFemale)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    const bottomClosingHtml = `
+      <div class="final-roster-bottom-breakdown" style="margin-top: 10px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; page-break-inside: avoid; break-inside: avoid;">
+        <div style="font-weight: 700; margin-bottom: 6px;">
+          បញ្ឈប់បញ្ជីនេះត្រឹមចំនួន ${toKhmerNum(stats.grandTotal)} នាក់ ក្នុងនោះ ស្រី ${toKhmerNum(stats.grandFemale)} នាក់។
+        </div>
+        <table style="border-collapse: collapse; border: none; font-size: 10pt; margin-top: 4px;">
+          <tr>
+            <td style="padding: 1px 8px; border: none; font-weight: 600;">- ប្រធាន</td>
+            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['ប្រធាន'].female)} នាក់</td>
+          </tr>
+          <tr>
+            <td style="padding: 1px 8px; border: none; font-weight: 600;">- អនុប្រធាន</td>
+            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['អនុប្រធាន'].female)} នាក់</td>
+          </tr>
+          <tr>
+            <td style="padding: 1px 8px; border: none; font-weight: 600;">- លេខា</td>
+            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['លេខាធិការ'].female)} នាក់</td>
+          </tr>
+          <tr>
+            <td style="padding: 1px 8px; border: none; font-weight: 600;">- សមាជិកទី១</td>
+            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['សមាជិកទី១'].female)} នាក់</td>
+          </tr>
+          <tr>
+            <td style="padding: 1px 8px; border: none; font-weight: 600;">- សមាជិកទី២</td>
+            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['សមាជិកទី២'].female)} នាក់</td>
+          </tr>
+          <tr>
+            <td style="padding: 1px 8px; border: none; font-weight: 600;">- សមាជិកទី៣</td>
+            <td style="padding: 1px 8px; border: none;">៖ ស្រី ${toKhmerNum(stats['សមាជិកទី៣'].female)} នាក់</td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    reportContentHtml = `
+      <div class="print-paper-sheet">
+        <div style="text-align: center; margin-bottom: 6px;">
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 13pt !important; font-weight: normal !important; color: #000; margin-bottom: 3px; text-align: center;">បញ្ជីរាយនាម</div>
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 3px; text-align: center;">សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) </div>
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
+        </div>
+        ${summaryBoxHtml}
+        <table class="final-roster-table official-print-table" style="margin-top: 4px;">
+          <thead>
+            <tr>
+              <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
+              <th style="min-width: 170px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម និងនាម</th>
+              <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
+              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">មុខតំណែង</th>
+              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ឃុំ សង្កាត់</th>
+              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ក្រុង ស្រុក</th>
+              <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">លេខកូដការិ.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        ${bottomClosingHtml}
+        ${getOfficialSignatureBlock(ps, 'results')}
+      </div>
+    `;
+  }
+
   container.innerHTML = reportContentHtml;
   setupReportLogoInteractions();
   setupReportDateInteractions();
@@ -4022,13 +4237,19 @@ function exportCurrentReportToExcel() {
   const code4 = ps ? String(ps.code || '').padStart(4, '0') : '0000';
   const reportType = document.getElementById('reportTypeSelect').value;
 
+  if (reportType === 'final_roster') {
+    exportFinalRosterToExcel(ps);
+    return;
+  }
+
   const sheetNamesMap = {
     'sortlist': 'SortList',
     'notice': 'ជូនដំណឹង',
     'attendance': 'បញ្ជីវត្តមាន',
     'scoresheet': 'បញ្ចូលពិន្ទុ',
     'results': 'លទ្ធផលតាមលំដាប់',
-    'commune_results': 'លទ្ធផលគ្រប់ការិយាល័យ'
+    'commune_results': 'លទ្ធផលគ្រប់ការិយាល័យ',
+    'final_roster': '21-TAKEO'
   };
   const sheetName = sheetNamesMap[reportType] || 'Report';
 
@@ -4054,6 +4275,181 @@ function exportCurrentReportToExcel() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.table_to_sheet(exportTable, { raw: true });
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, fileName);
+}
+
+async function exportFinalRosterToExcel(ps) {
+  if (!ps) {
+    alert('សូមជ្រើសរើសការិយាល័យ ឬឃុំ/សង្កាត់ជាមុនសិន!');
+    return;
+  }
+
+  const communeStations = (allPollingStations || [])
+    .filter(p => String(p.communeCode).padStart(3, '0') === String(ps.communeCode).padStart(3, '0'))
+    .sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+
+  let communeCandidates = [];
+  try {
+    const res = await fetch(`/api/candidates?communeCode=${ps.communeCode}`);
+    const data = await res.json();
+    communeCandidates = data.candidates || [];
+  } catch (err) {
+    console.error('Error fetching candidates for Excel:', err);
+  }
+
+  const ROSTER_ROLES = [
+    'ប្រធាន',
+    'អនុប្រធាន',
+    'លេខាធិការ',
+    'សមាជិកទី១',
+    'សមាជិកទី២',
+    'សមាជិកទី៣'
+  ];
+
+  const stats = {
+    'ប្រធាន': { total: 0, female: 0 },
+    'អនុប្រធាន': { total: 0, female: 0 },
+    'លេខាធិការ': { total: 0, female: 0 },
+    'សមាជិកទី១': { total: 0, female: 0 },
+    'សមាជិកទី២': { total: 0, female: 0 },
+    'សមាជិកទី៣': { total: 0, female: 0 },
+    grandTotal: 0,
+    grandFemale: 0
+  };
+
+  const candidateRows = [];
+  let globalRowIdx = 0;
+
+  communeStations.forEach((st, stIdx) => {
+    const stCands = communeCandidates.filter(c => c.pollingStationId === st.id);
+    const isFirstStOfCommune = (stIdx === 0);
+    const isFirstStOfDistrict = (stIdx === 0);
+
+    ROSTER_ROLES.forEach((role, roleIdx) => {
+      globalRowIdx++;
+
+      let c = stCands.find(x => x.role === role && x.status === 'A-ជាប់');
+      if (!c) {
+        const roleCands = stCands.filter(x => x.role === role);
+        roleCands.sort((a, b) => {
+          if (a.rank && b.rank) return a.rank - b.rank;
+          const at = parseFloat(a.scoreTotal) || 0;
+          const bt = parseFloat(b.scoreTotal) || 0;
+          return bt - at;
+        });
+        c = roleCands[0];
+      }
+
+      const isFemale = c && (c.gender === 'ស' || c.gender === 'ស្រី');
+      stats[role].total++;
+      stats.grandTotal++;
+      if (isFemale) {
+        stats[role].female++;
+        stats.grandFemale++;
+      }
+
+      const candName = c ? (c.name || '') : '';
+      const candGender = c ? (c.gender || '') : '';
+      const communeCol = (roleIdx === 0 && isFirstStOfCommune) ? (st.communeName || '') : ' -';
+      const districtCol = (roleIdx === 0 && isFirstStOfDistrict) ? (st.district || '') : ' -';
+      const stCodeNum = parseInt(st.code, 10);
+      const stCodeCol = (roleIdx === 0) ? (stCodeNum || st.code) : ' -';
+
+      candidateRows.push([
+        globalRowIdx,
+        candName,
+        candGender,
+        role,
+        communeCol,
+        districtCol,
+        stCodeCol
+      ]);
+    });
+  });
+
+  const mandateText = (appSettings && appSettings.mandate)
+    ? appSettings.mandate
+    : (ps.mandate || 'សម្រាប់ការបោះឆ្នោតជ្រើសតាំងតំណាងរាស្ត្រ នីតិកាលទី៨ ឆ្នាំ២០២៧');
+
+  const aoa = [];
+  // Rows 0 to 5 (Excel rows 1 to 6): empty
+  for (let i = 0; i < 6; i++) aoa.push([]);
+
+  // Row 6 (Excel row 7): Title
+  aoa.push(["បញ្ជីរាយនាម"]);
+
+  // Row 7 (Excel row 8): Subtitle
+  aoa.push(["សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) "]);
+
+  // Row 8 (Excel row 9): Mandate + Summary headers in Col J & K
+  aoa.push([
+    mandateText, "", "", "", "", "", "", "", "", "សរុប", "ស្រី"
+  ]);
+
+  // Row 9 (Excel row 10): Table headers + Summary row 1 (ប្រធាន)
+  aoa.push([
+    "ល.រ", "គោត្តនាម និងនាម", "ភេទ", "មុខតំណែង", "ឃុំ សង្កាត់", "ក្រុង ស្រុក", "លេខកូដការិ.",
+    "", "ប្រធាន", stats['ប្រធាន'].total, stats['ប្រធាន'].female
+  ]);
+
+  // Mapping summary rows across candidate rows (rows 10 to 15, Excel rows 11 to 16)
+  const summaryRoles = [
+    { role: 'អនុប្រធាន', total: stats['អនុប្រធាន'].total, female: stats['អនុប្រធាន'].female },
+    { role: 'លេខាធិការ', total: stats['លេខាធិការ'].total, female: stats['លេខាធិការ'].female },
+    { role: 'សមាជិកទី១', total: stats['សមាជិកទី១'].total, female: stats['សមាជិកទី១'].female },
+    { role: 'សមាជិកទី២', total: stats['សមាជិកទី២'].total, female: stats['សមាជិកទី២'].female },
+    { role: 'សមាជិកទី៣', total: stats['សមាជិកទី៣'].total, female: stats['សមាជិកទី៣'].female },
+    { role: '', total: stats.grandTotal, female: stats.grandFemale }
+  ];
+
+  for (let i = 0; i < candidateRows.length; i++) {
+    const cRow = [...candidateRows[i]];
+    if (i < summaryRoles.length) {
+      const sItem = summaryRoles[i];
+      cRow[7] = "";
+      cRow[8] = sItem.role;
+      cRow[9] = sItem.total;
+      cRow[10] = sItem.female;
+    }
+    aoa.push(cRow);
+  }
+
+  // Bottom notes
+  aoa.push([`បញ្ឈប់បញ្ជីនេះត្រឹមចំនួន ${toKhmerNum(stats.grandTotal)} នាក់ ក្នុងនោះ ស្រី ${toKhmerNum(stats.grandFemale)} នាក់។`]);
+  aoa.push(["", "ប្រធាន", stats['ប្រធាន'].female]);
+  aoa.push(["", "អនុប្រធាន", stats['អនុប្រធាន'].female]);
+  aoa.push(["", "លេខា", stats['លេខាធិការ'].female]);
+  aoa.push(["", "សមាជិកទី១", stats['សមាជិកទី១'].female]);
+  aoa.push(["", "សមាជិកទី២", stats['សមាជិកទី២'].female]);
+  aoa.push(["", "សមាជិកទី៣", stats['សមាជិកទី៣'].female]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Merges matching template
+  ws['!merges'] = [
+    { s: { c: 0, r: 6 }, e: { c: 6, r: 6 } },
+    { s: { c: 0, r: 7 }, e: { c: 6, r: 7 } },
+    { s: { c: 0, r: 8 }, e: { c: 6, r: 8 } }
+  ];
+
+  // Column widths matching template
+  ws['!cols'] = [
+    { wch: 6.78 },   // A: ល.រ
+    { wch: 18.33 },  // B: គោត្តនាម និងនាម
+    { wch: 5.00 },   // C: ភេទ
+    { wch: 13.55 },  // D: មុខតំណែង
+    { wch: 13.78 },  // E: ឃុំ សង្កាត់
+    { wch: 13.78 },  // F: ក្រុង ស្រុក
+    { wch: 12.44 },  // G: លេខកូដការិ.
+    { wch: 8.89 },   // H: spacer
+    { wch: 21.00 },  // I: Summary role
+    { wch: 8.89 },   // J: Summary Total
+    { wch: 8.89 }    // K: Summary Female
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '21-TAKEO');
+  const fileName = `បញ្ជីរាយនាម_គ.ក.ប_2027_ឃុំ_${ps.communeName || ''}_${ps.communeCode || ''}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
 
