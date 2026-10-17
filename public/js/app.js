@@ -5787,7 +5787,7 @@ async function renderReportPreview() {
           prevDist = cleanDist;
           rowsAllHtml += `
             <tr class="district-banner-row">
-              <td colspan="10" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
+              <td colspan="10" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px 5px 10px; border: 1px solid #000; text-align: left !important; color: #1e1b4b;">
                 🏛️ ${getDistrictPrefix(st.district)}
               </td>
             </tr>
@@ -6029,7 +6029,7 @@ async function renderReportPreview() {
         prevDist = cleanDist;
         rowsHtml += `
           <tr class="district-banner-row">
-            <td colspan="6" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
+            <td colspan="6" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px 5px 10px; border: 1px solid #000; text-align: left !important; color: #1e1b4b;">
               🏛️ ${getDistrictPrefix(st.district)}
             </td>
           </tr>
@@ -6141,7 +6141,7 @@ async function renderReportPreview() {
         prevDist = cleanDist;
         rowsHtml += `
           <tr class="district-banner-row">
-            <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
+            <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px 5px 10px; border: 1px solid #000; text-align: left !important; color: #1e1b4b;">
               🏛️ ${getDistrictPrefix(st.district)}
             </td>
           </tr>
@@ -6254,7 +6254,7 @@ async function renderReportPreview() {
         prevDist = cleanDist;
         rowsHtml += `
           <tr class="district-banner-row">
-            <td colspan="8" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
+            <td colspan="8" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px 5px 10px; border: 1px solid #000; text-align: left !important; color: #1e1b4b;">
               🏛️ ${getDistrictPrefix(st.district)}
             </td>
           </tr>
@@ -6394,7 +6394,7 @@ async function renderReportPreview() {
           prevDist = cleanDist;
           rowsHtml += `
             <tr class="district-banner-row">
-              <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px; border: 1px solid #000; text-align: center; color: #1e1b4b;">
+              <td colspan="7" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; background: #e0e7ff; padding: 5px 8px 5px 10px; border: 1px solid #000; text-align: left !important; color: #1e1b4b;">
                 🏛️ ${getDistrictPrefix(st.district)}
               </td>
             </tr>
