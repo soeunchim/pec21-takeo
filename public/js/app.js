@@ -5451,6 +5451,16 @@ function buildReportLetterheadHtml(ps, reportType = '') {
 }
 
 function buildReportTitleBoxHtml(ps, titleText, customSubHtml) {
+  const currentReportType = document.getElementById('reportTypeSelect')?.value || '';
+  const savedCustomTitle = localStorage.getItem('report_custom_title_' + currentReportType);
+  if (savedCustomTitle && savedCustomTitle.trim()) {
+    return `
+      <div class="report-title-section report-title-box report-draggable-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+        ${savedCustomTitle}
+      </div>
+    `;
+  }
+
   const psCodeFormatted = String(ps.code || '').padStart(4, '0');
   const psCodeKhmer = toKhmerNum(psCodeFormatted);
   const mandateText = appSettings.mandateTitle || 'សម្រាប់ការបោះឆ្នោតជ្រើសរើសក្រុមប្រឹក្សាឃុំ សង្កាត់ អណត្តិទី៧ ឆ្នាំ២០២៧';
@@ -5458,7 +5468,7 @@ function buildReportTitleBoxHtml(ps, titleText, customSubHtml) {
   const subHtml = customSubHtml || `<div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>`;
 
   return `
-    <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+    <div class="report-title-section report-title-box report-draggable-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
       <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">${titleText}</div>
       ${subHtml}
       <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">លេខកូដការិយាល័យ ៖ ${psCodeKhmer}</div>
@@ -7208,6 +7218,170 @@ document.addEventListener('focusout', (e) => {
   }
 }, true);
 
+// =========================================================================
+// Universal Draggable Report Boxes (Mouse drag repositioning & storage)
+// =========================================================================
+function getDraggableBoxPosition(boxId, reportType) {
+  try {
+    if (reportType) {
+      const specific = localStorage.getItem(`report_box_pos_${boxId}_${reportType}`);
+      if (specific) return JSON.parse(specific);
+    }
+    const globalPos = localStorage.getItem(`report_box_pos_${boxId}`);
+    if (globalPos) return JSON.parse(globalPos);
+  } catch (e) {}
+  return { x: 0, y: 0 };
+}
+
+function saveDraggableBoxPosition(boxId, reportType, pos) {
+  try {
+    if (reportType) {
+      localStorage.setItem(`report_box_pos_${boxId}_${reportType}`, JSON.stringify(pos));
+    }
+    localStorage.setItem(`report_box_pos_${boxId}`, JSON.stringify(pos));
+  } catch (e) {}
+}
+
+function applyAllSavedBoxPositions(container = document) {
+  const currentReportType = document.getElementById('reportTypeSelect')?.value || '';
+  const configs = [
+    { selector: '#reportLogoContainer', id: 'logo' },
+    { selector: '.report-inst-header-box', id: 'inst_header' },
+    { selector: '.report-kingdom-header-box', id: 'kingdom_header' },
+    { selector: '.report-title-box', id: 'title_box' },
+    { selector: '.signature-box', id: 'signature_box' }
+  ];
+  configs.forEach(cfg => {
+    const pos = getDraggableBoxPosition(cfg.id, currentReportType);
+    if (pos && (pos.x !== 0 || pos.y !== 0)) {
+      container.querySelectorAll(cfg.selector).forEach(el => {
+        el.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+      });
+    }
+  });
+}
+
+function setupDraggableReportBoxes() {
+  const currentReportType = document.getElementById('reportTypeSelect')?.value || '';
+  const boxConfigs = [
+    { selector: '#reportLogoContainer', id: 'logo', label: 'Logo' },
+    { selector: '.report-inst-header-box', id: 'inst_header', label: 'ស្ថាប័ន' },
+    { selector: '.report-kingdom-header-box', id: 'kingdom_header', label: 'ជាតិ' },
+    { selector: '.report-title-box', id: 'title_box', label: 'ចំណងជើង' },
+    { selector: '.signature-box', id: 'signature_box', label: 'ហត្ថលេខា' }
+  ];
+
+  boxConfigs.forEach(cfg => {
+    document.querySelectorAll(`#printContainer ${cfg.selector}`).forEach(boxEl => {
+      boxEl.classList.add('report-draggable-box');
+
+      // Apply initial saved position
+      const savedPos = getDraggableBoxPosition(cfg.id, currentReportType);
+      if (savedPos && (savedPos.x !== 0 || savedPos.y !== 0)) {
+        boxEl.style.transform = `translate(${savedPos.x}px, ${savedPos.y}px)`;
+      }
+
+      // Check if handle already exists
+      let handle = boxEl.querySelector(':scope > .report-box-drag-handle');
+      if (!handle) {
+        handle = document.createElement('div');
+        handle.className = 'report-box-drag-handle no-print';
+        handle.setAttribute('contenteditable', 'false');
+        handle.setAttribute('title', 'ចុចហើយអូស Mouse (Drag) ដើម្បីផ្លាស់ប្តូរទីតាំង');
+        handle.innerHTML = `
+          <span style="font-size: 13px; line-height: 1; cursor: grab;">✥</span>
+          <span style="cursor: grab;">${cfg.label}</span>
+          <span class="report-box-reset-btn" title="កំណត់ទីតាំងដើមឡើងវិញ (Reset 0,0)">↺</span>
+        `;
+        boxEl.appendChild(handle);
+      }
+
+      const resetBtn = handle.querySelector('.report-box-reset-btn');
+      if (resetBtn) {
+        resetBtn.onmousedown = (e) => e.stopPropagation();
+        resetBtn.onclick = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          boxEl.style.transform = 'translate(0px, 0px)';
+          saveDraggableBoxPosition(cfg.id, currentReportType, { x: 0, y: 0 });
+          document.querySelectorAll(cfg.selector).forEach(el => el.style.transform = 'translate(0px, 0px)');
+          showSaveSuccessToast('បានកំណត់ទីតាំង ' + cfg.label + ' ដើមឡើងវិញ');
+        };
+      }
+
+      // Mouse drag handlers
+      const startDrag = (e) => {
+        let isDragging = true;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const currentPos = getDraggableBoxPosition(cfg.id, currentReportType);
+        const startPosX = currentPos.x || 0;
+        const startPosY = currentPos.y || 0;
+
+        handle.classList.add('is-dragging');
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'grabbing';
+
+        const onMouseMove = (ev) => {
+          if (!isDragging) return;
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          const newX = Math.round(startPosX + dx);
+          const newY = Math.round(startPosY + dy);
+          boxEl.style.transform = `translate(${newX}px, ${newY}px)`;
+          document.querySelectorAll(cfg.selector).forEach(el => {
+            if (el !== boxEl) el.style.transform = `translate(${newX}px, ${newY}px)`;
+          });
+        };
+
+        const onMouseUp = (ev) => {
+          if (!isDragging) return;
+          isDragging = false;
+          handle.classList.remove('is-dragging');
+          document.body.style.userSelect = '';
+          document.body.style.cursor = '';
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          const newX = Math.round(startPosX + dx);
+          const newY = Math.round(startPosY + dy);
+          const finalPos = { x: newX, y: newY };
+          saveDraggableBoxPosition(cfg.id, currentReportType, finalPos);
+          document.querySelectorAll(cfg.selector).forEach(el => {
+            el.style.transform = `translate(${newX}px, ${newY}px)`;
+          });
+
+          if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+            showSaveSuccessToast('បានរក្សាទុកទីតាំង ' + cfg.label + ' រួចរាល់');
+          }
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      };
+
+      // Mousedown on handle initiates dragging
+      handle.onmousedown = (e) => {
+        if (e.target.closest('.report-box-reset-btn')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        startDrag(e);
+      };
+
+      // Also allow Alt+drag anywhere on the box
+      boxEl.addEventListener('mousedown', (e) => {
+        if (e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          startDrag(e);
+        }
+      });
+    });
+  });
+}
+
 function setupReportSignatureInteractions() {
   const currentReportType = document.getElementById('reportTypeSelect')?.value || 'sortlist';
 
@@ -7274,16 +7448,25 @@ function setupReportSignatureInteractions() {
 
   // 4. Institution Letterhead Box (.report-inst-header-box)
   document.querySelectorAll('.report-inst-header-box').forEach(el => {
-    let originalHtml = el.innerHTML.trim();
-    el.onfocus = () => { originalHtml = el.innerHTML.trim(); };
+    const getCleanHtml = (node) => {
+      const clone = node.cloneNode(true);
+      clone.querySelectorAll('.report-box-drag-handle').forEach(h => h.remove());
+      return clone.innerHTML.trim();
+    };
+    let originalHtml = getCleanHtml(el);
+    el.onfocus = () => { originalHtml = getCleanHtml(el); };
     el.onblur = () => {
-      const valHtml = el.innerHTML.trim();
+      const valHtml = getCleanHtml(el);
       const rType = el.getAttribute('data-report-type');
       const storageKey = (rType === 'final_roster') ? 'report_custom_inst_header_final_roster' : 'report_custom_inst_header';
       localStorage.setItem(storageKey, valHtml);
       const selector = (rType === 'final_roster') ? '.report-inst-header-box[data-report-type="final_roster"]' : '.report-inst-header-box:not([data-report-type="final_roster"])';
       document.querySelectorAll(selector).forEach(target => {
-        if (target !== el) target.innerHTML = valHtml;
+        if (target !== el) {
+          const tHandle = target.querySelector('.report-box-drag-handle');
+          target.innerHTML = valHtml;
+          if (tHandle) target.appendChild(tHandle);
+        }
       });
       if (valHtml !== originalHtml) {
         showSaveSuccessToast('បានរក្សាទុករួច');
@@ -7341,6 +7524,31 @@ function setupReportSignatureInteractions() {
     };
   });
 
+  // 7. Title Box (.report-title-box)
+  document.querySelectorAll('.report-title-box').forEach(el => {
+    const getCleanHtml = (node) => {
+      const clone = node.cloneNode(true);
+      clone.querySelectorAll('.report-box-drag-handle').forEach(h => h.remove());
+      return clone.innerHTML.trim();
+    };
+    let originalHtml = getCleanHtml(el);
+    el.onfocus = () => { originalHtml = getCleanHtml(el); };
+    el.onblur = () => {
+      const valHtml = getCleanHtml(el);
+      localStorage.setItem('report_custom_title_' + currentReportType, valHtml);
+      document.querySelectorAll('.report-title-box').forEach(target => {
+        if (target !== el) {
+          const tHandle = target.querySelector('.report-box-drag-handle');
+          target.innerHTML = valHtml;
+          if (tHandle) target.appendChild(tHandle);
+        }
+      });
+      if (valHtml !== originalHtml) {
+        showSaveSuccessToast('បានរក្សាទុកចំណងជើងរួច');
+      }
+    };
+  });
+
   // Live screen -> print view synchronization
   const syncLive = (selector) => {
     const screenEl = document.querySelector(`.report-screen-view ${selector}`);
@@ -7357,6 +7565,9 @@ function setupReportSignatureInteractions() {
   syncLive('.report-inst-header-box');
   syncLive('.report-tacteing-emblem');
   syncLive('.report-title-box');
+
+  // Setup draggable boxes for all boxed sections in all reports
+  setupDraggableReportBoxes();
 }
 
 function setupAutoPrintPagination() {
@@ -7594,6 +7805,7 @@ function setupAutoPrintPagination() {
 
   printView.innerHTML = printPagesHtml;
   sheet.appendChild(printView);
+  applyAllSavedBoxPositions(printView);
 }
 
 function syncReportSignaturesBeforePrint() {
@@ -7601,7 +7813,12 @@ function syncReportSignaturesBeforePrint() {
     const screenEl = document.querySelector(`.report-screen-view ${selector}`);
     const printEls = document.querySelectorAll(`.report-print-view ${selector}`);
     if (screenEl && printEls.length > 0) {
-      printEls.forEach(pel => pel.innerHTML = screenEl.innerHTML);
+      printEls.forEach(pel => {
+        pel.innerHTML = screenEl.innerHTML;
+        if (screenEl.style.transform) {
+          pel.style.transform = screenEl.style.transform;
+        }
+      });
     }
   };
   sync('.editable-sig-committee');
@@ -7615,6 +7832,9 @@ function syncReportSignaturesBeforePrint() {
   sync('.report-editable-notice-place');
   sync('.report-editable-notice-date');
   sync('.report-editable-notice-time');
+  sync('.signature-box');
+  sync('.report-kingdom-header-box');
+  sync('#reportLogoContainer');
 }
 
 function exportCurrentReportToExcel() {
