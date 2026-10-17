@@ -487,6 +487,7 @@ function setupEventListeners() {
       if (targetId === 'tabPollingStations') renderPollingStationsTable();
       if (targetId === 'tabScoring') renderScoringTableForActiveStation();
       if (targetId === 'tabDuplicates') loadDuplicateCandidatesList();
+      if (targetId === 'tabStatistics') loadStatisticsPage();
       if (targetId === 'tabReports') {
         syncScoringStationToReports();
         renderReportPreview();
@@ -6471,13 +6472,13 @@ async function renderReportPreview() {
                 const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? toKhmerNum(Number(c.scoreTotal).toFixed(2)) : '';
                 scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
                 if (c.status === 'A-ជាប់') {
-                  statusHtml = `<td style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">A-ជាប់</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">A-ជាប់</td>`;
                 } else if (c.status === 'B-បម្រុង') {
-                  statusHtml = `<td style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">B-បម្រុង</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">B-បម្រុង</td>`;
                 } else if (c.status === 'C-បម្រុង' || c.status === 'C-បម្រុងបន្ទាប់') {
-                  statusHtml = `<td style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">C-បម្រុងបន្ទាប់</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">C-បម្រុងបន្ទាប់</td>`;
                 } else {
-                  statusHtml = `<td style="width: 110px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">${c.status || ''}</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">${c.status || ''}</td>`;
                 }
               }
             } else {
@@ -6574,13 +6575,13 @@ async function renderReportPreview() {
               const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? toKhmerNum(Number(c.scoreTotal).toFixed(2)) : '';
               scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
               if (c.status === 'A-ជាប់') {
-                statusHtml = `<td style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">A-ជាប់</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">A-ជាប់</td>`;
               } else if (c.status === 'B-បម្រុង') {
-                statusHtml = `<td style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">B-បម្រុង</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">B-បម្រុង</td>`;
               } else if (c.status === 'C-បម្រុង' || c.status === 'C-បម្រុងបន្ទាប់') {
-                statusHtml = `<td style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">C-បម្រុងបន្ទាប់</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">C-បម្រុងបន្ទាប់</td>`;
               } else {
-                statusHtml = `<td style="width: 110px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">${c.status || ''}</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: normal; color: #000; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">${c.status || ''}</td>`;
               }
             }
           } else {
@@ -8963,3 +8964,717 @@ window.closeModal = function(modalId) {
   const el = document.getElementById(modalId);
   if (el) el.classList.remove('active');
 };
+
+// ==============================================================================
+// PASSED CANDIDATES STATISTICS TAB (តារាងស្ថិតិបេក្ខជនជាប់ គ.ក.ប)
+// ==============================================================================
+let cachedStatsCandidates = null;
+window.currentStatsExportData = null;
+
+const STATS_ROLES_LIST = [
+  'ប្រធាន',
+  'អនុប្រធាន',
+  'លេខាធិការ',
+  'សមាជិកទី១',
+  'សមាជិកទី២',
+  'សមាជិកទី៣'
+];
+
+async function loadStatisticsPage() {
+  const container = document.getElementById('statisticsTableContainer');
+  if (container) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #64748b; font-size: 14px;">
+        ⏳ កំពុងទាញយកទិន្នន័យស្ថិតិបេក្ខជនជាប់...
+      </div>
+    `;
+  }
+
+  try {
+    if (!allPollingStations || !allPollingStations.length) {
+      const psRes = await (await fetch('/api/polling-stations')).json();
+      allPollingStations = psRes.pollingStations || [];
+    }
+
+    const candRes = await (await fetch('/api/candidates?district=all&communeCode=all')).json();
+    cachedStatsCandidates = candRes.candidates || [];
+
+    const distSelect = document.getElementById('statDistrictFilter');
+    if (distSelect) {
+      const currentVal = distSelect.value;
+      const dists = [...new Set(allPollingStations.map(p => p.district))].filter(Boolean).sort();
+      let distOptions = '<option value="all">ទាំងអស់ (ទូទាំងខេត្ត)</option>';
+      dists.forEach(d => {
+        distOptions += `<option value="${d}">${getDistrictPrefix(d)}</option>`;
+      });
+      distSelect.innerHTML = distOptions;
+
+      if (currentUser && currentUser.role === 'Trainer' && currentUser.district && currentUser.district !== 'all') {
+        distSelect.value = currentUser.district;
+        distSelect.disabled = true;
+      } else if (currentVal && Array.from(distSelect.options).some(o => o.value === currentVal)) {
+        distSelect.value = currentVal;
+      }
+    }
+
+    updateStatCommuneDropdown();
+    renderStatisticsPage();
+  } catch (err) {
+    console.error('Error loading statistics:', err);
+    if (container) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 30px; color: #ef4444; font-size: 14px;">
+          ❌ មានបញ្ហាក្នុងការទាញយកទិន្នន័យស្ថិតិ ៖ ${err.message}
+        </div>
+      `;
+    }
+  }
+}
+
+function updateStatCommuneDropdown() {
+  const distSelect = document.getElementById('statDistrictFilter');
+  const comSelect = document.getElementById('statCommuneFilter');
+  if (!comSelect || !distSelect) return;
+
+  const selDist = distSelect.value;
+  const currentVal = comSelect.value;
+
+  let filteredStations = allPollingStations;
+  if (selDist !== 'all') {
+    const cleanD = selDist.trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    filteredStations = filteredStations.filter(s => String(s.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanD);
+  }
+
+  const comMap = new Map();
+  filteredStations.forEach(s => {
+    const code = String(s.communeCode || '').padStart(3, '0');
+    if (!comMap.has(code)) {
+      comMap.set(code, {
+        code: code,
+        name: s.communeName || '',
+        district: s.district || ''
+      });
+    }
+  });
+
+  let comOptions = '<option value="all">ទាំងអស់</option>';
+  Array.from(comMap.values()).sort((a, b) => a.code.localeCompare(b.code)).forEach(c => {
+    comOptions += `<option value="${c.code}">${getCommunePrefix(c.name, c.district)} (${toKhmerNum(c.code)})</option>`;
+  });
+  comSelect.innerHTML = comOptions;
+
+  if (currentUser && currentUser.role === 'Commune' && currentUser.communeCode) {
+    comSelect.value = String(currentUser.communeCode).padStart(3, '0');
+    comSelect.disabled = true;
+  } else if (currentVal && Array.from(comSelect.options).some(o => o.value === currentVal)) {
+    comSelect.value = currentVal;
+  }
+}
+
+function onStatDistrictChange() {
+  updateStatCommuneDropdown();
+  renderStatisticsPage();
+}
+
+function getPassedCandidateForStationRole(stCandidates, role) {
+  const roleCands = (stCandidates || []).filter(c => c.role === role);
+  if (!roleCands.length) return null;
+
+  let c = roleCands.find(x => x.status === 'A-ជាប់');
+  if (!c) {
+    roleCands.sort((a, b) => {
+      if (a.rank && b.rank) return a.rank - b.rank;
+      const at = parseFloat(a.scoreTotal) || 0;
+      const bt = parseFloat(b.scoreTotal) || 0;
+      return bt - at;
+    });
+    const top = roleCands[0];
+    if (top && top.name && (top.status === 'A-ជាប់' || top.rank === 1 || parseFloat(top.scoreTotal) > 0)) {
+      c = top;
+    }
+  }
+  return (c && c.name) ? c : null;
+}
+
+function renderStatisticsPage() {
+  const container = document.getElementById('statisticsTableContainer');
+  if (!container) return;
+
+  const levelSelect = document.getElementById('statLevelSelect');
+  const distSelect = document.getElementById('statDistrictFilter');
+  const comSelect = document.getElementById('statCommuneFilter');
+  const comWrapper = document.getElementById('statCommuneFilterWrapper');
+
+  const level = levelSelect ? levelSelect.value : 'province';
+  const selDist = distSelect ? distSelect.value : 'all';
+  const selCom = comSelect ? comSelect.value : 'all';
+
+  if (comWrapper) {
+    comWrapper.style.display = (level === 'province') ? 'none' : 'flex';
+  }
+
+  // Filter stations based on selection
+  let targetStations = [...(allPollingStations || [])];
+  if (selDist !== 'all') {
+    const cleanD = selDist.trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+    targetStations = targetStations.filter(s => String(s.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanD);
+  }
+  if (level !== 'province' && selCom !== 'all') {
+    const targetCom = String(selCom).padStart(3, '0');
+    targetStations = targetStations.filter(s => String(s.communeCode || '').padStart(3, '0') === targetCom);
+  }
+
+  // Pre-calculate per-station passed candidates
+  const allCands = cachedStatsCandidates || [];
+  const stationPassedMap = new Map();
+
+  targetStations.forEach(st => {
+    const stCands = allCands.filter(c => c.pollingStationId === st.id);
+    const roleStats = {};
+    let stTotal = 0;
+    let stFemale = 0;
+
+    STATS_ROLES_LIST.forEach(role => {
+      const cand = getPassedCandidateForStationRole(stCands, role);
+      if (cand) {
+        const isF = (cand.gender === 'ស' || cand.gender === 'ស្រី' || cand.gender === 'F');
+        roleStats[role] = { total: 1, female: isF ? 1 : 0 };
+        stTotal += 1;
+        if (isF) stFemale += 1;
+      } else {
+        roleStats[role] = { total: 0, female: 0 };
+      }
+    });
+
+    stationPassedMap.set(st.id, {
+      station: st,
+      roles: roleStats,
+      grandTotal: stTotal,
+      grandFemale: stFemale
+    });
+  });
+
+  // Aggregation containers
+  let rowsHtml = '';
+  const exportRows = [];
+  let grandTotalStations = 0;
+  const grandRoleTotals = {};
+  STATS_ROLES_LIST.forEach(r => grandRoleTotals[r] = { total: 0, female: 0 });
+  let grandAllTotal = 0;
+  let grandAllFemale = 0;
+
+  // LEVEL 1: PROVINCE (Group by District)
+  if (level === 'province') {
+    const distGroups = new Map();
+    targetStations.forEach(st => {
+      const d = st.district || 'មិនស្គាល់';
+      if (!distGroups.has(d)) distGroups.set(d, []);
+      distGroups.get(d).push(st);
+    });
+
+    let rowIdx = 0;
+    Array.from(distGroups.keys()).sort().forEach(d => {
+      rowIdx++;
+      const stList = distGroups.get(d);
+      const stCount = stList.length;
+      grandTotalStations += stCount;
+
+      const dRoles = {};
+      STATS_ROLES_LIST.forEach(r => dRoles[r] = { total: 0, female: 0 });
+      let dTotal = 0;
+      let dFemale = 0;
+
+      stList.forEach(st => {
+        const data = stationPassedMap.get(st.id);
+        if (data) {
+          STATS_ROLES_LIST.forEach(r => {
+            dRoles[r].total += data.roles[r].total;
+            dRoles[r].female += data.roles[r].female;
+            grandRoleTotals[r].total += data.roles[r].total;
+            grandRoleTotals[r].female += data.roles[r].female;
+          });
+          dTotal += data.grandTotal;
+          dFemale += data.grandFemale;
+          grandAllTotal += data.grandTotal;
+          grandAllFemale += data.grandFemale;
+        }
+      });
+
+      let roleCells = '';
+      const expRow = [rowIdx, getDistrictPrefix(d), stCount];
+      STATS_ROLES_LIST.forEach(r => {
+        roleCells += `
+          <td style="font-weight: 500;">${toKhmerNum(dRoles[r].total)}</td>
+          <td class="col-female">${toKhmerNum(dRoles[r].female)}</td>
+        `;
+        expRow.push(dRoles[r].total, dRoles[r].female);
+      });
+      expRow.push(dTotal, dFemale);
+      exportRows.push(expRow);
+
+      rowsHtml += `
+        <tr>
+          <td class="text-center">${toKhmerNum(rowIdx)}</td>
+          <td class="text-left" style="font-weight: 600; color: #1e3a8a;">${getDistrictPrefix(d)}</td>
+          <td class="text-center" style="font-weight: 600;">${toKhmerNum(stCount)}</td>
+          ${roleCells}
+          <td class="col-grand-total text-center">${toKhmerNum(dTotal)}</td>
+          <td class="col-female text-center" style="font-weight: 700;">${toKhmerNum(dFemale)}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // LEVEL 2: COMMUNE (Group by Commune)
+  else if (level === 'commune') {
+    const comGroups = new Map();
+    targetStations.forEach(st => {
+      const code = String(st.communeCode || '').padStart(3, '0');
+      const key = `${st.district}_${code}`;
+      if (!comGroups.has(key)) {
+        comGroups.set(key, {
+          district: st.district,
+          communeCode: code,
+          communeName: st.communeName || '',
+          stations: []
+        });
+      }
+      comGroups.get(key).stations.push(st);
+    });
+
+    let rowIdx = 0;
+    Array.from(comGroups.values()).sort((a, b) => a.communeCode.localeCompare(b.communeCode)).forEach(grp => {
+      rowIdx++;
+      const stCount = grp.stations.length;
+      grandTotalStations += stCount;
+
+      const cRoles = {};
+      STATS_ROLES_LIST.forEach(r => cRoles[r] = { total: 0, female: 0 });
+      let cTotal = 0;
+      let cFemale = 0;
+
+      grp.stations.forEach(st => {
+        const data = stationPassedMap.get(st.id);
+        if (data) {
+          STATS_ROLES_LIST.forEach(r => {
+            cRoles[r].total += data.roles[r].total;
+            cRoles[r].female += data.roles[r].female;
+            grandRoleTotals[r].total += data.roles[r].total;
+            grandRoleTotals[r].female += data.roles[r].female;
+          });
+          cTotal += data.grandTotal;
+          cFemale += data.grandFemale;
+          grandAllTotal += data.grandTotal;
+          grandAllFemale += data.grandFemale;
+        }
+      });
+
+      let roleCells = '';
+      const comFullLabel = `${getCommunePrefix(grp.communeName, grp.district)} (${toKhmerNum(grp.communeCode)})`;
+      const expRow = [rowIdx, getDistrictPrefix(grp.district), comFullLabel, stCount];
+      STATS_ROLES_LIST.forEach(r => {
+        roleCells += `
+          <td style="font-weight: 500;">${toKhmerNum(cRoles[r].total)}</td>
+          <td class="col-female">${toKhmerNum(cRoles[r].female)}</td>
+        `;
+        expRow.push(cRoles[r].total, cRoles[r].female);
+      });
+      expRow.push(cTotal, cFemale);
+      exportRows.push(expRow);
+
+      rowsHtml += `
+        <tr>
+          <td class="text-center">${toKhmerNum(rowIdx)}</td>
+          <td class="text-left">${getDistrictPrefix(grp.district)}</td>
+          <td class="text-left" style="font-weight: 600; color: #1e3a8a;">${comFullLabel}</td>
+          <td class="text-center" style="font-weight: 600;">${toKhmerNum(stCount)}</td>
+          ${roleCells}
+          <td class="col-grand-total text-center">${toKhmerNum(cTotal)}</td>
+          <td class="col-female text-center" style="font-weight: 700;">${toKhmerNum(cFemale)}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // LEVEL 3: POLLING STATION (1 row per station)
+  else {
+    let rowIdx = 0;
+    targetStations.forEach(st => {
+      rowIdx++;
+      grandTotalStations += 1;
+      const data = stationPassedMap.get(st.id);
+
+      let sTotal = 0;
+      let sFemale = 0;
+      let roleCells = '';
+
+      const stCodeKhmer = toKhmerNum(String(st.code || '').padStart(4, '0'));
+      const expRow = [rowIdx, getDistrictPrefix(st.district), getCommunePrefix(st.communeName, st.district), stCodeKhmer, st.name || ''];
+
+      STATS_ROLES_LIST.forEach(r => {
+        const tot = data ? data.roles[r].total : 0;
+        const fem = data ? data.roles[r].female : 0;
+
+        grandRoleTotals[r].total += tot;
+        grandRoleTotals[r].female += fem;
+        sTotal += tot;
+        sFemale += fem;
+
+        roleCells += `
+          <td style="${tot > 0 ? 'color: #166534; font-weight: 600;' : 'color: #94a3b8;'}">${toKhmerNum(tot)}</td>
+          <td class="col-female" style="${fem > 0 ? 'font-weight: 700;' : 'color: #cbd5e1;'}">${toKhmerNum(fem)}</td>
+        `;
+        expRow.push(tot, fem);
+      });
+
+      grandAllTotal += sTotal;
+      grandAllFemale += sFemale;
+      expRow.push(sTotal, sFemale);
+      exportRows.push(expRow);
+
+      rowsHtml += `
+        <tr>
+          <td class="text-center">${toKhmerNum(rowIdx)}</td>
+          <td class="text-left">${getDistrictPrefix(st.district)}</td>
+          <td class="text-left">${getCommunePrefix(st.communeName, st.district)}</td>
+          <td class="text-center" style="font-weight: 600;">${stCodeKhmer}</td>
+          <td class="text-left" style="font-size: 12px;">${st.name || ''}</td>
+          ${roleCells}
+          <td class="col-grand-total text-center">${toKhmerNum(sTotal)}</td>
+          <td class="col-female text-center" style="font-weight: 700;">${toKhmerNum(sFemale)}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // Update Summary Pill at top
+  const summaryPill = document.getElementById('statSummaryPill');
+  if (summaryPill) {
+    summaryPill.textContent = `សរុបជាប់ ៖ ${toKhmerNum(grandAllTotal)} នាក់ (ស្រី ${toKhmerNum(grandAllFemale)} នាក់)`;
+  }
+
+  // Build Footer Total Row
+  let footerRoleCells = '';
+  const totalExpRow = ['សរុប', '', grandTotalStations];
+  if (level === 'commune') totalExpRow.push('');
+  if (level === 'station') totalExpRow.push('', '');
+
+  STATS_ROLES_LIST.forEach(r => {
+    footerRoleCells += `
+      <td class="text-center" style="font-weight: 700;">${toKhmerNum(grandRoleTotals[r].total)}</td>
+      <td class="col-female text-center" style="font-weight: 700;">${toKhmerNum(grandRoleTotals[r].female)}</td>
+    `;
+    totalExpRow.push(grandRoleTotals[r].total, grandRoleTotals[r].female);
+  });
+  totalExpRow.push(grandAllTotal, grandAllFemale);
+
+  const locColspan = (level === 'province') ? 2 : (level === 'commune') ? 3 : 5;
+  const footerRowHtml = `
+    <tr class="row-total">
+      <td colspan="${locColspan}" class="text-center" style="letter-spacing: 0.5px;">
+        សរុបរួម (${toKhmerNum(grandTotalStations)} ការិយាល័យ)
+      </td>
+      ${footerRoleCells}
+      <td class="col-grand-total text-center" style="font-size: 13px !important; font-weight: 800 !important; color: #166534 !important;">${toKhmerNum(grandAllTotal)}</td>
+      <td class="col-female text-center" style="font-size: 13px !important; font-weight: 800 !important; color: #7e22ce !important;">${toKhmerNum(grandAllFemale)}</td>
+    </tr>
+  `;
+
+  // Dynamic Header Columns
+  let locationHeaders = '';
+  if (level === 'province') {
+    locationHeaders = `
+      <th rowspan="2" style="width: 45px;">ល.រ</th>
+      <th rowspan="2" style="min-width: 160px;">ក្រុង-ស្រុក</th>
+      <th rowspan="2" style="width: 100px;">ការិយាល័យ</th>
+    `;
+  } else if (level === 'commune') {
+    locationHeaders = `
+      <th rowspan="2" style="width: 45px;">ល.រ</th>
+      <th rowspan="2" style="min-width: 130px;">ក្រុង-ស្រុក</th>
+      <th rowspan="2" style="min-width: 160px;">ឃុំ-សង្កាត់</th>
+      <th rowspan="2" style="width: 95px;">ការិយាល័យ</th>
+    `;
+  } else {
+    locationHeaders = `
+      <th rowspan="2" style="width: 45px;">ល.រ</th>
+      <th rowspan="2" style="width: 120px;">ក្រុង-ស្រុក</th>
+      <th rowspan="2" style="width: 130px;">ឃុំ-សង្កាត់</th>
+      <th rowspan="2" style="width: 85px;">លេខកូដ</th>
+      <th rowspan="2" style="min-width: 160px;">ទីតាំងការិយាល័យ</th>
+    `;
+  }
+
+  // Save current export data for Excel / Print
+  window.currentStatsExportData = {
+    level: level,
+    district: selDist,
+    commune: selCom,
+    totalStations: grandTotalStations,
+    grandTotal: grandAllTotal,
+    grandFemale: grandAllFemale,
+    grandRoleTotals: grandRoleTotals,
+    rows: exportRows
+  };
+
+  // Full Table Assembly
+  const tableHtml = `
+    <div class="stats-table-wrapper">
+      <table class="stats-table">
+        <thead>
+          <tr>
+            ${locationHeaders}
+            <th colspan="2" class="th-role-header">ប្រធាន</th>
+            <th colspan="2" class="th-role-header">អនុប្រធាន</th>
+            <th colspan="2" class="th-role-header">លេខាធិការ</th>
+            <th colspan="2" class="th-role-header">សមាជិកទី១</th>
+            <th colspan="2" class="th-role-header">សមាជិកទី២</th>
+            <th colspan="2" class="th-role-header">សមាជិកទី៣</th>
+            <th colspan="2" class="th-grand-total">សរុបរួម</th>
+          </tr>
+          <tr>
+            <th style="width: 48px;">សរុប</th><th style="width: 48px;" class="col-female">ស្រី</th>
+            <th style="width: 48px;">សរុប</th><th style="width: 48px;" class="col-female">ស្រី</th>
+            <th style="width: 48px;">សរុប</th><th style="width: 48px;" class="col-female">ស្រី</th>
+            <th style="width: 48px;">សរុប</th><th style="width: 48px;" class="col-female">ស្រី</th>
+            <th style="width: 48px;">សរុប</th><th style="width: 48px;" class="col-female">ស្រី</th>
+            <th style="width: 48px;">សរុប</th><th style="width: 48px;" class="col-female">ស្រី</th>
+            <th style="width: 58px;" class="th-grand-total">សរុប</th><th style="width: 58px;" class="th-grand-total col-female">ស្រី</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || `<tr><td colspan="18" style="padding: 30px; text-align: center; color: #94a3b8;">ពុំមានទិន្នន័យស្របតាមលក្ខខណ្ឌជ្រើសរើសឡើយ</td></tr>`}
+        </tbody>
+        <tfoot>
+          ${footerRowHtml}
+        </tfoot>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = tableHtml;
+}
+
+function exportStatisticsToExcel() {
+  if (!window.currentStatsExportData || !window.XLSX) {
+    alert('ទិន្នន័យពុំទាន់រួចរាល់សម្រាប់ការទាញយកឡើយ!');
+    return;
+  }
+
+  const d = window.currentStatsExportData;
+  const levelNames = {
+    'province': 'ទូទាំងខេត្ត_តាមក្រុងស្រុក',
+    'commune': 'តាមឃុំសង្កាត់',
+    'station': 'តាមការិយាល័យបោះឆ្នោត'
+  };
+
+  const wb = XLSX.utils.book_new();
+
+  let headerRow1 = [];
+  let headerRow2 = [];
+
+  if (d.level === 'province') {
+    headerRow1 = ['ល.រ', 'ក្រុង-ស្រុក', 'ការិយាល័យសរុប', 'ប្រធាន', '', 'អនុប្រធាន', '', 'លេខាធិការ', '', 'សមាជិកទី១', '', 'សមាជិកទី២', '', 'សមាជិកទី៣', '', 'សរុបរួម', ''];
+    headerRow2 = ['', '', '', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី'];
+  } else if (d.level === 'commune') {
+    headerRow1 = ['ល.រ', 'ក្រុង-ស្រុក', 'ឃុំ-សង្កាត់', 'ការិយាល័យសរុប', 'ប្រធាន', '', 'អនុប្រធាន', '', 'លេខាធិការ', '', 'សមាជិកទី១', '', 'សមាជិកទី២', '', 'សមាជិកទី៣', '', 'សរុបរួម', ''];
+    headerRow2 = ['', '', '', '', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី'];
+  } else {
+    headerRow1 = ['ល.រ', 'ក្រុង-ស្រុក', 'ឃុំ-សង្កាត់', 'លេខកូដ', 'ទីតាំងការិយាល័យ', 'ប្រធាន', '', 'អនុប្រធាន', '', 'លេខាធិការ', '', 'សមាជិកទី១', '', 'សមាជិកទី២', '', 'សមាជិកទី៣', '', 'សរុបរួម', ''];
+    headerRow2 = ['', '', '', '', '', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី', 'សរុប', 'ស្រី'];
+  }
+
+  const aoa = [
+    ['តារាងស្ថិតិសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ដែលបានជាប់ជាផ្លូវការ'],
+    [`កម្រិតស្ថិតិ ៖ ${levelNames[d.level] || d.level} | សរុបជាប់ ៖ ${d.grandTotal} នាក់ (ស្រី ${d.grandFemale} នាក់)`],
+    [],
+    headerRow1,
+    headerRow2
+  ];
+
+  d.rows.forEach(r => aoa.push(r));
+
+  // Footer Total Row
+  const totalRow = ['សរុបរួម'];
+  const padCount = (d.level === 'province') ? 1 : (d.level === 'commune') ? 2 : 3;
+  for (let i = 0; i < padCount; i++) totalRow.push('');
+  totalRow.push(d.totalStations);
+  STATS_ROLES_LIST.forEach(r => {
+    totalRow.push(d.grandRoleTotals[r].total, d.grandRoleTotals[r].female);
+  });
+  totalRow.push(d.grandTotal, d.grandFemale);
+  aoa.push(totalRow);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  const colWidths = [
+    { wch: 6 },
+    { wch: 20 },
+    { wch: 22 },
+    { wch: 10 },
+    { wch: 24 }
+  ];
+  for (let i = 0; i < 14; i++) colWidths.push({ wch: 8 });
+  ws['!cols'] = colWidths;
+
+  XLSX.utils.book_append_sheet(wb, ws, 'តារាងស្ថិតិ_គកប');
+  const fileName = `តារាងស្ថិតិបេក្ខជនជាប់_គកប_${d.level}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+}
+
+function printStatisticsTable() {
+  const container = document.getElementById('statisticsTableContainer');
+  if (!container || !window.currentStatsExportData) {
+    alert('ពុំទាន់មានទិន្នន័យដើម្បីបោះពុម្ពឡើយ!');
+    return;
+  }
+
+  const d = window.currentStatsExportData;
+  const levelLabels = {
+    'province': 'ទូទាំងខេត្ត (តាមក្រុង-ស្រុក)',
+    'commune': 'តាមឃុំ-សង្កាត់',
+    'station': 'តាមការិយាល័យបោះឆ្នោតនីមួយៗ'
+  };
+
+  const printContent = container.innerHTML;
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    window.print();
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="km">
+    <head>
+      <meta charset="UTF-8">
+      <title>តារាងស្ថិតិសមាសភាព គ.ក.ប ដែលបានជាប់ជាផ្លូវការ</title>
+      <link href="https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&display=swap" rel="stylesheet">
+      <style>
+        @page {
+          size: A4 landscape;
+          margin: 10mm 10mm 10mm 10mm;
+        }
+        body {
+          font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif;
+          margin: 0;
+          padding: 10px;
+          color: #000;
+          background: #fff;
+          font-size: 11pt;
+        }
+        .letterhead-table {
+          width: 100%;
+          border-collapse: collapse;
+          border: none;
+          margin-bottom: 6px;
+        }
+        .letterhead-table td {
+          border: none;
+          vertical-align: top;
+        }
+        .inst-title {
+          font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif;
+          font-size: 11pt;
+          line-height: 1.5;
+          text-align: left;
+        }
+        .kingdom-title {
+          font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif;
+          font-size: 13pt;
+          text-align: center;
+          line-height: 1.5;
+        }
+        .report-main-title {
+          font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif;
+          font-size: 13pt;
+          text-align: center;
+          margin: 8px 0 2px 0;
+        }
+        .report-sub-title {
+          font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif;
+          font-size: 11.5pt;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .stats-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10pt;
+        }
+        .stats-table th, .stats-table td {
+          border: 1px solid #000;
+          padding: 3px 5px;
+          text-align: center;
+        }
+        .stats-table thead tr:first-child th {
+          font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif;
+          font-size: 10pt;
+          background: #f1f5f9;
+        }
+        .stats-table thead tr:nth-child(2) th {
+          font-size: 9.5pt;
+          background: #f8fafc;
+        }
+        .stats-table tr.row-total td {
+          font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
+          font-size: 10pt !important;
+          background: #e2e8f0 !important;
+          font-weight: bold;
+        }
+        .text-left { text-align: left !important; }
+        .text-center { text-align: center !important; }
+        .footer-sig-block {
+          margin-top: 14px;
+          display: flex;
+          justify-content: flex-end;
+          page-break-inside: avoid;
+        }
+      </style>
+    </head>
+    <body>
+      <table class="letterhead-table">
+        <tr>
+          <td style="width: 45%;">
+            <div class="inst-title">
+              <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
+              <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
+              <div>គណៈកម្មការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
+            </div>
+          </td>
+          <td style="width: 55%;">
+            <div class="kingdom-title">
+              <div>ព្រះរាជាណាចក្រកម្ពុជា</div>
+              <div>ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
+              <div style="font-family: 'Tacteing', serif; font-size: 15pt;">3</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <div class="report-main-title">តារាងស្ថិតិសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ដែលបានជាប់</div>
+      <div class="report-sub-title">កម្រិតស្ថិតិ ៖ ${levelLabels[d.level] || d.level} | សរុប ៖ ${toKhmerNum(d.grandTotal)} នាក់ (ស្រី ${toKhmerNum(d.grandFemale)} នាក់)</div>
+
+      ${printContent}
+
+      <div class="footer-sig-block">
+        <div style="text-align: center; width: 260px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif; font-size: 10.5pt;">
+          <div>ថ្ងៃ...........................ខែ..................ឆ្នាំ...............</div>
+          <div style="margin-top: 4px; font-weight: bold; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif;">ប្រធាន គ.ខ.ប</div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 300);
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
