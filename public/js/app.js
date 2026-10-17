@@ -508,6 +508,9 @@ function setupEventListeners() {
     if (typeof removePausedBannersBeforePrint === 'function') {
       removePausedBannersBeforePrint();
     }
+    if (typeof setupAutoPrintPagination === 'function') {
+      setupAutoPrintPagination();
+    }
     if (typeof syncReportSignaturesBeforePrint === 'function') {
       syncReportSignaturesBeforePrint();
     }
@@ -517,6 +520,9 @@ function setupEventListeners() {
   window.addEventListener('beforeprint', () => {
     if (typeof removePausedBannersBeforePrint === 'function') {
       removePausedBannersBeforePrint();
+    }
+    if (typeof setupAutoPrintPagination === 'function') {
+      setupAutoPrintPagination();
     }
     if (typeof syncReportSignaturesBeforePrint === 'function') {
       syncReportSignaturesBeforePrint();
@@ -6706,6 +6712,7 @@ async function renderReportPreview() {
   setupReportLogoInteractions();
   setupReportDateInteractions();
   setupReportSignatureInteractions();
+  setupAutoPrintPagination();
 }
 
 function sanitizeCandidateText(text) {
@@ -7250,6 +7257,175 @@ function setupReportSignatureInteractions() {
   syncLive('.report-title-box');
 }
 
+function setupAutoPrintPagination() {
+  const sheet = document.querySelector('#printContainer .print-paper-sheet');
+  if (!sheet) return;
+
+  const currentReportType = document.getElementById('reportTypeSelect')?.value || 'sortlist';
+  const hiddenStation = document.getElementById('reportStationSelect')?.value || '';
+  const codeSelect = document.getElementById('reportCodeSelect');
+  const isAllStations = (hiddenStation === 'all' || (codeSelect && codeSelect.value === 'all') || hiddenStation === 'all_district');
+
+  // If Report 1 (single station), it already has its dedicated 2-page print view built-in!
+  if (currentReportType === 'sortlist' && !isAllStations) {
+    return;
+  }
+
+  // Get screen view or wrap existing sheet contents into screen view
+  let screenView = sheet.querySelector('.report-screen-view');
+  if (!screenView) {
+    const existingChildren = Array.from(sheet.children).filter(el => !el.classList.contains('report-print-view'));
+    screenView = document.createElement('div');
+    screenView.className = 'report-screen-view no-print';
+    existingChildren.forEach(child => screenView.appendChild(child));
+    sheet.prepend(screenView);
+  }
+
+  // Remove existing generated print view if any to rebuild fresh
+  const existingPrintView = sheet.querySelector('.report-print-view');
+  if (existingPrintView) {
+    existingPrintView.remove();
+  }
+
+  // Find table and rows inside screenView
+  const table = screenView.querySelector('table');
+  if (!table) return;
+
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+  if (!rows || rows.length === 0) return;
+
+  const isLandscape = sheet.classList.contains('landscape');
+
+  // Determine pagination thresholds per report type
+  let page1Cap = 24;
+  let midPageCap = 30;
+  let lastPageCap = 24;
+
+  if (isLandscape) {
+    page1Cap = 18;
+    midPageCap = 24;
+    lastPageCap = 16;
+  } else if (currentReportType === 'final_roster') {
+    page1Cap = 24; // 4 stations of 6
+    midPageCap = 30; // 5 stations of 6
+    lastPageCap = 24;
+  } else if (currentReportType === 'notice') {
+    page1Cap = 20;
+    midPageCap = 28;
+    lastPageCap = 20;
+  } else if (currentReportType === 'results') {
+    page1Cap = 22;
+    midPageCap = 30;
+    lastPageCap = 20;
+  }
+
+  // If total rows fit comfortably on 1 page (single page report)
+  if (rows.length <= page1Cap) {
+    // Total pages = 1 -> No page number footer needed!
+    screenView.classList.remove('no-print');
+    return;
+  }
+
+  // Multi-page document: 2 or more pages!
+  screenView.classList.add('no-print');
+
+  // Extract common components from screenView
+  const letterheadHtml = screenView.querySelector('.letterhead')?.outerHTML || '';
+  const titleBoxHtml = screenView.querySelector('.report-title-section')?.outerHTML || '';
+  const tableColgroupHtml = table.querySelector('colgroup')?.outerHTML || '';
+  const tableTheadHtml = table.querySelector('thead')?.outerHTML || '';
+  const tableClass = table.className || 'official-print-table';
+  const tableStyle = table.getAttribute('style') || '';
+  
+  // Footer: final-roster-footer or signature-section
+  const footerEl = screenView.querySelector('.final-roster-footer') || screenView.querySelector('.signature-section');
+  const footerHtml = footerEl ? footerEl.outerHTML : '';
+
+  // Notice extra intro text (if any) between title and table
+  let noticeIntroHtml = '';
+  if (currentReportType === 'notice') {
+    const introEl = screenView.querySelector('.report-notice-intro') || screenView.querySelector('div[style*="text-align: justify"]');
+    if (introEl) noticeIntroHtml = introEl.outerHTML;
+  }
+
+  // Chunk rows into pages
+  const pagesRows = [];
+  let currentChunk = [];
+  let isFirstPage = true;
+
+  for (let i = 0; i < rows.length; i++) {
+    currentChunk.push(rows[i].outerHTML);
+    const currentLimit = isFirstPage ? page1Cap : midPageCap;
+    const remainingAfterThis = rows.length - (i + 1);
+
+    if (currentChunk.length >= currentLimit && remainingAfterThis > 0) {
+      pagesRows.push(currentChunk);
+      currentChunk = [];
+      isFirstPage = false;
+    }
+  }
+  if (currentChunk.length > 0) {
+    pagesRows.push(currentChunk);
+  }
+
+  // If the last page has too many rows to fit the footer comfortably, split it
+  if (pagesRows.length > 1) {
+    const lastChunk = pagesRows[pagesRows.length - 1];
+    if (lastChunk.length > lastPageCap) {
+      const splitPoint = Math.max(1, lastChunk.length - lastPageCap);
+      const overflow = lastChunk.splice(splitPoint);
+      pagesRows.push(overflow);
+    }
+  }
+
+  const totalPages = pagesRows.length;
+
+  // Build the .report-print-view element
+  const printView = document.createElement('div');
+  printView.className = 'report-print-view print-only';
+
+  let printPagesHtml = '';
+  pagesRows.forEach((rowChunk, pageIdx) => {
+    const pageNum = pageIdx + 1;
+    const isP1 = (pageNum === 1);
+    const isLast = (pageNum === totalPages);
+
+    let pageHeaderContent = '';
+    if (isP1) {
+      pageHeaderContent = `${letterheadHtml}${titleBoxHtml}${noticeIntroHtml}`;
+    }
+
+    let pageFooterContent = '';
+    if (isLast) {
+      pageFooterContent = footerHtml;
+    }
+
+    printPagesHtml += `
+      <div class="report-print-page report-print-page-${pageNum}">
+        <div class="report-page-body">
+          ${pageHeaderContent}
+          <table class="${tableClass}" style="${tableStyle}">
+            ${tableColgroupHtml}
+            <thead>
+              ${tableTheadHtml}
+            </thead>
+            <tbody>
+              ${rowChunk.join('')}
+            </tbody>
+          </table>
+          ${pageFooterContent}
+        </div>
+        <div class="report-page-footer">
+          - ${toKhmerNum(pageNum)} -
+        </div>
+      </div>
+    `;
+  });
+
+  printView.innerHTML = printPagesHtml;
+  sheet.appendChild(printView);
+}
+
 function syncReportSignaturesBeforePrint() {
   const sync = (selector) => {
     const screenEl = document.querySelector(`.report-screen-view ${selector}`);
@@ -7264,6 +7440,11 @@ function syncReportSignaturesBeforePrint() {
   sync('.report-inst-header-box');
   sync('.report-tacteing-emblem');
   sync('.report-title-box');
+  sync('.sig-lunar-date-val');
+  sync('.sig-solar-date-val');
+  sync('.report-editable-notice-place');
+  sync('.report-editable-notice-date');
+  sync('.report-editable-notice-time');
 }
 
 function exportCurrentReportToExcel() {

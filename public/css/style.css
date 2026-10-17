@@ -1542,17 +1542,32 @@ tr.excel-row-active td.excel-calc-rank {
     display: table-header-group !important;
   }
 
-  /* Two distinct pages guaranteed to fit on exactly 2 sheets */
+  /* Pages guaranteed to fit on sheets */
   .report-print-page {
     box-sizing: border-box !important;
-    height: 198mm !important;
-    max-height: 198mm !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
     overflow: hidden !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .report-print-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .print-paper-sheet.landscape .report-print-page {
+    height: 198mm !important;
+    max-height: 198mm !important;
+  }
+
+  .print-paper-sheet:not(.landscape) .report-print-page {
+    height: 286mm !important;
+    max-height: 286mm !important;
   }
 
   .report-print-page-1 {
@@ -1566,10 +1581,6 @@ tr.excel-row-active td.excel-calc-rank {
     margin-top: 0 !important;
     padding-top: 0 !important;
     border-top: none !important;
-    page-break-before: avoid !important;
-    break-before: avoid !important;
-    page-break-after: avoid !important;
-    break-after: avoid !important;
   }
 
   .report-page-body {
