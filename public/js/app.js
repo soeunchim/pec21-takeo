@@ -510,27 +510,35 @@ function setupEventListeners() {
 
   // Direct Print Button
   document.getElementById('btnDirectPrint').addEventListener('click', () => {
-    if (typeof removePausedBannersBeforePrint === 'function') {
-      removePausedBannersBeforePrint();
-    }
-    if (typeof setupAutoPrintPagination === 'function') {
-      setupAutoPrintPagination();
-    }
-    if (typeof syncReportSignaturesBeforePrint === 'function') {
-      syncReportSignaturesBeforePrint();
+    try {
+      if (typeof removePausedBannersBeforePrint === 'function') {
+        removePausedBannersBeforePrint();
+      }
+      if (typeof setupAutoPrintPagination === 'function') {
+        setupAutoPrintPagination();
+      }
+      if (typeof syncReportSignaturesBeforePrint === 'function') {
+        syncReportSignaturesBeforePrint();
+      }
+    } catch (err) {
+      console.error('Error preparing print pagination:', err);
     }
     window.print();
   });
 
   window.addEventListener('beforeprint', () => {
-    if (typeof removePausedBannersBeforePrint === 'function') {
-      removePausedBannersBeforePrint();
-    }
-    if (typeof setupAutoPrintPagination === 'function') {
-      setupAutoPrintPagination();
-    }
-    if (typeof syncReportSignaturesBeforePrint === 'function') {
-      syncReportSignaturesBeforePrint();
+    try {
+      if (typeof removePausedBannersBeforePrint === 'function') {
+        removePausedBannersBeforePrint();
+      }
+      if (typeof setupAutoPrintPagination === 'function') {
+        setupAutoPrintPagination();
+      }
+      if (typeof syncReportSignaturesBeforePrint === 'function') {
+        syncReportSignaturesBeforePrint();
+      }
+    } catch (err) {
+      console.error('Error in beforeprint pagination:', err);
     }
   });
 
@@ -7408,7 +7416,11 @@ function setupAutoPrintPagination() {
   }
 
   // Clean up any old single page footers first
-  sheet.querySelectorAll('.report-single-page-footer, > .report-page-footer').forEach(el => el.remove());
+  Array.from(sheet.children).forEach(el => {
+    if (el && el.classList && (el.classList.contains('report-single-page-footer') || el.classList.contains('report-page-footer'))) {
+      el.remove();
+    }
+  });
 
   // If total rows fit comfortably on 1 page (single page report)
   if (rows.length <= page1Cap) {
