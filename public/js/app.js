@@ -7410,7 +7410,7 @@ function setupAutoPrintPagination() {
   } else if (currentReportType === 'final_roster') {
     page1Cap = 34; // Reduced by 2 rows (from 36 to 34) as requested by user
     midPageCap = 42; // 7 stations of 6 candidates
-    lastPageCap = 28; // Last page with summary & signatures fits up to 28 rows to prevent blank trailing page
+    lastPageCap = 38; // Up to 38 rows + footer fits comfortably on last page (450 rows = exactly 11 full pages)
     singlePageMaxRows = 24; // up to 24 rows on 1 page (no page number)
     if (rows.length > singlePageMaxRows && rows.length <= 34) {
       page1Cap = 20;
@@ -7527,15 +7527,18 @@ function setupAutoPrintPagination() {
     pagesRows.push(currentChunk);
   }
 
-  // If the last page has too many rows to fit the footer comfortably, split it
+  // If the last page has too many rows to fit the footer comfortably, split it cleanly
   if (pagesRows.length > 1) {
     const lastChunk = pagesRows[pagesRows.length - 1];
     if (lastChunk.length > lastPageCap) {
-      let splitPoint = Math.max(1, lastChunk.length - lastPageCap);
+      // Balance rows between the second-to-last page and the new last page so neither page looks empty
+      const targetLast = Math.min(lastPageCap, Math.max(6, Math.floor(lastChunk.length / 2)));
+      let splitPoint = lastChunk.length - targetLast;
       if (currentReportType === 'final_roster' && splitPoint % 6 !== 0) {
-        splitPoint = Math.ceil(splitPoint / 6) * 6;
+        splitPoint = Math.floor(splitPoint / 6) * 6;
+        if (splitPoint < 6) splitPoint = 6;
       }
-      if (splitPoint < lastChunk.length) {
+      if (splitPoint > 0 && splitPoint < lastChunk.length) {
         const overflow = lastChunk.splice(splitPoint);
         pagesRows.push(overflow);
       }
