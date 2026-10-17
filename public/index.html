@@ -412,37 +412,35 @@
             </div>
           </div>
 
-          <!-- Filter Bar -->
-          <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 18px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
-            <!-- Level Selector (ប្រអប់ទី១) -->
+          <!-- Filter Bar: 3 Cascade Filter Boxes (ក្រុង/ស្រុក, ឃុំ/សង្កាត់, ការិយាល័យ) -->
+          <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+            <!-- ប្រអប់ទី១ ៖ ក្រុង/ស្រុក -->
             <div style="display: flex; align-items: center; gap: 8px;">
-              <label for="statLevelSelect" style="font-weight: 600; font-size: 13px; color: #334155; white-space: nowrap; margin: 0;">
-                🔍 កម្រិតស្ថិតិ ៖
-              </label>
-              <select id="statLevelSelect" class="form-control form-control-sm" style="min-width: 235px; font-weight: 600; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 6px; padding: 5px 10px;" onchange="onStatLevelChange()">
-                <option value="province">ទូទាំងខេត្ត ក្រុងស្រុកទាំង១០</option>
-                <option value="commune">តាមឃុំសង្កាត់</option>
-                <option value="station">តាមការិយាល័យ</option>
-              </select>
-            </div>
-
-            <!-- District Filter -->
-            <div id="statDistrictFilterWrapper" style="display: none; align-items: center; gap: 8px;">
               <label for="statDistrictFilter" style="font-weight: 600; font-size: 13px; color: #334155; white-space: nowrap; margin: 0;">
-                🏛️ ក្រុង-ស្រុក ៖
+                🏛️ ក្រុង/ស្រុក ៖
               </label>
-              <select id="statDistrictFilter" class="form-control form-control-sm" style="min-width: 170px; border-radius: 6px; padding: 5px 10px;" onchange="onStatDistrictChange()">
-                <option value="all">ទាំងអស់</option>
+              <select id="statDistrictFilter" class="form-control form-control-sm" style="min-width: 185px; font-weight: 600; color: #1e40af; border: 1.5px solid #93c5fd; border-radius: 6px; padding: 5px 10px;" onchange="onStatDistrictFilterChange()">
+                <option value="all">--គ្រប់ក្រុងស្រុក--</option>
               </select>
             </div>
 
-            <!-- Commune Filter -->
-            <div id="statCommuneFilterWrapper" style="display: none; align-items: center; gap: 8px;">
+            <!-- ប្រអប់ទី២ ៖ ឃុំ/សង្កាត់ -->
+            <div style="display: flex; align-items: center; gap: 8px;">
               <label for="statCommuneFilter" style="font-weight: 600; font-size: 13px; color: #334155; white-space: nowrap; margin: 0;">
-                🏘️ ឃុំ-សង្កាត់ ៖
+                🏘️ ឃុំ/សង្កាត់ ៖
               </label>
-              <select id="statCommuneFilter" class="form-control form-control-sm" style="min-width: 170px; border-radius: 6px; padding: 5px 10px;" onchange="renderStatisticsPage()">
-                <option value="all">ទាំងអស់</option>
+              <select id="statCommuneFilter" class="form-control form-control-sm" style="min-width: 185px; border-radius: 6px; padding: 5px 10px;" onchange="onStatCommuneFilterChange()">
+                <option value="all">--គ្រប់ឃុំសង្កាត់--</option>
+              </select>
+            </div>
+
+            <!-- ប្រអប់ទី៣ ៖ ការិយាល័យ -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="statStationFilter" style="font-weight: 600; font-size: 13px; color: #334155; white-space: nowrap; margin: 0;">
+                🏫 ការិយាល័យ ៖
+              </label>
+              <select id="statStationFilter" class="form-control form-control-sm" style="min-width: 170px; border-radius: 6px; padding: 5px 10px;" onchange="renderStatisticsPage()">
+                <option value="all">--គ្រប់ការិយាល័យ--</option>
               </select>
             </div>
 
@@ -1157,6 +1155,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261017_stats_dropdowns_v45"></script>
+  <script src="js/app.js?v=20261017_stats_cascade_v46"></script>
 </body>
 </html>

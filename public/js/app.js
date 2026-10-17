@@ -9007,7 +9007,7 @@ async function loadStatisticsPage() {
       const currentVal = distSelect.value;
       const dists = [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
       dists.sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b));
-      let distOptions = '<option value="all">ទាំងអស់</option>';
+      let distOptions = '<option value="all">--គ្រប់ក្រុងស្រុក--</option>';
       dists.forEach(d => {
         distOptions += `<option value="${d}">${getDistrictPrefix(d)}</option>`;
       });
@@ -9016,12 +9016,15 @@ async function loadStatisticsPage() {
       if (currentUser && currentUser.role === 'Trainer' && currentUser.district && currentUser.district !== 'all') {
         distSelect.value = currentUser.district;
         distSelect.disabled = true;
+      } else if (currentUser && currentUser.role === 'Commune' && currentUser.district) {
+        distSelect.value = currentUser.district;
+        distSelect.disabled = true;
       } else if (currentVal && Array.from(distSelect.options).some(o => o.value === currentVal)) {
         distSelect.value = currentVal;
       }
     }
 
-    onStatLevelChange();
+    onStatDistrictFilterChange();
   } catch (err) {
     console.error('Error loading statistics:', err);
     if (container) {
@@ -9034,63 +9037,46 @@ async function loadStatisticsPage() {
   }
 }
 
-function onStatLevelChange() {
-  const levelSelect = document.getElementById('statLevelSelect');
-  const distWrapper = document.getElementById('statDistrictFilterWrapper');
-  const comWrapper = document.getElementById('statCommuneFilterWrapper');
+function onStatDistrictFilterChange() {
   const distSelect = document.getElementById('statDistrictFilter');
   const comSelect = document.getElementById('statCommuneFilter');
+  const stationSelect = document.getElementById('statStationFilter');
 
-  const level = levelSelect ? levelSelect.value : 'province';
-
-  if (level === 'province') {
-    if (distWrapper) distWrapper.style.display = 'none';
-    if (comWrapper) comWrapper.style.display = 'none';
-    if (distSelect && (!currentUser || currentUser.role !== 'Trainer')) distSelect.value = 'all';
-    if (comSelect) comSelect.value = 'all';
-  } else if (level === 'commune') {
-    if (distWrapper) distWrapper.style.display = 'flex';
-    if (comWrapper) comWrapper.style.display = 'none';
-    if (comSelect) comSelect.value = 'all';
-  } else {
-    // station level
-    if (distWrapper) distWrapper.style.display = 'flex';
-    if (comWrapper) comWrapper.style.display = 'flex';
-  }
-
-  updateStatCommuneDropdown();
-  renderStatisticsPage();
-}
-
-function updateStatCommuneDropdown() {
-  const distSelect = document.getElementById('statDistrictFilter');
-  const comSelect = document.getElementById('statCommuneFilter');
-  if (!comSelect || !distSelect) return;
-
+  if (!distSelect || !comSelect) return;
   const selDist = distSelect.value;
-  const currentVal = comSelect.value;
 
-  let filteredStations = allPollingStations;
-  if (selDist !== 'all') {
-    const cleanD = selDist.trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-    filteredStations = filteredStations.filter(s => String(s.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanD);
+  if (selDist === 'all') {
+    comSelect.innerHTML = '<option value="all">--គ្រប់ឃុំសង្កាត់--</option>';
+    comSelect.value = 'all';
+    if (stationSelect) {
+      stationSelect.innerHTML = '<option value="all">--គ្រប់ការិយាល័យ--</option>';
+      stationSelect.value = 'all';
+    }
+    renderStatisticsPage();
+    return;
   }
+
+  const cleanD = selDist.trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+  const districtStations = (allPollingStations || []).filter(s => {
+    return String(s.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanD;
+  });
 
   const comMap = new Map();
-  filteredStations.forEach(s => {
+  districtStations.forEach(s => {
     const code = String(s.communeCode || '').padStart(3, '0');
     if (!comMap.has(code)) {
       comMap.set(code, {
         code: code,
         name: s.communeName || '',
-        district: s.district || ''
+        district: s.district || selDist
       });
     }
   });
 
-  let comOptions = '<option value="all">ទាំងអស់</option>';
+  const currentVal = comSelect.value;
+  let comOptions = '<option value="all">--គ្រប់ឃុំសង្កាត់--</option>';
   Array.from(comMap.values()).sort((a, b) => a.code.localeCompare(b.code)).forEach(c => {
-    comOptions += `<option value="${c.code}">${getCommunePrefix(c.name, c.district)} (${toKhmerNum(c.code)})</option>`;
+    comOptions += `<option value="${c.code}">${getCommunePrefix(c.name, c.district)}</option>`;
   });
   comSelect.innerHTML = comOptions;
 
@@ -9099,11 +9085,61 @@ function updateStatCommuneDropdown() {
     comSelect.disabled = true;
   } else if (currentVal && Array.from(comSelect.options).some(o => o.value === currentVal)) {
     comSelect.value = currentVal;
+  } else {
+    comSelect.value = 'all';
   }
+
+  onStatCommuneFilterChange();
 }
 
-function onStatDistrictChange() {
-  updateStatCommuneDropdown();
+function onStatCommuneFilterChange() {
+  const distSelect = document.getElementById('statDistrictFilter');
+  const comSelect = document.getElementById('statCommuneFilter');
+  const stationSelect = document.getElementById('statStationFilter');
+
+  if (!stationSelect) {
+    renderStatisticsPage();
+    return;
+  }
+
+  const selDist = distSelect ? distSelect.value : 'all';
+  const selCom = comSelect ? comSelect.value : 'all';
+
+  if (selDist === 'all' || selCom === 'all') {
+    stationSelect.innerHTML = '<option value="all">--គ្រប់ការិយាល័យ--</option>';
+    stationSelect.value = 'all';
+    renderStatisticsPage();
+    return;
+  }
+
+  const cleanD = selDist.trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+  const comCode = String(selCom).padStart(3, '0');
+  const stations = (allPollingStations || []).filter(s => {
+    const dMatch = String(s.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanD;
+    const cMatch = String(s.communeCode || '').padStart(3, '0') === comCode;
+    return dMatch && cMatch;
+  });
+
+  stations.sort((a, b) => {
+    const sa = parseInt(a.code, 10) || 0;
+    const sb = parseInt(b.code, 10) || 0;
+    return sa - sb;
+  });
+
+  const currentVal = stationSelect.value;
+  let stationOptions = '<option value="all">--គ្រប់ការិយាល័យ--</option>';
+  stations.forEach(st => {
+    const codeKh = toKhmerNum(String(st.code || '').padStart(4, '0'));
+    stationOptions += `<option value="${st.id}">${codeKh}</option>`;
+  });
+  stationSelect.innerHTML = stationOptions;
+
+  if (currentVal && Array.from(stationSelect.options).some(o => o.value === currentVal)) {
+    stationSelect.value = currentVal;
+  } else {
+    stationSelect.value = 'all';
+  }
+
   renderStatisticsPage();
 }
 
@@ -9131,17 +9167,21 @@ function renderStatisticsPage() {
   const container = document.getElementById('statisticsTableContainer');
   if (!container) return;
 
-  const levelSelect = document.getElementById('statLevelSelect');
   const distSelect = document.getElementById('statDistrictFilter');
   const comSelect = document.getElementById('statCommuneFilter');
-  const comWrapper = document.getElementById('statCommuneFilterWrapper');
+  const stationSelect = document.getElementById('statStationFilter');
 
-  const level = levelSelect ? levelSelect.value : 'province';
   const selDist = distSelect ? distSelect.value : 'all';
   const selCom = comSelect ? comSelect.value : 'all';
+  const selStation = stationSelect ? stationSelect.value : 'all';
 
-  if (comWrapper) {
-    comWrapper.style.display = (level === 'province') ? 'none' : 'flex';
+  let level = 'province';
+  if (selDist !== 'all') {
+    if (selCom === 'all') {
+      level = 'commune';
+    } else {
+      level = 'station';
+    }
   }
 
   // Filter stations based on selection
@@ -9150,9 +9190,12 @@ function renderStatisticsPage() {
     const cleanD = selDist.trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
     targetStations = targetStations.filter(s => String(s.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanD);
   }
-  if (level !== 'province' && selCom !== 'all') {
+  if (selDist !== 'all' && selCom !== 'all') {
     const targetCom = String(selCom).padStart(3, '0');
     targetStations = targetStations.filter(s => String(s.communeCode || '').padStart(3, '0') === targetCom);
+  }
+  if (level === 'station' && selStation !== 'all') {
+    targetStations = targetStations.filter(s => String(s.id) === String(selStation));
   }
 
   // Pre-calculate per-station passed candidates
@@ -9416,7 +9459,7 @@ function renderStatisticsPage() {
   });
   totalExpRow.push(grandAllTotal, grandAllFemale);
 
-  const locColspan = (level === 'province') ? 2 : (level === 'commune') ? 3 : 5;
+  const locColspan = (level === 'province') ? 3 : (level === 'commune') ? 4 : 5;
   const footerRowHtml = `
     <tr class="row-total">
       <td colspan="${locColspan}" class="text-center" style="letter-spacing: 0.5px;">
@@ -9458,12 +9501,15 @@ function renderStatisticsPage() {
     level: level,
     district: selDist,
     commune: selCom,
+    station: selStation,
     totalStations: grandTotalStations,
     grandTotal: grandAllTotal,
     grandFemale: grandAllFemale,
     grandRoleTotals: grandRoleTotals,
     rows: exportRows
   };
+
+  const totalCols = (level === 'province') ? 17 : (level === 'commune') ? 18 : 19;
 
   // Full Table Assembly
   const tableHtml = `
@@ -9491,7 +9537,7 @@ function renderStatisticsPage() {
           </tr>
         </thead>
         <tbody>
-          ${rowsHtml || `<tr><td colspan="18" style="padding: 30px; text-align: center; color: #94a3b8;">ពុំមានទិន្នន័យស្របតាមលក្ខខណ្ឌជ្រើសរើសឡើយ</td></tr>`}
+          ${rowsHtml || `<tr><td colspan="${totalCols}" style="padding: 30px; text-align: center; color: #94a3b8;">ពុំមានទិន្នន័យស្របតាមលក្ខខណ្ឌជ្រើសរើសឡើយ</td></tr>`}
         </tbody>
         <tfoot>
           ${footerRowHtml}
