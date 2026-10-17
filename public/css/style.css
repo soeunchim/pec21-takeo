@@ -1563,33 +1563,61 @@ tr.excel-row-active td.excel-calc-rank {
     break-after: page !important;
   }
 
-  .report-print-page:last-child {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-
   .print-paper-sheet.landscape .report-print-page {
     box-sizing: border-box !important;
     position: relative !important;
-    min-height: 198mm !important;
-    max-height: 200mm !important;
+    height: 194mm !important;
+    min-height: 190mm !important;
+    max-height: 196mm !important;
     padding-bottom: 8mm !important;
     page-break-after: always !important;
     break-after: page !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    overflow: hidden !important;
   }
 
   .print-paper-sheet:not(.landscape) .report-print-page {
     box-sizing: border-box !important;
     position: relative !important;
-    min-height: 286mm !important;
-    max-height: 288mm !important;
-    padding-bottom: 10mm !important;
+    height: 280mm !important;
+    min-height: 275mm !important;
+    max-height: 282mm !important;
+    padding-bottom: 12mm !important;
     page-break-after: always !important;
     break-after: page !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    overflow: hidden !important;
+  }
+
+  /* Strictly avoid page-break after the LAST page to eliminate trailing blank sheet */
+  .report-print-page:last-child,
+  .report-print-page:last-of-type,
+  .print-paper-sheet .report-print-page:last-child,
+  .print-paper-sheet .report-print-page:last-of-type,
+  .print-paper-sheet:not(.landscape) .report-print-page:last-child,
+  .print-paper-sheet:not(.landscape) .report-print-page:last-of-type,
+  .print-paper-sheet.landscape .report-print-page:last-child,
+  .print-paper-sheet.landscape .report-print-page:last-of-type {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+    min-height: auto !important;
+    height: auto !important;
+    max-height: 282mm !important;
+  }
+
+  .report-print-view,
+  .print-paper-sheet {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .report-print-page table.official-print-table td {
+    padding: 2px 4px !important;
+    line-height: 1.25 !important;
   }
 
   .report-print-page-1 {

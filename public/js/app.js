@@ -7397,9 +7397,9 @@ function setupAutoPrintPagination() {
   const isLandscape = sheet.classList.contains('landscape');
 
   // Determine pagination thresholds per report type
-  let page1Cap = 30;
+  let page1Cap = 28;
   let midPageCap = 36;
-  let lastPageCap = 30;
+  let lastPageCap = 28;
   let singlePageMaxRows = 24;
 
   if (isLandscape) {
@@ -7408,12 +7408,12 @@ function setupAutoPrintPagination() {
     lastPageCap = 14;
     singlePageMaxRows = 12;
   } else if (currentReportType === 'final_roster') {
-    page1Cap = 36; // 6 stations of 6 candidates
+    page1Cap = 34; // Reduced by 2 rows (from 36 to 34) as requested by user
     midPageCap = 42; // 7 stations of 6 candidates
-    lastPageCap = 36; // 6 stations of 6 candidates + bottom summary & signatures
-    singlePageMaxRows = 30; // up to 5 stations of 6 candidates + bottom summary & signatures on 1 page
-    if (rows.length > singlePageMaxRows && rows.length <= 36) {
-      page1Cap = 24; // If 6 stations (36 rows), split cleanly into 24 and 12 across 2 pages
+    lastPageCap = 28; // Last page with summary & signatures fits up to 28 rows to prevent blank trailing page
+    singlePageMaxRows = 24; // up to 24 rows on 1 page (no page number)
+    if (rows.length > singlePageMaxRows && rows.length <= 34) {
+      page1Cap = 20;
     }
   } else if (currentReportType === 'notice') {
     page1Cap = 28;
@@ -7421,17 +7421,17 @@ function setupAutoPrintPagination() {
     lastPageCap = 28;
     singlePageMaxRows = 22;
   } else if (currentReportType === 'results') {
-    page1Cap = 30;
+    page1Cap = 28;
     midPageCap = 36;
     lastPageCap = 28;
     singlePageMaxRows = 24;
   } else if (currentReportType === 'scoresheet') {
-    page1Cap = 30;
+    page1Cap = 28;
     midPageCap = 36;
     lastPageCap = 28;
     singlePageMaxRows = 24;
   } else if (currentReportType === 'attendance') {
-    page1Cap = isLandscape ? 14 : 30;
+    page1Cap = isLandscape ? 14 : 28;
     midPageCap = isLandscape ? 18 : 36;
     lastPageCap = isLandscape ? 14 : 28;
     singlePageMaxRows = isLandscape ? 12 : 24;
@@ -7463,11 +7463,7 @@ function setupAutoPrintPagination() {
       document.body.classList.remove('report-multipage-active');
     }
 
-    // Single page footer: ១/១ (Print-only, completely hidden on the screen Form)
-    const singleFooter = document.createElement('div');
-    singleFooter.className = 'report-page-footer report-single-page-footer print-only';
-    singleFooter.textContent = `${toKhmerNum(1)}/${toKhmerNum(1)}`;
-    sheet.appendChild(singleFooter);
+    // Single page report -> NO PAGE NUMBER! (User request: មួយទៀតប្រសិនមានតែ១ទំព័រ មិនបាច់ដាក់លេខទំព័រទេ)
     return;
   }
 
@@ -7585,9 +7581,10 @@ function setupAutoPrintPagination() {
           </table>
           ${pageFooterContent}
         </div>
+        ${totalPages > 1 ? `
         <div class="report-page-footer print-only">
           ${toKhmerNum(pageNum)}/${toKhmerNum(totalPages)}
-        </div>
+        </div>` : ''}
       </div>
     `;
   });
