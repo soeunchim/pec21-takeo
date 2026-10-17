@@ -1600,7 +1600,10 @@ tr.excel-row-active td.excel-calc-rank {
     width: 100% !important;
   }
 
-  .report-print-page .report-page-footer {
+  .report-page-footer,
+  .report-print-page .report-page-footer,
+  .report-single-page-footer,
+  .print-paper-sheet > .report-page-footer {
     position: absolute !important;
     bottom: 2mm !important;
     left: 0 !important;
@@ -1615,6 +1618,25 @@ tr.excel-row-active td.excel-calc-rank {
     z-index: 100 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  /* Single page report sheets pinned full page */
+  .print-paper-sheet:not(.print-has-pages):not(.landscape) {
+    position: relative !important;
+    height: 282mm !important;
+    min-height: 282mm !important;
+    max-height: 282mm !important;
+    padding-bottom: 12mm !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-paper-sheet:not(.print-has-pages).landscape {
+    position: relative !important;
+    height: 196mm !important;
+    min-height: 196mm !important;
+    max-height: 196mm !important;
+    padding-bottom: 10mm !important;
+    box-sizing: border-box !important;
   }
 
   .print-paper-sheet.landscape .letterhead {
@@ -1733,8 +1755,8 @@ tr.excel-row-active td.excel-calc-rank {
     border: none !important;
   }
 
-  /* Portrait reports (Reports 2-5): Strict 1-page fit */
-  body:not(.report-landscape-active):not(.report-multipage-active) .print-paper-sheet {
+  /* Portrait reports (Single page fit): Strict 1-page fit only when not multi-page and not print-has-pages */
+  body:not(.report-landscape-active):not(.report-multipage-active) .print-paper-sheet:not(.print-has-pages) {
     max-height: 288mm !important;
     overflow: hidden !important;
     page-break-inside: avoid !important;
@@ -1743,7 +1765,8 @@ tr.excel-row-active td.excel-calc-rank {
     break-after: avoid !important;
   }
 
-  body.report-multipage-active .print-paper-sheet {
+  body.report-multipage-active .print-paper-sheet,
+  .print-paper-sheet.print-has-pages {
     max-height: none !important;
     height: auto !important;
     overflow: visible !important;

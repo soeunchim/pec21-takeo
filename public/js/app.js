@@ -7365,8 +7365,18 @@ function setupAutoPrintPagination() {
     return;
   }
 
-  // Find table and rows inside screenView or directly in sheet
-  const table = sheet.querySelector('.report-screen-view table') || sheet.querySelector('table:not(.report-print-view table)');
+  // 1. Locate the master data table (either in .report-screen-view or directly in sheet)
+  // NEVER select chunked tables from .report-print-view!
+  let table = null;
+  const existingScreenView = sheet.querySelector('.report-screen-view');
+  if (existingScreenView) {
+    table = existingScreenView.querySelector('table');
+  }
+  if (!table) {
+    const printView = sheet.querySelector('.report-print-view');
+    const allTables = Array.from(sheet.querySelectorAll('table'));
+    table = allTables.find(t => !printView || !printView.contains(t));
+  }
   if (!table) return;
 
   const rows = Array.from(table.querySelectorAll('tbody tr'));
@@ -7397,16 +7407,12 @@ function setupAutoPrintPagination() {
     lastPageCap = 18;
   }
 
-  // Clean up any old single page footer first
-  const oldSingleFooter = sheet.querySelector('.report-single-page-footer');
-  if (oldSingleFooter) {
-    oldSingleFooter.remove();
-  }
+  // Clean up any old single page footers first
+  sheet.querySelectorAll('.report-single-page-footer, > .report-page-footer').forEach(el => el.remove());
 
   // If total rows fit comfortably on 1 page (single page report)
   if (rows.length <= page1Cap) {
     // Total pages = 1 -> Single page report!
-    const existingScreenView = sheet.querySelector('.report-screen-view');
     if (existingScreenView) {
       while (existingScreenView.firstChild) {
         sheet.insertBefore(existingScreenView.firstChild, existingScreenView);
@@ -7418,6 +7424,9 @@ function setupAutoPrintPagination() {
       existingPrintView.remove();
     }
     sheet.classList.remove('print-has-pages');
+    if (!isAllStations && currentReportType !== 'sortlist') {
+      document.body.classList.remove('report-multipage-active');
+    }
 
     // Single page footer: ១/១
     const singleFooter = document.createElement('div');
@@ -7428,6 +7437,9 @@ function setupAutoPrintPagination() {
   }
 
   // Multi-page document: 2 or more pages!
+  document.body.classList.add('report-multipage-active');
+  sheet.classList.add('print-has-pages');
+
   let screenView = sheet.querySelector('.report-screen-view');
   if (!screenView) {
     const existingChildren = Array.from(sheet.children).filter(el => !el.classList.contains('report-print-view'));
@@ -7444,8 +7456,6 @@ function setupAutoPrintPagination() {
   if (existingPrintView) {
     existingPrintView.remove();
   }
-
-  sheet.classList.add('print-has-pages');
 
   // Extract common components from screenView
   const letterheadHtml = screenView.querySelector('.letterhead')?.outerHTML || '';
