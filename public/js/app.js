@@ -7566,13 +7566,17 @@ function getReportTableRowPadding() {
 }
 
 function setReportTableRowPadding(paddingVal) {
-  const p = Math.max(0, Math.min(18, parseInt(paddingVal, 10) || 2));
+  const p = Math.max(0, Math.min(25, parseInt(paddingVal, 10) || 0));
   document.documentElement.style.setProperty('--report-row-padding-v', `${p}px`);
   localStorage.setItem('report_table_row_padding', String(p));
+  const input = document.getElementById('reportRowHeightInput');
   const label = document.getElementById('reportRowHeightLabel');
   const slider = document.getElementById('reportRowHeightSlider');
-  if (label) label.textContent = `${p}px`;
-  if (slider) slider.value = p;
+  if (input && document.activeElement !== input) input.value = p;
+  if (label && label.id === 'reportRowHeightLabel' && label.tagName === 'SPAN' && !document.getElementById('reportRowHeightInput')) {
+    label.textContent = `${p}px`;
+  }
+  if (slider) slider.value = Math.min(slider.max || 20, p);
   document.querySelectorAll('#printContainer table.official-print-table td, #printContainer table.official-print-table th').forEach(cell => {
     cell.style.paddingTop = `${p}px`;
     cell.style.paddingBottom = `${p}px`;
@@ -7582,16 +7586,49 @@ function setReportTableRowPadding(paddingVal) {
 function setupReportTableRowHeightControls() {
   const btnShrink = document.getElementById('btnShrinkReportRows');
   const btnExpand = document.getElementById('btnExpandReportRows');
+  const input = document.getElementById('reportRowHeightInput');
   const slider = document.getElementById('reportRowHeightSlider');
   const btnReset = document.getElementById('btnResetReportRows');
   const currentP = getReportTableRowPadding();
   setReportTableRowPadding(currentP);
+
+  if (input) {
+    input.value = currentP;
+    input.oninput = () => {
+      const val = parseInt(input.value, 10);
+      if (!isNaN(val)) {
+        const clamped = Math.max(0, Math.min(25, val));
+        document.documentElement.style.setProperty('--report-row-padding-v', `${clamped}px`);
+        localStorage.setItem('report_table_row_padding', String(clamped));
+        if (slider) slider.value = Math.min(slider.max || 20, clamped);
+        document.querySelectorAll('#printContainer table.official-print-table td, #printContainer table.official-print-table th').forEach(cell => {
+          cell.style.paddingTop = `${clamped}px`;
+          cell.style.paddingBottom = `${clamped}px`;
+        });
+      }
+    };
+    input.onchange = () => {
+      let val = parseInt(input.value, 10);
+      if (isNaN(val) || val < 0) val = 0;
+      if (val > 25) val = 25;
+      input.value = val;
+      setReportTableRowPadding(val);
+      setupAutoPrintPagination();
+      showSaveSuccessToast(`បានកំណត់កម្ពស់ជួរដេក ${val}px`);
+    };
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        input.blur();
+      }
+    };
+  }
 
   if (btnShrink) {
     btnShrink.onclick = (e) => {
       e.preventDefault();
       const p = Math.max(0, getReportTableRowPadding() - 1);
       setReportTableRowPadding(p);
+      if (input) input.value = p;
       setupAutoPrintPagination();
       showSaveSuccessToast(`បានបង្រួមកម្ពស់ជួរដេក ${p}px`);
     };
@@ -7599,15 +7636,18 @@ function setupReportTableRowHeightControls() {
   if (btnExpand) {
     btnExpand.onclick = (e) => {
       e.preventDefault();
-      const p = Math.min(18, getReportTableRowPadding() + 1);
+      const p = Math.min(25, getReportTableRowPadding() + 1);
       setReportTableRowPadding(p);
+      if (input) input.value = p;
       setupAutoPrintPagination();
       showSaveSuccessToast(`បានពង្រីកកម្ពស់ជួរដេក ${p}px`);
     };
   }
   if (slider) {
     slider.oninput = (e) => {
-      setReportTableRowPadding(parseInt(e.target.value, 10));
+      const val = parseInt(e.target.value, 10);
+      setReportTableRowPadding(val);
+      if (input) input.value = val;
     };
     slider.onchange = () => {
       setupAutoPrintPagination();
@@ -7618,6 +7658,7 @@ function setupReportTableRowHeightControls() {
     btnReset.onclick = (e) => {
       e.preventDefault();
       setReportTableRowPadding(2);
+      if (input) input.value = 2;
       setupAutoPrintPagination();
       showSaveSuccessToast('បានកំណត់កម្ពស់ជួរដេកដើមវិញ (2px)');
     };
@@ -7653,7 +7694,7 @@ function setupInteractiveRowResizeOnTables() {
           if (!isResizing) return;
           const dy = ev.clientY - startY;
           const paddingDelta = Math.round(dy / 3);
-          const newPadding = Math.max(0, Math.min(18, startPadding + paddingDelta));
+          const newPadding = Math.max(0, Math.min(25, startPadding + paddingDelta));
           setReportTableRowPadding(newPadding);
         };
 
