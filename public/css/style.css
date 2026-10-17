@@ -1557,14 +1557,11 @@ tr.excel-row-active td.excel-calc-rank {
   /* Pages guaranteed to fit on sheets */
   .report-print-page {
     box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
+    position: relative !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-after: always !important;
     break-after: page !important;
-    position: relative !important;
   }
 
   .report-print-page:last-child {
@@ -1573,11 +1570,17 @@ tr.excel-row-active td.excel-calc-rank {
   }
 
   .print-paper-sheet.landscape .report-print-page {
-    min-height: 195mm !important;
+    height: 196mm !important;
+    min-height: 196mm !important;
+    max-height: 196mm !important;
+    padding-bottom: 10mm !important;
   }
 
   .print-paper-sheet:not(.landscape) .report-print-page {
-    min-height: 278mm !important;
+    height: 282mm !important;
+    min-height: 282mm !important;
+    max-height: 282mm !important;
+    padding-bottom: 12mm !important;
   }
 
   .report-print-page-1 {
@@ -1594,21 +1597,22 @@ tr.excel-row-active td.excel-calc-rank {
   }
 
   .report-page-body {
-    flex: 1 1 auto !important;
+    width: 100% !important;
   }
 
-  .report-page-footer {
-    display: block !important;
+  .report-print-page .report-page-footer {
+    position: absolute !important;
+    bottom: 2mm !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
     text-align: center !important;
     font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
     font-size: 11pt !important;
     font-weight: 700 !important;
     line-height: 1 !important;
-    padding-top: 4px !important;
-    padding-bottom: 2mm !important;
-    margin-top: auto !important;
-    width: 100% !important;
     color: #000 !important;
+    z-index: 100 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }

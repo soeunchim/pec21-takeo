@@ -7317,7 +7317,7 @@ function setupAutoPrintPagination() {
 
   // Determine pagination thresholds per report type
   let page1Cap = 18;
-  let midPageCap = 24;
+  let midPageCap = 18;
   let lastPageCap = 18;
 
   if (isLandscape) {
@@ -7325,17 +7325,17 @@ function setupAutoPrintPagination() {
     midPageCap = 15;
     lastPageCap = 12;
   } else if (currentReportType === 'final_roster') {
-    page1Cap = 18; // 3 stations of 6
-    midPageCap = 24; // 4 stations of 6
-    lastPageCap = 18; // 3 stations of 6 + bottom summary & signatures
+    page1Cap = 18; // 3 stations of 6 candidates
+    midPageCap = 18; // 3 stations of 6 candidates
+    lastPageCap = 18; // 3 stations of 6 candidates + bottom summary & signatures
   } else if (currentReportType === 'notice') {
     page1Cap = 18;
-    midPageCap = 22;
-    lastPageCap = 16;
+    midPageCap = 18;
+    lastPageCap = 18;
   } else if (currentReportType === 'results') {
     page1Cap = 18;
-    midPageCap = 24;
-    lastPageCap = 16;
+    midPageCap = 18;
+    lastPageCap = 18;
   }
 
   // Clean up any old single page footer first
