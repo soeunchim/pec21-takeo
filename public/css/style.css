@@ -280,25 +280,31 @@ textarea,
 .nav-tabs {
   background: white;
   display: flex;
-  padding: 0 24px;
+  padding: 0 10px;
   border-bottom: 1px solid var(--border);
-  gap: 8px;
+  gap: 2px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.nav-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
-  padding: 12px 16px;
-  font-size: 14px;
+  padding: 9px 9px;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   white-space: nowrap;
   transition: all 0.2s;
 }
@@ -404,8 +410,8 @@ textarea,
 /* Main Content Layout */
 .container {
   max-width: 1440px;
-  margin: 20px auto;
-  padding: 0 20px;
+  margin: 12px auto 20px auto;
+  padding: 0 16px;
 }
 
 .page-section {
@@ -2057,10 +2063,43 @@ tr.excel-row-active td.excel-calc-rank {
   break-inside: avoid;
 }
 
+.final-roster-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 6px;
+  width: 100%;
+}
+
 .final-roster-bottom-breakdown {
-  margin-top: 10px;
+  margin: 0 !important;
+  padding: 0 !important;
   font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-  font-size: 11pt !important;
+  font-size: 10.5pt !important;
+  line-height: 1.4 !important;
+  vertical-align: top !important;
+}
+
+/* Compact Tab Reports layout */
+#tabReports > .card.no-print:first-child {
+  margin-top: 0 !important;
+  padding: 10px 14px !important;
+  margin-bottom: 6px !important;
+}
+
+#tabReports .filter-bar {
+  margin-top: 6px !important;
+  padding: 8px 10px !important;
+}
+
+#tabReports #reportDateToolbarCard {
+  margin-bottom: 6px !important;
+  padding: 8px 12px !important;
+}
+
+#tabReports #reportInterviewScheduleCard {
+  margin-bottom: 6px !important;
+  padding: 8px 12px !important;
 }
 
 /* ==============================================================================

@@ -391,25 +391,25 @@
            ===================================================================== -->
       <section id="tabReports" class="page-section">
         <div class="card no-print">
-          <!-- Excel-style 5 Sheets Navigation Tab Bar -->
+          <!-- Excel-style 6 Sheets Navigation Tab Bar -->
           <div class="excel-sheets-nav-bar" id="reportTabsBar">
             <button type="button" class="excel-sheet-tab active" data-report="sortlist" id="reportTabBtn_sortlist" title="សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (SortList)">
-              📋 1. SortList
+              📋 ១. SortList
             </button>
             <button type="button" class="excel-sheet-tab" data-report="notice" id="reportTabBtn_notice" title="សន្លឹក ២ ៖ សេចក្តីជូនដំណឹងបេក្ខជនសម្ភាសន៍ (Notice)">
-              📢 2. ជូនដំណឹង
+              📢 ២. សេចក្តីជូនដំណឹង
             </button>
             <button type="button" class="excel-sheet-tab" data-report="attendance" id="reportTabBtn_attendance" title="សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ជ្រើសរើស គ.ក.ប (Attendance)">
-              ✍️ 3. បញ្ជីវត្តមាន
+              ✍️ ៣. បញ្ជីវត្តមាន
             </button>
             <button type="button" class="excel-sheet-tab" data-report="scoresheet" id="reportTabBtn_scoresheet" title="សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប (Score Sheet)">
-              📝 4. ស្រង់ពិន្ទុ
+              📝 ៤. ស្រង់ពិន្ទុ
             </button>
             <button type="button" class="excel-sheet-tab" data-report="results" id="reportTabBtn_results" title="សន្លឹក ៥ ៖ លទ្ធផលនៃការសម្ភាសន៍តាមលំដាប់ពិន្ទុ (Ranked) - អាចជ្រើសរើស ១ ការិយាល័យ ឬគ្រប់ការិយាល័យ">
-              🏆 5. លទ្ធផលតាមលំដាប់
+              🏆 ៥. លទ្ធផលតាមលំដាប់
             </button>
             <button type="button" class="excel-sheet-tab" data-report="final_roster" id="reportTabBtn_final_roster" title="សន្លឹក ៦ ៖ បញ្ជីរាយនាមសមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) ផ្លូវការ">
-              📜 6. បញ្ជីរាយនាម គ.ក.ប
+              📜 ៦. បញ្ជីរាយនាម គ.ក.ប
             </button>
           </div>
 
@@ -486,14 +486,14 @@
             <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed #e2e8f0; margin-top: 10px;">
               <span id="reportActiveStationInfo" style="font-size: 13px; color: #1d4ed8; font-weight: 700;"></span>
               <span id="reportStatusHint" style="font-size: 12px; color: #475569; font-weight: 500;">
-                💡 ចុចលើ Tab សន្លឹកនីមួយៗ (1 ដល់ 7) ខាងលើដើម្បីមើល ឬបោះពុម្ព
+                💡 ចុចលើ Tab សន្លឹកនីមួយៗ (១ ដល់ ៦) ខាងលើដើម្បីមើល ឬបោះពុម្ព
               </span>
             </div>
           </div>
         </div>
 
         <!-- Toolbar for Automatic Lunar & Solar Dates (Hidden in Print) -->
-        <div class="card no-print" id="reportDateToolbarCard" style="margin-bottom: 12px; padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div class="card no-print" id="reportDateToolbarCard" style="margin-bottom: 6px; padding: 8px 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
           <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 ជ្រើសរើសកាលបរិច្ឆេទ ៖</span>
@@ -513,8 +513,8 @@
           </div>
         </div>
 
-        <!-- Panel for Commune Interview Place, Date, Time (Hidden in Print) -->
-        <div class="card no-print" id="reportInterviewScheduleCard" style="margin-bottom: 12px; padding: 10px 14px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; box-shadow: 0 1px 4px rgba(22, 101, 52, 0.08);">
+        <!-- Panel for Commune Interview Place, Date, Time (Hidden in Print - Only for Report 2 Notice) -->
+        <div class="card no-print" id="reportInterviewScheduleCard" style="display: none; margin-bottom: 6px; padding: 8px 12px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; box-shadow: 0 1px 4px rgba(22, 101, 52, 0.08);">
           <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-weight: 700; color: #166534; font-size: 13px;">
@@ -1027,6 +1027,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261017_dup_tab_v17"></script>
+  <script src="js/app.js?v=20261017_dup_tab_v18"></script>
 </body>
 </html>

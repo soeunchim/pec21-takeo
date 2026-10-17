@@ -4592,6 +4592,11 @@ function initReportSelectorBar() {
       tab.classList.add('active');
       const repType = tab.getAttribute('data-report');
       document.getElementById('reportTypeSelect').value = repType;
+
+      const schedCard = document.getElementById('reportInterviewScheduleCard');
+      if (schedCard) {
+        schedCard.style.display = (repType === 'notice') ? 'block' : 'none';
+      }
       
       const titleEl = document.getElementById('activeReportSheetTitle');
       if (titleEl) {
@@ -5005,6 +5010,12 @@ function toISODate(dStr) {
 function updateReportInterviewScheduleInputs(selCommuneCode, stations) {
   const card = document.getElementById('reportInterviewScheduleCard');
   if (!card) return;
+
+  const currentRep = document.getElementById('reportTypeSelect')?.value || 'sortlist';
+  if (currentRep !== 'notice') {
+    card.style.display = 'none';
+    return;
+  }
 
   let comCode = selCommuneCode;
   if (!comCode || comCode === 'all') {
@@ -6652,12 +6663,12 @@ async function renderReportPreview() {
     });
 
     const bottomFooterHtml = `
-      <div class="final-roster-footer" style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; width: 100%; page-break-inside: avoid; break-inside: avoid;">
-        <div class="final-roster-bottom-breakdown" style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; font-weight: 700; line-height: 1.4; padding-top: 2px;">
+      <div class="final-roster-footer" style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 6px; width: 100%; page-break-inside: avoid; break-inside: avoid;">
+        <div class="final-roster-bottom-breakdown" style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important; font-weight: 700; line-height: 1.4; margin: 0 !important; padding: 0 !important; vertical-align: top;">
           បញ្ឈប់បញ្ជីនេះត្រឹមចំនួន ${toKhmerNum(stats.grandTotal)} នាក់ ក្នុងនោះ ស្រី ${toKhmerNum(stats.grandFemale)} នាក់។
         </div>
         <div style="margin-left: auto;">
-          ${getOfficialSignatureBlock(ps, 'results')}
+          ${getOfficialSignatureBlock(ps, 'final_roster')}
         </div>
       </div>
     `;
@@ -6917,11 +6928,12 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
     `;
   }
 
-  // Reports 2-5: Flush right aligned with table's right border
+  // Reports 2-6: Flush right aligned with table's right border
+  const sigTopMargin = (reportType === 'final_roster') ? '0' : '8px';
   return `
-    <div class="signature-section" style="margin-top: 8px; width: 100%; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid;">
-      <div class="signature-box signature-box-right" style="width: auto; min-width: 290px; max-width: 350px; margin-left: auto; margin-right: 0; text-align: center; color: #000; font-family: var(--font-body);">
-        <div class="editable-sig-date sig-lunar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center; white-space: nowrap;">
+    <div class="signature-section" style="margin-top: ${sigTopMargin}; width: 100%; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid;">
+      <div class="signature-box signature-box-right" style="width: auto; min-width: 290px; max-width: 350px; margin-left: auto; margin-right: 0; text-align: center; color: #000; font-family: var(--font-body); margin-top: 0; padding-top: 0;">
+        <div class="editable-sig-date sig-lunar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center; white-space: nowrap; margin-top: 0; padding-top: 0;">
           ${dateCfg.lunar}
         </div>
         <div class="editable-sig-date sig-solar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
