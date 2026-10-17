@@ -5290,10 +5290,12 @@ function buildReportLetterheadHtml(ps) {
               </div>
               <!-- Box 1 (Left Institution Header): Left-aligned, Font Khmer OS Muol Light, Size: 10pt -->
               <div class="report-inst-header-box" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
-                <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
-                <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
-                <div>${committeeTitle}</div>
-                <div>${jurisdictionLine}</div>
+                ${(localStorage.getItem('report_custom_inst_header') && localStorage.getItem('report_custom_inst_header').trim()) ? localStorage.getItem('report_custom_inst_header') : `
+                  <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
+                  <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
+                  <div>${committeeTitle}</div>
+                  <div>${jurisdictionLine}</div>
+                `}
               </div>
             </div>
           </td>
@@ -5302,7 +5304,7 @@ function buildReportLetterheadHtml(ps) {
             <div class="report-kingdom-header-box" style="padding-top: 0; white-space: nowrap;">
               <div class="report-kingdom-title">ព្រះរាជាណាចក្រកម្ពុជា</div>
               <div class="report-kingdom-title">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
-              <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">5</div>
+              <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">${localStorage.getItem('report_custom_tacteing') || '5'}</div>
             </div>
           </td>
           <!-- Column 3 (35%): Right Spacer to balance Box 2 in the exact center of A4 paper -->
@@ -6964,22 +6966,37 @@ function setupReportDateInteractions() {
   }
 
   if (lunarInput) {
+    let orig = lunarInput.value;
+    lunarInput.onfocus = () => { orig = lunarInput.value; };
     lunarInput.oninput = (e) => {
       setReportDateConfig(e.target.value, undefined);
       getAllLunarDates().forEach(el => el.textContent = e.target.value);
     };
+    lunarInput.onchange = lunarInput.onblur = (e) => {
+      setReportDateConfig(e.target.value, undefined);
+      getAllLunarDates().forEach(el => el.textContent = e.target.value);
+      if (e.target.value !== orig) showSaveSuccessToast('បានរក្សាទុករួច');
+    };
   }
 
   if (solarInput) {
+    let orig = solarInput.value;
+    solarInput.onfocus = () => { orig = solarInput.value; };
     solarInput.oninput = (e) => {
       setReportDateConfig(undefined, e.target.value);
       getAllSolarDates().forEach(el => el.textContent = e.target.value);
+    };
+    solarInput.onchange = solarInput.onblur = (e) => {
+      setReportDateConfig(undefined, e.target.value);
+      getAllSolarDates().forEach(el => el.textContent = e.target.value);
+      if (e.target.value !== orig) showSaveSuccessToast('បានរក្សាទុករួច');
     };
   }
 
   if (btnAuto) {
     btnAuto.onclick = () => {
       updateDatesFromTarget(new Date());
+      showSaveSuccessToast('បានរក្សាទុករួច');
     };
   }
 
@@ -7012,22 +7029,44 @@ function setupReportDateInteractions() {
   });
 }
 
+let toastThrottleTimer = null;
 function showSaveSuccessToast(message = 'បានរក្សាទុករួច') {
-  let toast = document.getElementById('pec21SaveToast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'pec21SaveToast';
-    toast.className = 'pec21-save-toast';
-    document.body.appendChild(toast);
-  }
-  toast.innerHTML = `<span style="font-size: 16px;">✅</span> <span>${message}</span>`;
-  toast.classList.add('show');
+  if (toastThrottleTimer) clearTimeout(toastThrottleTimer);
+  toastThrottleTimer = setTimeout(() => {
+    let toast = document.getElementById('pec21SaveToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'pec21SaveToast';
+      toast.className = 'pec21-save-toast';
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span style="font-size: 16px;">✅</span> <span>${message}</span>`;
+    toast.classList.add('show');
 
-  if (toast._timer) clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2200);
+    if (toast._timer) clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2200);
+  }, 40);
 }
+
+// Global listener to ensure ANY editable element anywhere triggers toast when user finishes editing
+let globalLastEditableFocus = null;
+let globalLastEditableOriginalHtml = '';
+document.addEventListener('focusin', (e) => {
+  if (e.target && e.target.isContentEditable) {
+    globalLastEditableFocus = e.target;
+    globalLastEditableOriginalHtml = e.target.innerHTML;
+  }
+}, true);
+
+document.addEventListener('focusout', (e) => {
+  if (e.target && e.target.isContentEditable) {
+    if (e.target.innerHTML !== globalLastEditableOriginalHtml) {
+      showSaveSuccessToast('បានរក្សាទុករួច');
+    }
+  }
+}, true);
 
 function setupReportSignatureInteractions() {
   const currentReportType = document.getElementById('reportTypeSelect')?.value || 'sortlist';
@@ -7093,6 +7132,72 @@ function setupReportSignatureInteractions() {
     };
   });
 
+  // 4. Institution Letterhead Box (.report-inst-header-box)
+  document.querySelectorAll('.report-inst-header-box').forEach(el => {
+    let originalHtml = el.innerHTML.trim();
+    el.onfocus = () => { originalHtml = el.innerHTML.trim(); };
+    el.onblur = () => {
+      const valHtml = el.innerHTML.trim();
+      localStorage.setItem('report_custom_inst_header', valHtml);
+      document.querySelectorAll('.report-inst-header-box').forEach(target => {
+        if (target !== el) target.innerHTML = valHtml;
+      });
+      if (valHtml !== originalHtml) {
+        showSaveSuccessToast('បានរក្សាទុករួច');
+      }
+    };
+  });
+
+  // 5. Tacteing Emblem (.report-tacteing-emblem)
+  document.querySelectorAll('.report-tacteing-emblem').forEach(el => {
+    let orig = el.innerText.trim();
+    el.onfocus = () => { orig = el.innerText.trim(); };
+    el.onblur = () => {
+      const val = el.innerText.trim();
+      localStorage.setItem('report_custom_tacteing', val);
+      document.querySelectorAll('.report-tacteing-emblem').forEach(target => {
+        if (target !== el) target.innerText = val;
+      });
+      if (val !== orig) {
+        showSaveSuccessToast('បានរក្សាទុករួច');
+      }
+    };
+  });
+
+  // 6. Notice Elements (.report-editable-notice-place, etc.)
+  document.querySelectorAll('.report-editable-notice-place').forEach(el => {
+    let orig = el.innerText.trim();
+    el.onfocus = () => { orig = el.innerText.trim(); };
+    el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } };
+    el.onblur = () => {
+      const val = el.innerText.trim();
+      localStorage.setItem('report_notice_place', val);
+      if (val !== orig) showSaveSuccessToast('បានរក្សាទុករួច');
+    };
+  });
+
+  document.querySelectorAll('.report-editable-notice-date').forEach(el => {
+    let orig = el.innerText.trim();
+    el.onfocus = () => { orig = el.innerText.trim(); };
+    el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } };
+    el.onblur = () => {
+      const val = el.innerText.trim();
+      localStorage.setItem('report_notice_date', val);
+      if (val !== orig) showSaveSuccessToast('បានរក្សាទុករួច');
+    };
+  });
+
+  document.querySelectorAll('.report-editable-notice-time').forEach(el => {
+    let orig = el.innerText.trim();
+    el.onfocus = () => { orig = el.innerText.trim(); };
+    el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } };
+    el.onblur = () => {
+      const val = el.innerText.trim();
+      localStorage.setItem('report_notice_time', val);
+      if (val !== orig) showSaveSuccessToast('បានរក្សាទុករួច');
+    };
+  });
+
   // Live screen -> print view synchronization
   const syncLive = (selector) => {
     const screenEl = document.querySelector(`.report-screen-view ${selector}`);
@@ -7106,6 +7211,9 @@ function setupReportSignatureInteractions() {
   syncLive('.editable-sig-committee');
   syncLive('.editable-sig-committee-list');
   syncLive('.editable-sig-role');
+  syncLive('.report-inst-header-box');
+  syncLive('.report-tacteing-emblem');
+  syncLive('.report-title-box');
 }
 
 function syncReportSignaturesBeforePrint() {
@@ -7119,6 +7227,9 @@ function syncReportSignaturesBeforePrint() {
   sync('.editable-sig-committee');
   sync('.editable-sig-committee-list');
   sync('.editable-sig-role');
+  sync('.report-inst-header-box');
+  sync('.report-tacteing-emblem');
+  sync('.report-title-box');
 }
 
 function exportCurrentReportToExcel() {

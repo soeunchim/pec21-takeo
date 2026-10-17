@@ -1883,11 +1883,16 @@ tr.excel-row-active td.excel-calc-rank {
   line-height: 1.4;
 }
 
-/* Editable Signature Section Hover & Focus Styles */
+/* Editable Report Elements Hover & Focus Styles */
 .editable-sig-committee,
 .editable-sig-role,
 .editable-sig-committee-list,
-.editable-sig-date {
+.editable-sig-date,
+.report-inst-header-box,
+.report-tacteing-emblem,
+.report-editable-notice-place,
+.report-editable-notice-date,
+.report-editable-notice-time {
   outline: none;
   border-radius: 4px;
   padding: 1px 4px;
@@ -1901,7 +1906,17 @@ tr.excel-row-active td.excel-calc-rank {
 .editable-sig-committee-list:hover,
 .editable-sig-committee-list:focus,
 .editable-sig-date:hover,
-.editable-sig-date:focus {
+.editable-sig-date:focus,
+.report-inst-header-box:hover,
+.report-inst-header-box:focus,
+.report-tacteing-emblem:hover,
+.report-tacteing-emblem:focus,
+.report-editable-notice-place:hover,
+.report-editable-notice-place:focus,
+.report-editable-notice-date:hover,
+.report-editable-notice-date:focus,
+.report-editable-notice-time:hover,
+.report-editable-notice-time:focus {
   background-color: rgba(59, 130, 246, 0.06);
   box-shadow: 0 0 0 1px #93c5fd;
   cursor: text;
@@ -1911,7 +1926,12 @@ tr.excel-row-active td.excel-calc-rank {
   .editable-sig-committee,
   .editable-sig-role,
   .editable-sig-committee-list,
-  .editable-sig-date {
+  .editable-sig-date,
+  .report-inst-header-box,
+  .report-tacteing-emblem,
+  .report-editable-notice-place,
+  .report-editable-notice-date,
+  .report-editable-notice-time {
     background: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
