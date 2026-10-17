@@ -1518,8 +1518,9 @@ tr.excel-row-active td.excel-calc-rank {
     margin: 4mm 6mm;
   }
 
-  /* Switch between Screen and Print view */
-  .report-screen-view,
+  /* Switch between Screen and Print view only when multi-page print view exists */
+  .print-has-pages .report-screen-view,
+  .report-screen-view.no-print,
   .no-print {
     display: none !important;
   }

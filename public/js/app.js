@@ -7306,24 +7306,8 @@ function setupAutoPrintPagination() {
     return;
   }
 
-  // Get screen view or wrap existing sheet contents into screen view
-  let screenView = sheet.querySelector('.report-screen-view');
-  if (!screenView) {
-    const existingChildren = Array.from(sheet.children).filter(el => !el.classList.contains('report-print-view'));
-    screenView = document.createElement('div');
-    screenView.className = 'report-screen-view no-print';
-    existingChildren.forEach(child => screenView.appendChild(child));
-    sheet.prepend(screenView);
-  }
-
-  // Remove existing generated print view if any to rebuild fresh
-  const existingPrintView = sheet.querySelector('.report-print-view');
-  if (existingPrintView) {
-    existingPrintView.remove();
-  }
-
-  // Find table and rows inside screenView
-  const table = screenView.querySelector('table');
+  // Find table and rows inside screenView or directly in sheet
+  const table = sheet.querySelector('.report-screen-view table') || sheet.querySelector('table:not(.report-print-view table)');
   if (!table) return;
 
   const rows = Array.from(table.querySelectorAll('tbody tr'));
@@ -7356,19 +7340,48 @@ function setupAutoPrintPagination() {
 
   // If total rows fit comfortably on 1 page (single page report)
   if (rows.length <= page1Cap) {
-    // Total pages = 1 -> No page number footer needed!
-    screenView.classList.remove('no-print');
+    // Total pages = 1 -> No pagination needed!
+    // Unwrap screenView if previously wrapped so content is direct child of sheet and fully visible
+    const existingScreenView = sheet.querySelector('.report-screen-view');
+    if (existingScreenView) {
+      while (existingScreenView.firstChild) {
+        sheet.insertBefore(existingScreenView.firstChild, existingScreenView);
+      }
+      existingScreenView.remove();
+    }
+    const existingPrintView = sheet.querySelector('.report-print-view');
+    if (existingPrintView) {
+      existingPrintView.remove();
+    }
+    sheet.classList.remove('print-has-pages');
     return;
   }
 
   // Multi-page document: 2 or more pages!
-  screenView.classList.add('no-print');
+  let screenView = sheet.querySelector('.report-screen-view');
+  if (!screenView) {
+    const existingChildren = Array.from(sheet.children).filter(el => !el.classList.contains('report-print-view'));
+    screenView = document.createElement('div');
+    screenView.className = 'report-screen-view no-print';
+    existingChildren.forEach(child => screenView.appendChild(child));
+    sheet.prepend(screenView);
+  } else {
+    screenView.classList.add('no-print');
+  }
+
+  // Remove existing generated print view if any to rebuild fresh
+  const existingPrintView = sheet.querySelector('.report-print-view');
+  if (existingPrintView) {
+    existingPrintView.remove();
+  }
+
+  sheet.classList.add('print-has-pages');
 
   // Extract common components from screenView
   const letterheadHtml = screenView.querySelector('.letterhead')?.outerHTML || '';
   const titleBoxHtml = screenView.querySelector('.report-title-section')?.outerHTML || '';
   const tableColgroupHtml = table.querySelector('colgroup')?.outerHTML || '';
-  const tableTheadHtml = table.querySelector('thead')?.outerHTML || '';
+  const tableTheadHtml = table.querySelector('thead')?.innerHTML || '';
   const tableClass = table.className || 'official-print-table';
   const tableStyle = table.getAttribute('style') || '';
   
