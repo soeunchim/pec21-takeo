@@ -2657,7 +2657,42 @@ async function checkCandidateDuplicateRow(tr) {
       });
 
       if (confirmedNotDuplicate) {
-        // User confirmed NOT duplicate -> Highlight BOTH rows in RED and KEEP & PERSIST candidate in database!
+        // Second Confirmation Popup requested by user
+        const secondConfirmHtml = `
+<div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
+  <div style="margin-bottom: 12px; color: #1e293b; font-size: 14.5px;">
+    តើអ្នកបញ្ចូលឈ្មោះបេក្ខជន <strong>«${rawName}»</strong> ដែលស្ទួនជាមួយ ៖
+  </div>
+  <div style="background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.8;">
+    <div>• <strong>ក្រុង/ស្រុក ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.district}</span></div>
+    <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.commune}</span></div>
+    <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.station}</span></div>
+    <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${duplicateFound.role}</span></div>
+  </div>
+  <div style="font-weight: 700; color: #b91c1c; font-size: 14.5px; text-align: center;">
+    នេះមែនទេ?
+  </div>
+</div>
+        `.trim();
+
+        const reallyInsert = await showModernPopup({
+          title: '❓ បញ្ជាក់ការបញ្ចូលបេក្ខជនស្ទួន',
+          message: secondConfirmHtml,
+          type: 'question',
+          icon: '❓',
+          showCancel: true,
+          confirmText: 'ពិតមែន',
+          cancelText: 'បោះបង់',
+          cancelIsDanger: true
+        });
+
+        if (!reallyInsert) {
+          // User clicked "បោះបង់" -> Candidate is NOT inserted
+          clearCandidateRowInputs(tr);
+          return false;
+        }
+
+        // User clicked "ពិតមែន" -> Highlight BOTH rows in RED and KEEP & PERSIST candidate in database!
         tr.dataset.dupConfirmedSig = currentSig;
         tr.dataset.isDuplicate = "true";
         tr.classList.add('duplicate-highlight-row');
@@ -8310,6 +8345,39 @@ async function handleCandidateSubmit(e) {
         });
 
         if (!ok) {
+          return;
+        }
+
+        const exStation = ex.pollingStationName || (ex.pollingStationCode ? 'ការិយាល័យលេខ ' + ex.pollingStationCode : 'មិនបានបញ្ជាក់');
+        const secondConfirmHtml = `
+<div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
+  <div style="margin-bottom: 12px; color: #1e293b; font-size: 14.5px;">
+    តើអ្នកបញ្ចូលឈ្មោះបេក្ខជន <strong>«${payload.name}»</strong> ដែលស្ទួនជាមួយ ៖
+  </div>
+  <div style="background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.8;">
+    <div>• <strong>ក្រុង/ស្រុក ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.district || 'មិនបានបញ្ជាក់'}</span></div>
+    <div>• <strong>ឃុំ/សង្កាត់ ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.communeName || 'មិនបានបញ្ជាក់'}</span></div>
+    <div>• <strong>ការិយាល័យបោះឆ្នោត ៖</strong> <span style="color:#991b1b; font-weight: 700;">${exStation}</span></div>
+    <div>• <strong>មុខតំណែង ៖</strong> <span style="color:#991b1b; font-weight: 700;">${ex.role || 'មិនបានបញ្ជាក់'}</span></div>
+  </div>
+  <div style="font-weight: 700; color: #b91c1c; font-size: 14.5px; text-align: center;">
+    នេះមែនទេ?
+  </div>
+</div>
+        `.trim();
+
+        const reallyInsert = await showModernPopup({
+          title: '❓ បញ្ជាក់ការបញ្ចូលបេក្ខជនស្ទួន',
+          message: secondConfirmHtml,
+          type: 'question',
+          icon: '❓',
+          showCancel: true,
+          confirmText: 'ពិតមែន',
+          cancelText: 'បោះបង់',
+          cancelIsDanger: true
+        });
+
+        if (!reallyInsert) {
           return;
         }
 
