@@ -1074,6 +1074,9 @@ function getDistrictPrefix(districtName) {
   if (clean === 'ដូនកែវ') {
     return 'ក្រុងដូនកែវ';
   }
+  if (clean.includes('អង្គ')) {
+    return 'ស្រុកអង្គរបូរី';
+  }
   return `ស្រុក${clean}`;
 }
 
@@ -1081,7 +1084,7 @@ function getDistrictPrefix(districtName) {
 function getTakeoDistrictOrder(districtName) {
   if (!districtName) return 999;
   const clean = String(districtName).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
-  if (clean.includes('អង្គរ')) return 0;
+  if (clean.includes('អង្គ')) return 0;
   if (clean.includes('បាទី')) return 1;
   if (clean.includes('បូរី')) return 2;
   if (clean.includes('គិរី') || clean.includes('គីរី')) return 3;
@@ -9002,8 +9005,9 @@ async function loadStatisticsPage() {
     const distSelect = document.getElementById('statDistrictFilter');
     if (distSelect) {
       const currentVal = distSelect.value;
-      const dists = [...new Set(allPollingStations.map(p => p.district))].filter(Boolean).sort();
-      let distOptions = '<option value="all">ទាំងអស់ (ទូទាំងខេត្ត)</option>';
+      const dists = [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
+      dists.sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b));
+      let distOptions = '<option value="all">ទាំងអស់</option>';
       dists.forEach(d => {
         distOptions += `<option value="${d}">${getDistrictPrefix(d)}</option>`;
       });
@@ -9017,8 +9021,7 @@ async function loadStatisticsPage() {
       }
     }
 
-    updateStatCommuneDropdown();
-    renderStatisticsPage();
+    onStatLevelChange();
   } catch (err) {
     console.error('Error loading statistics:', err);
     if (container) {
@@ -9029,6 +9032,34 @@ async function loadStatisticsPage() {
       `;
     }
   }
+}
+
+function onStatLevelChange() {
+  const levelSelect = document.getElementById('statLevelSelect');
+  const distWrapper = document.getElementById('statDistrictFilterWrapper');
+  const comWrapper = document.getElementById('statCommuneFilterWrapper');
+  const distSelect = document.getElementById('statDistrictFilter');
+  const comSelect = document.getElementById('statCommuneFilter');
+
+  const level = levelSelect ? levelSelect.value : 'province';
+
+  if (level === 'province') {
+    if (distWrapper) distWrapper.style.display = 'none';
+    if (comWrapper) comWrapper.style.display = 'none';
+    if (distSelect && (!currentUser || currentUser.role !== 'Trainer')) distSelect.value = 'all';
+    if (comSelect) comSelect.value = 'all';
+  } else if (level === 'commune') {
+    if (distWrapper) distWrapper.style.display = 'flex';
+    if (comWrapper) comWrapper.style.display = 'none';
+    if (comSelect) comSelect.value = 'all';
+  } else {
+    // station level
+    if (distWrapper) distWrapper.style.display = 'flex';
+    if (comWrapper) comWrapper.style.display = 'flex';
+  }
+
+  updateStatCommuneDropdown();
+  renderStatisticsPage();
 }
 
 function updateStatCommuneDropdown() {
@@ -9173,7 +9204,7 @@ function renderStatisticsPage() {
     });
 
     let rowIdx = 0;
-    Array.from(distGroups.keys()).sort().forEach(d => {
+    Array.from(distGroups.keys()).sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b)).forEach(d => {
       rowIdx++;
       const stList = distGroups.get(d);
       const stCount = stList.length;
@@ -9243,7 +9274,12 @@ function renderStatisticsPage() {
     });
 
     let rowIdx = 0;
-    Array.from(comGroups.values()).sort((a, b) => a.communeCode.localeCompare(b.communeCode)).forEach(grp => {
+    Array.from(comGroups.values()).sort((a, b) => {
+      const ordA = getTakeoDistrictOrder(a.district);
+      const ordB = getTakeoDistrictOrder(b.district);
+      if (ordA !== ordB) return ordA - ordB;
+      return a.communeCode.localeCompare(b.communeCode);
+    }).forEach(grp => {
       rowIdx++;
       const stCount = grp.stations.length;
       grandTotalStations += stCount;
@@ -9298,6 +9334,18 @@ function renderStatisticsPage() {
 
   // LEVEL 3: POLLING STATION (1 row per station)
   else {
+    targetStations.sort((a, b) => {
+      const ordA = getTakeoDistrictOrder(a.district);
+      const ordB = getTakeoDistrictOrder(b.district);
+      if (ordA !== ordB) return ordA - ordB;
+      const cA = String(a.communeCode || '').padStart(3, '0');
+      const cB = String(b.communeCode || '').padStart(3, '0');
+      if (cA !== cB) return cA.localeCompare(cB);
+      const codeA = parseInt(a.code, 10) || 0;
+      const codeB = parseInt(b.code, 10) || 0;
+      return codeA - codeB;
+    });
+
     let rowIdx = 0;
     targetStations.forEach(st => {
       rowIdx++;

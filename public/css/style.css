@@ -2691,7 +2691,7 @@ tr.excel-row-active td.excel-calc-rank {
 .stats-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif;
+  font-family: 'Kantumruy Pro', 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
   font-size: 13px;
   color: #1e293b;
   min-width: 1000px;
