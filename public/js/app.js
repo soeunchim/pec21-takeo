@@ -7562,11 +7562,14 @@ function setupReportSignatureInteractions() {
 
 function getReportTableRowPadding() {
   const saved = localStorage.getItem('report_table_row_padding');
-  return saved !== null ? parseInt(saved, 10) : 2;
+  return saved !== null ? parseFloat(saved) : 2;
 }
 
 function setReportTableRowPadding(paddingVal) {
-  const p = Math.max(0, Math.min(25, parseInt(paddingVal, 10) || 0));
+  let p = parseFloat(paddingVal);
+  if (isNaN(p) || p < 0) p = 0;
+  if (p > 25) p = 25;
+  p = Math.round(p * 10) / 10;
   document.documentElement.style.setProperty('--report-row-padding-v', `${p}px`);
   localStorage.setItem('report_table_row_padding', String(p));
   const input = document.getElementById('reportRowHeightInput');
@@ -7595,9 +7598,9 @@ function setupReportTableRowHeightControls() {
   if (input) {
     input.value = currentP;
     input.oninput = () => {
-      const val = parseInt(input.value, 10);
+      const val = parseFloat(input.value);
       if (!isNaN(val)) {
-        const clamped = Math.max(0, Math.min(25, val));
+        const clamped = Math.round(Math.max(0, Math.min(25, val)) * 10) / 10;
         document.documentElement.style.setProperty('--report-row-padding-v', `${clamped}px`);
         localStorage.setItem('report_table_row_padding', String(clamped));
         if (slider) slider.value = Math.min(slider.max || 20, clamped);
@@ -7608,9 +7611,10 @@ function setupReportTableRowHeightControls() {
       }
     };
     input.onchange = () => {
-      let val = parseInt(input.value, 10);
+      let val = parseFloat(input.value);
       if (isNaN(val) || val < 0) val = 0;
       if (val > 25) val = 25;
+      val = Math.round(val * 10) / 10;
       input.value = val;
       setReportTableRowPadding(val);
       setupAutoPrintPagination();
@@ -7626,7 +7630,7 @@ function setupReportTableRowHeightControls() {
   if (btnShrink) {
     btnShrink.onclick = (e) => {
       e.preventDefault();
-      const p = Math.max(0, getReportTableRowPadding() - 1);
+      const p = Math.max(0, Math.round((getReportTableRowPadding() - 0.5) * 10) / 10);
       setReportTableRowPadding(p);
       if (input) input.value = p;
       setupAutoPrintPagination();
@@ -7636,7 +7640,7 @@ function setupReportTableRowHeightControls() {
   if (btnExpand) {
     btnExpand.onclick = (e) => {
       e.preventDefault();
-      const p = Math.min(25, getReportTableRowPadding() + 1);
+      const p = Math.min(25, Math.round((getReportTableRowPadding() + 0.5) * 10) / 10);
       setReportTableRowPadding(p);
       if (input) input.value = p;
       setupAutoPrintPagination();
@@ -7645,7 +7649,7 @@ function setupReportTableRowHeightControls() {
   }
   if (slider) {
     slider.oninput = (e) => {
-      const val = parseInt(e.target.value, 10);
+      const val = parseFloat(e.target.value);
       setReportTableRowPadding(val);
       if (input) input.value = val;
     };
@@ -7693,8 +7697,8 @@ function setupInteractiveRowResizeOnTables() {
         const onMouseMove = (ev) => {
           if (!isResizing) return;
           const dy = ev.clientY - startY;
-          const paddingDelta = Math.round(dy / 3);
-          const newPadding = Math.max(0, Math.min(25, startPadding + paddingDelta));
+          const paddingDelta = Math.round((dy / 4) * 2) / 2;
+          const newPadding = Math.max(0, Math.min(25, Math.round((startPadding + paddingDelta) * 10) / 10));
           setReportTableRowPadding(newPadding);
         };
 

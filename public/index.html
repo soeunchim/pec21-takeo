@@ -6,7 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261017_row_input_v38">
+  <link rel="stylesheet" href="css/style.css?v=20261017_compact_decimal_v39">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗳️</text></svg>">
 </head>
 <body>
@@ -390,7 +390,7 @@
            TAB 4: OFFICIAL REPORTS & PRINT (The 5 Excel sheets matching layout)
            ===================================================================== -->
       <section id="tabReports" class="page-section">
-        <div class="card no-print">
+        <div class="card no-print" style="padding: 6px 12px; margin-bottom: 4px;">
           <!-- Excel-style 6 Sheets Navigation Tab Bar -->
           <div class="excel-sheets-nav-bar" id="reportTabsBar">
             <button type="button" class="excel-sheet-tab active" data-report="sortlist" id="reportTabBtn_sortlist" title="សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (សម្រាំងពាក្យ)">
@@ -414,79 +414,79 @@
           </div>
 
           <!-- Sheet Header & Actions Toolbar -->
-          <div class="card-header" style="flex-wrap: wrap; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+          <div class="card-header" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 6px; padding-bottom: 6px; margin-bottom: 2px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span id="activeReportSheetTitle" style="font-weight: 700; font-size: 15px; color: #1e3a8a;">
+              <span id="activeReportSheetTitle" style="font-weight: 700; font-size: 14px; color: #1e3a8a;">
                 📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (សម្រាំងពាក្យ) [📄 ក្រដាសផ្តេក - Landscape]
               </span>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-              <button id="btnToggleEmptyRows" class="btn btn-outline btn-sm" type="button" title="លាក់ ឬបង្ហាញជួរដេកទទេដូចក្នុង Excel">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              <button id="btnToggleEmptyRows" class="btn btn-outline btn-sm" type="button" style="padding: 2px 7px; font-size: 11px;" title="លាក់ ឬបង្ហាញជួរដេកទទេដូចក្នុង Excel">
                 👁️ <span id="toggleEmptyRowsText">លាក់ជួរដេកទទេ</span>
               </button>
-              <button id="btnExportCurrentReportExcel" class="btn btn-excel btn-sm" type="button" title="ទាញយកសន្លឹករបាយការណ៍នេះជាឯកសារ Excel">
+              <button id="btnExportCurrentReportExcel" class="btn btn-excel btn-sm" type="button" style="padding: 2px 8px; font-size: 11px;" title="ទាញយកសន្លឹករបាយការណ៍នេះជាឯកសារ Excel">
                 📥 ទាញយកជា Excel (.xlsx)
               </button>
-              <!-- Row Height Controller (Expand & Shrink all rows across all reports) -->
-              <div class="report-row-height-controller no-print" style="display: flex; align-items: center; gap: 5px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 6px; padding: 2px 8px;" title="ពង្រីក ឬបង្រួមកម្ពស់ជួរដេកនៃតារាង (Row Height)">
-                <span style="font-size: 12px; font-weight: 700; color: #1e40af; white-space: nowrap;">↕️ កម្ពស់ជួរដេក ៖</span>
-                <button type="button" id="btnShrinkReportRows" class="btn btn-outline btn-xs" style="padding: 2px 7px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="បង្រួមកម្ពស់ជួរដេក (Shrink)">➖ បង្រួម</button>
-                <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1.5px solid #93c5fd; border-radius: 4px; padding: 0 4px; height: 24px;" title="វាយបញ្ចូលកម្ពស់ជួរដេកដោយផ្ទាល់ (ឧទាហរណ៍ 0, 2, 4, 6...)">
-                  <input type="number" id="reportRowHeightInput" min="0" max="25" step="1" value="2" style="width: 32px; height: 20px; text-align: center; font-size: 12px; font-weight: 700; color: #1d4ed8; border: none; outline: none; background: transparent; padding: 0; -moz-appearance: textfield;" title="ចុចដើម្បីវាយលេខកម្ពស់ដោយផ្ទាល់">
-                  <span id="reportRowHeightLabel" style="font-size: 11px; font-weight: 700; color: #2563eb;">px</span>
+              <!-- Row Height Controller (Expand & Shrink all rows across all reports - supports decimals like 1.5) -->
+              <div class="report-row-height-controller no-print" style="display: flex; align-items: center; gap: 4px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 6px; padding: 1px 6px;" title="ពង្រីក ឬបង្រួមកម្ពស់ជួរដេកនៃតារាង (Row Height)">
+                <span style="font-size: 11px; font-weight: 700; color: #1e40af; white-space: nowrap;">↕️ កម្ពស់ជួរដេក ៖</span>
+                <button type="button" id="btnShrinkReportRows" class="btn btn-outline btn-xs" style="padding: 1px 5px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="បង្រួមកម្ពស់ជួរដេក (Shrink -0.5px)">➖ បង្រួម</button>
+                <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1.5px solid #93c5fd; border-radius: 4px; padding: 0 3px; height: 22px;" title="វាយបញ្ចូលកម្ពស់ជួរដេកដោយផ្ទាល់ អាចវាយចំនួនទសភាគបាន (ឧ. 1.5, 2, 2.5...)">
+                  <input type="number" id="reportRowHeightInput" min="0" max="25" step="0.1" value="2" style="width: 38px; height: 18px; text-align: center; font-size: 12px; font-weight: 700; color: #1d4ed8; border: none; outline: none; background: transparent; padding: 0; -moz-appearance: textfield;" title="ចុចដើម្បីវាយលេខកម្ពស់ដោយផ្ទាល់ (អាចវាយទសភាគ ឧ. 1.5)">
+                  <span id="reportRowHeightLabel" style="font-size: 10.5px; font-weight: 700; color: #2563eb;">px</span>
                 </div>
-                <button type="button" id="btnExpandReportRows" class="btn btn-outline btn-xs" style="padding: 2px 7px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="ពង្រីកកម្ពស់ជួរដេក (Expand)">➕ ពង្រីក</button>
-                <input type="range" id="reportRowHeightSlider" min="0" max="20" step="1" value="2" style="width: 65px; height: 12px; cursor: pointer; accent-color: #2563eb;" title="អូស Mouse ដើម្បីពង្រីក/បង្រួមកម្ពស់ជួរដេក">
-                <button type="button" id="btnResetReportRows" class="btn btn-secondary btn-xs" style="padding: 1px 5px; font-size: 10px; border-radius: 3px;" title="កំណត់កម្ពស់ដើមវិញ (Reset 2px)">↺</button>
+                <button type="button" id="btnExpandReportRows" class="btn btn-outline btn-xs" style="padding: 1px 5px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="ពង្រីកកម្ពស់ជួរដេក (Expand +0.5px)">➕ ពង្រីក</button>
+                <input type="range" id="reportRowHeightSlider" min="0" max="20" step="0.5" value="2" style="width: 60px; height: 12px; cursor: pointer; accent-color: #2563eb;" title="អូស Mouse ដើម្បីពង្រីក/បង្រួមកម្ពស់ជួរដេក">
+                <button type="button" id="btnResetReportRows" class="btn btn-secondary btn-xs" style="padding: 0 4px; font-size: 10px; border-radius: 3px;" title="កំណត់កម្ពស់ដើមវិញ (Reset 2px)">↺</button>
               </div>
-              <button id="btnDirectPrint" class="btn btn-primary btn-sm" type="button">
+              <button id="btnDirectPrint" class="btn btn-primary btn-sm" type="button" style="padding: 2px 10px; font-size: 11.5px;">
                 🖨️ បោះពុម្ពឥឡូវនេះ (Print / PDF)
               </button>
             </div>
           </div>
 
-          <!-- Station Selector Toolbar (4 parts identical to scoring page) -->
-          <div class="filter-bar" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-top: 8px;">
-            <div style="width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+          <!-- Station Selector Toolbar (Compact & Tight) -->
+          <div class="filter-bar" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px; margin-top: 2px;">
+            <div style="width: 100%; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end;">
               <!-- 1. ក្រុង/ស្រុក -->
-              <div style="flex: 1; min-width: 170px;">
-                <label id="reportDistrictLabel" class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+              <div style="flex: 1; min-width: 150px;">
+                <label id="reportDistrictLabel" class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 1px; font-size: 11px; display: block;">
                   🏛️ ក្រុង/ស្រុក (District)
                 </label>
-                <select id="reportDistrictFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc;" title="ជ្រើសរើសក្រុង/ស្រុក">
+                <select id="reportDistrictFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc; height: 30px; font-size: 12px; padding: 2px 6px;" title="ជ្រើសរើសក្រុង/ស្រុក">
                   <option value="">-- ជ្រើសរើសក្រុង/ស្រុក --</option>
                 </select>
               </div>
 
               <!-- 2. ឃុំ/សង្កាត់ -->
-              <div style="flex: 1.2; min-width: 190px;">
-                <label id="reportCommuneLabel" class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+              <div style="flex: 1.2; min-width: 170px;">
+                <label id="reportCommuneLabel" class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 1px; font-size: 11px; display: block;">
                   🏘️ ឃុំ/សង្កាត់ (Commune)
                 </label>
-                <select id="reportCommuneFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc;" title="ជ្រើសរើសឃុំ/សង្កាត់">
+                <select id="reportCommuneFilter" class="form-control" style="font-weight: 600; border-color: #93c5fd; background-color: #f8fafc; height: 30px; font-size: 12px; padding: 2px 6px;" title="ជ្រើសរើសឃុំ/សង្កាត់">
                   <option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>
                 </select>
               </div>
 
               <!-- 3. កូដការិយាល័យ -->
-              <div style="flex: 1.2; min-width: 220px;">
-                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+              <div style="flex: 1.2; min-width: 200px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 1px; font-size: 11px; display: block;">
                   🔢 កូដការិយាល័យ (Code)
                 </label>
-                <div style="display: flex; gap: 6px;">
-                  <input type="text" id="reportCodeInput" list="reportCodeDatalist" class="form-control" placeholder="វាយកូដ..." style="width: 105px; font-weight: 800; font-size: 15px; text-align: center; color: #1e40af; border: 2px solid #2563eb; background: #eff6ff;" title="វាយលេខកូដការិយាល័យ" autocomplete="off">
+                <div style="display: flex; gap: 4px;">
+                  <input type="text" id="reportCodeInput" list="reportCodeDatalist" class="form-control" placeholder="វាយកូដ..." style="width: 95px; height: 30px; font-weight: 800; font-size: 13.5px; text-align: center; color: #1e40af; border: 2px solid #2563eb; background: #eff6ff; padding: 2px 4px;" title="វាយលេខកូដការិយាល័យ" autocomplete="off">
                   <datalist id="reportCodeDatalist"></datalist>
-                  <select id="reportCodeSelect" class="form-control" style="font-weight: 700; border-color: #93c5fd; flex: 1;" title="ជ្រើសរើសលេខកូដការិយាល័យ">
+                  <select id="reportCodeSelect" class="form-control" style="font-weight: 700; border-color: #93c5fd; flex: 1; height: 30px; font-size: 12px; padding: 2px 6px;" title="ជ្រើសរើសលេខកូដការិយាល័យ">
                   </select>
                 </div>
               </div>
 
               <!-- 4. ឈ្មោះទីតាំងការិយាល័យ -->
-              <div style="flex: 2; min-width: 260px;">
-                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 6px; display: block;">
+              <div style="flex: 2; min-width: 230px;">
+                <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 1px; font-size: 11px; display: block;">
                   📍 ឈ្មោះទីតាំងការិយាល័យ (Location)
                 </label>
-                <select id="reportLocationSelect" class="form-control" style="font-weight: 600; border-color: #93c5fd; color: #0f172a;" title="ទីតាំងការិយាល័យ">
+                <select id="reportLocationSelect" class="form-control" style="font-weight: 600; border-color: #93c5fd; color: #0f172a; height: 30px; font-size: 12px; padding: 2px 6px;" title="ទីតាំងការិយាល័យ">
                 </select>
               </div>
             </div>
@@ -495,32 +495,33 @@
             <input type="hidden" id="reportStationSelect" value="">
             <input type="hidden" id="reportTypeSelect" value="sortlist">
 
-            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed #e2e8f0; margin-top: 10px;">
-              <span id="reportActiveStationInfo" style="font-size: 13px; color: #1d4ed8; font-weight: 700;"></span>
-              <span id="reportStatusHint" style="font-size: 12px; color: #475569; font-weight: 500;">
+            <!-- Active Station Info & Hint Bar (Compact with No Wasted Space) -->
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding-top: 2px; border-top: 1px dashed #cbd5e1; margin-top: 3px;">
+              <span id="reportActiveStationInfo" style="font-size: 11.5px; color: #1d4ed8; font-weight: 700; line-height: 1.2;"></span>
+              <span id="reportStatusHint" style="font-size: 11px; color: #475569; font-weight: 500; line-height: 1.2;">
                 💡 ចុចលើ Tab សន្លឹកនីមួយៗ (១ ដល់ ៦) ខាងលើដើម្បីមើល ឬបោះពុម្ព
               </span>
             </div>
           </div>
         </div>
 
-        <!-- Toolbar for Automatic Lunar & Solar Dates (Hidden in Print) -->
-        <div class="card no-print" id="reportDateToolbarCard" style="margin-bottom: 6px; padding: 8px 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 ជ្រើសរើសកាលបរិច្ឆេទ ៖</span>
-              <input type="date" id="reportSolarDatePicker" class="form-control form-control-sm" style="font-size: 12px; padding: 3px 6px; width: 135px; border-color: #3b82f6;" title="ជ្រើសរើសថ្ងៃខែឆ្នាំ ដើម្បីគណនាចន្ទគតិ និងសុរិយគតិស្វ័យប្រវត្តិ">
-              <button type="button" id="btnAutoFillDate" class="btn btn-primary btn-sm" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;" title="យកថ្ងៃនេះ">
+        <!-- Toolbar for Automatic Lunar & Solar Dates (Compact) -->
+        <div class="card no-print" id="reportDateToolbarCard" style="margin-top: 2px; margin-bottom: 4px; padding: 4px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 11.5px; font-weight: 700; color: #1e293b; white-space: nowrap;">📅 ជ្រើសរើសកាលបរិច្ឆេទ ៖</span>
+              <input type="date" id="reportSolarDatePicker" class="form-control form-control-sm" style="font-size: 11.5px; padding: 2px 5px; height: 26px; width: 130px; border-color: #3b82f6;" title="ជ្រើសរើសថ្ងៃខែឆ្នាំ ដើម្បីគណនាចន្ទគតិ និងសុរិយគតិស្វ័យប្រវត្តិ">
+              <button type="button" id="btnAutoFillDate" class="btn btn-primary btn-sm" style="padding: 2px 7px; font-size: 11px; height: 26px; white-space: nowrap;" title="យកថ្ងៃនេះ">
                 ⚡ ថ្ងៃនេះ
               </button>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 250px;">
-              <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">☀️ សុរិយគតិ ៖</span>
-              <input type="text" id="reportSolarDateInput" class="form-control form-control-sm" style="font-size: 12px; padding: 4px 8px; flex: 1;" placeholder="ថ្ងៃទី... ខែ... ឆ្នាំ...">
+            <div style="display: flex; align-items: center; gap: 5px; flex: 1; min-width: 240px;">
+              <span style="font-size: 11.5px; font-weight: 700; color: #1e293b; white-space: nowrap;">☀️ សុរិយគតិ ៖</span>
+              <input type="text" id="reportSolarDateInput" class="form-control form-control-sm" style="font-size: 11.5px; padding: 2px 6px; height: 26px; flex: 1;" placeholder="ថ្ងៃទី... ខែ... ឆ្នាំ...">
             </div>
-            <div style="display: flex; align-items: center; gap: 6px; flex: 1.3; min-width: 280px;">
-              <span style="font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap;">🌙 ចន្ទគតិ ៖</span>
-              <input type="text" id="reportLunarDateInput" class="form-control form-control-sm" style="font-size: 12px; padding: 4px 8px; flex: 1;" placeholder="ថ្ងៃ... ខែ... ឆ្នាំ... ព.ស....">
+            <div style="display: flex; align-items: center; gap: 5px; flex: 1.3; min-width: 260px;">
+              <span style="font-size: 11.5px; font-weight: 700; color: #1e293b; white-space: nowrap;">🌙 ចន្ទគតិ ៖</span>
+              <input type="text" id="reportLunarDateInput" class="form-control form-control-sm" style="font-size: 11.5px; padding: 2px 6px; height: 26px; flex: 1;" placeholder="ថ្ងៃ... ខែ... ឆ្នាំ... ព.ស....">
             </div>
           </div>
         </div>
@@ -1078,6 +1079,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261017_row_input_v38"></script>
+  <script src="js/app.js?v=20261017_compact_decimal_v39"></script>
 </body>
 </html>
