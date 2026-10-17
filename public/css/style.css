@@ -1883,6 +1883,42 @@ tr.excel-row-active td.excel-calc-rank {
   line-height: 1.4;
 }
 
+/* Editable Signature Section Hover & Focus Styles */
+.editable-sig-committee,
+.editable-sig-role,
+.editable-sig-committee-list,
+.editable-sig-date {
+  outline: none;
+  border-radius: 4px;
+  padding: 1px 4px;
+  transition: all 0.2s ease;
+}
+
+.editable-sig-committee:hover,
+.editable-sig-committee:focus,
+.editable-sig-role:hover,
+.editable-sig-role:focus,
+.editable-sig-committee-list:hover,
+.editable-sig-committee-list:focus,
+.editable-sig-date:hover,
+.editable-sig-date:focus {
+  background-color: rgba(59, 130, 246, 0.06);
+  box-shadow: 0 0 0 1px #93c5fd;
+  cursor: text;
+}
+
+@media print {
+  .editable-sig-committee,
+  .editable-sig-role,
+  .editable-sig-committee-list,
+  .editable-sig-date {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
+
 /* Item 4: Interactive Logo Container (Move, Resize, Upload) */
 .report-logo-wrapper {
   position: relative;

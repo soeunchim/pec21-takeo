@@ -508,12 +508,18 @@ function setupEventListeners() {
     if (typeof removePausedBannersBeforePrint === 'function') {
       removePausedBannersBeforePrint();
     }
+    if (typeof syncReportSignaturesBeforePrint === 'function') {
+      syncReportSignaturesBeforePrint();
+    }
     window.print();
   });
 
   window.addEventListener('beforeprint', () => {
     if (typeof removePausedBannersBeforePrint === 'function') {
       removePausedBannersBeforePrint();
+    }
+    if (typeof syncReportSignaturesBeforePrint === 'function') {
+      syncReportSignaturesBeforePrint();
     }
   });
 
@@ -6667,6 +6673,7 @@ async function renderReportPreview() {
   container.innerHTML = reportContentHtml;
   setupReportLogoInteractions();
   setupReportDateInteractions();
+  setupReportSignatureInteractions();
 }
 
 function sanitizeCandidateText(text) {
@@ -6813,10 +6820,10 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
   if (reportType === 'sortlist') {
     // Report 1: 5-Member Committee Signatures Centered
     signatureContent = `
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
+        <div class="editable-sig-committee" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលចំណងជើងគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
           គណៈកម្មការសម្រាំងជ្រើសរើស គ.ក.ប
         </div>
-        <div class="committee-signatures" style="display: inline-block; text-align: left; font-size: 9.5pt; line-height: 2.1; margin: 0 auto; white-space: nowrap;">
+        <div class="committee-signatures editable-sig-committee-list" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលសមាសភាពគណៈកម្មការ" style="display: inline-block; text-align: left; font-size: 9.5pt; line-height: 2.1; margin: 0 auto; white-space: nowrap;">
           <div style="display: flex; align-items: baseline; white-space: nowrap;">
             <span style="width: 26px;">១-</span>
             <span style="width: 140px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
@@ -6850,12 +6857,12 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
         </div>
     `;
   } else {
-    // Reports 2-5: ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប / ប្រធាន (Centered)
+    // Reports 2-6: ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប / ប្រធាន (Centered)
     signatureContent = `
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 4px; color: #000; text-align: center;">
+        <div class="editable-sig-committee" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 4px; color: #000; text-align: center;">
           ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប
         </div>
-        <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 35px; color: #000; text-align: center;">
+        <div class="editable-sig-role" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលមុខតំណែង" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 35px; color: #000; text-align: center;">
           ប្រធាន
         </div>
     `;
@@ -6981,6 +6988,35 @@ function setupReportDateInteractions() {
       getAllSolarDates().forEach(targetEl => targetEl.textContent = val);
     };
   });
+}
+
+function setupReportSignatureInteractions() {
+  const syncElements = (selector) => {
+    const screenEl = document.querySelector(`.report-screen-view ${selector}`);
+    const printEls = document.querySelectorAll(`.report-print-view ${selector}`);
+    if (screenEl && printEls.length > 0) {
+      screenEl.oninput = screenEl.onblur = () => {
+        printEls.forEach(pel => pel.innerHTML = screenEl.innerHTML);
+      };
+    }
+  };
+
+  syncElements('.editable-sig-committee');
+  syncElements('.editable-sig-committee-list');
+  syncElements('.editable-sig-role');
+}
+
+function syncReportSignaturesBeforePrint() {
+  const sync = (selector) => {
+    const screenEl = document.querySelector(`.report-screen-view ${selector}`);
+    const printEls = document.querySelectorAll(`.report-print-view ${selector}`);
+    if (screenEl && printEls.length > 0) {
+      printEls.forEach(pel => pel.innerHTML = screenEl.innerHTML);
+    }
+  };
+  sync('.editable-sig-committee');
+  sync('.editable-sig-committee-list');
+  sync('.editable-sig-role');
 }
 
 function exportCurrentReportToExcel() {
