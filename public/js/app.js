@@ -361,6 +361,7 @@ function showAppShell() {
     if (btnAddStation) btnAddStation.style.display = 'inline-flex';
     if (btnBatchCommune) btnBatchCommune.style.display = 'inline-flex';
   }
+  updateDuplicateBadgeCount();
 }
 
 window.handleLoginSubmit = async function(e) {
@@ -479,6 +480,7 @@ function setupEventListeners() {
       if (targetId === 'tabDashboard') loadDashboardStats();
       if (targetId === 'tabPollingStations') renderPollingStationsTable();
       if (targetId === 'tabScoring') renderScoringTableForActiveStation();
+      if (targetId === 'tabDuplicates') loadDuplicateCandidatesList();
       if (targetId === 'tabReports') {
         syncScoringStationToReports();
         renderReportPreview();
@@ -2763,6 +2765,288 @@ async function checkCandidateDuplicateRow(tr) {
   }
 }
 
+// ==============================================================================
+// TAB: DUPLICATE CANDIDATES MANAGEMENT (បញ្ជីបេក្ខជនស្ទួនទូទាំងខេត្ត)
+// ==============================================================================
+
+let currentDuplicateGroups = [];
+
+function escapeJs(str) {
+  return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+async function updateDuplicateBadgeCount() {
+  try {
+    const res = await fetch('/api/candidates/duplicates');
+    if (!res.ok) return;
+    const data = await res.json();
+    const count = data.totalDuplicates || 0;
+    const badge = document.getElementById('duplicateBadgeCount');
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = toKhmerNum(count);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    const headerBadge = document.getElementById('dupCountBadge');
+    if (headerBadge) {
+      headerBadge.textContent = `ស្ទួនសរុប ៖ ${toKhmerNum(count)} នាក់ (${toKhmerNum(data.totalGroups || 0)} ក្រុម)`;
+    }
+  } catch (e) {
+    console.error('Error updating duplicate badge:', e);
+  }
+}
+
+async function loadDuplicateCandidatesList() {
+  const container = document.getElementById('duplicateListContainer');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;">
+      ⏳ កំពុងទាញយកទិន្នន័យបេក្ខជនស្ទួន...
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/candidates/duplicates');
+    if (!res.ok) throw new Error('Failed to fetch duplicates');
+    const data = await res.json();
+    currentDuplicateGroups = data.groups || [];
+
+    const badge = document.getElementById('duplicateBadgeCount');
+    if (badge) {
+      const count = data.totalDuplicates || 0;
+      if (count > 0) {
+        badge.textContent = toKhmerNum(count);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    const headerBadge = document.getElementById('dupCountBadge');
+    if (headerBadge) {
+      headerBadge.textContent = `ស្ទួនសរុប ៖ ${toKhmerNum(data.totalDuplicates || 0)} នាក់ (${toKhmerNum(data.totalGroups || 0)} ក្រុម)`;
+    }
+
+    renderDuplicateCandidates(currentDuplicateGroups);
+  } catch (err) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 30px; color: #dc2626;">
+        ❌ មានបញ្ហាក្នុងការទាញយកទិន្នន័យ ៖ ${err.message}
+      </div>
+    `;
+  }
+}
+
+function renderDuplicateCandidates(groups) {
+  const container = document.getElementById('duplicateListContainer');
+  if (!container) return;
+
+  if (!groups || groups.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 50px 20px; background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 12px;">
+        <div style="font-size: 42px; margin-bottom: 12px;">🎉</div>
+        <div style="font-size: 16px; font-weight: 700; color: #166534; margin-bottom: 6px;">
+          មិនមានបេក្ខជនស្ទួនក្នុងប្រព័ន្ធឡើយ! (No Duplicate Candidates)
+        </div>
+        <div style="font-size: 13px; color: #15803d;">
+          បេក្ខជនទាំងអស់ក្នុងប្រព័ន្ធមានភាពត្រឹមត្រូវ និងគ្មានឈ្មោះស្ទួនឆ្លងកាត់ការិយាល័យឡើយ។
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  groups.forEach((g, gIdx) => {
+    const genderText = g.gender === 'ប' ? 'ប្រុស' : 'ស្រី';
+    const dobFormatted = formatKhmerDate(g.dob);
+
+    html += `
+      <div class="dup-group-card" style="margin-bottom: 24px; border: 1.5px solid #fca5a5; border-radius: 10px; overflow: hidden; background: #ffffff; box-shadow: 0 3px 10px rgba(220,38,38,0.07);">
+        <!-- Group Header -->
+        <div style="background: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%); padding: 12px 18px; border-bottom: 1.5px solid #fecdd3; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="background: #dc2626; color: #ffffff; font-weight: 700; font-size: 12px; padding: 3px 8px; border-radius: 6px;">
+              ក្រុមទី ${toKhmerNum(gIdx + 1)}
+            </span>
+            <span style="font-size: 15px; font-weight: 700; color: #991b1b;">
+              👤 គោត្តនាម-នាម ៖ ${g.name}
+            </span>
+            <span style="color: #cbd5e1; font-size: 13px;">|</span>
+            <span style="font-size: 13px; color: #334155;">
+              <strong>ភេទ ៖</strong> ${genderText}
+            </span>
+            <span style="color: #cbd5e1; font-size: 13px;">|</span>
+            <span style="font-size: 13px; color: #334155;">
+              <strong>ថ្ងៃខែឆ្នាំកំណើត ៖</strong> <span style="font-weight: 700; color: #0f172a;">${dobFormatted}</span>
+            </span>
+          </div>
+          <div>
+            <span style="font-size: 12.5px; font-weight: 700; background: #ffffff; color: #dc2626; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              ⚠️ រកឃើញស្ទួនចំនួន ${toKhmerNum(g.count)} ការិយាល័យ
+            </span>
+          </div>
+        </div>
+
+        <!-- Group Candidate Rows Table -->
+        <div class="table-responsive" style="margin: 0; padding: 0;">
+          <table class="table-custom" style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 0;">
+            <thead>
+              <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: 12px;">
+                <th style="padding: 9px 8px; text-align: center; width: 45px;">ល.រ</th>
+                <th style="padding: 9px 10px; text-align: left;">ក្រុង/ស្រុក</th>
+                <th style="padding: 9px 10px; text-align: left;">ឃុំ/សង្កាត់</th>
+                <th style="padding: 9px 10px; text-align: left;">ការិយាល័យបោះឆ្នោត</th>
+                <th style="padding: 9px 10px; text-align: left;">មុខតំណែង</th>
+                <th style="padding: 9px 8px; text-align: center;">ទូរស័ព្ទ</th>
+                <th style="padding: 9px 6px; text-align: center; width: 65px;">ពិន្ទុសម្រាំង</th>
+                <th style="padding: 9px 6px; text-align: center; width: 65px;">សម្ភាសន៍</th>
+                <th style="padding: 9px 6px; text-align: center; width: 65px;">សរុប</th>
+                <th style="padding: 9px 6px; text-align: center; width: 55px;">ចំណាត់ថ្នាក់</th>
+                <th style="padding: 9px 8px; text-align: center; width: 85px;">លទ្ធផល</th>
+                <th style="padding: 9px 10px; text-align: center; width: 140px;">សកម្មភាព</th>
+              </tr>
+            </thead>
+            <tbody>
+    `;
+
+    g.candidates.forEach((c, cIdx) => {
+      const orderNum = toKhmerNum(cIdx + 1);
+      const stCode = c.pollingStationCode ? String(c.pollingStationCode).padStart(4, '0') : '';
+      const stDisplay = c.pollingStationName || (stCode ? `ការិយាល័យលេខ ${toKhmerNum(stCode)}` : 'មិនបានបញ្ជាក់');
+      const roleText = c.role ? `${c.role} (លេខរៀងទី ${toKhmerNum(c.orderInRole || 1)})` : '---';
+
+      let statusBadge = '<span class="badge badge-reserve">---</span>';
+      if (c.status === 'A-ជាប់') statusBadge = '<span class="badge badge-passed">A-ជាប់</span>';
+      else if (c.status === 'B-បម្រុង') statusBadge = '<span class="badge badge-reserve">B-បម្រុង</span>';
+      else if (c.status === 'C-បម្រុងបន្ទាប់') statusBadge = '<span class="badge badge-reserve2">C-បម្រុងបន្ទាប់</span>';
+      else if (c.status === 'អវត្តមាន') statusBadge = '<span class="badge badge-absent">អវត្តមាន</span>';
+
+      const interviewText = c.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (c.scoreInterview !== '' && c.scoreInterview !== undefined ? toKhmerNum(c.scoreInterview) : '---');
+      const totalText = c.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (c.scoreTotal !== '' && c.scoreTotal !== undefined ? toKhmerNum(c.scoreTotal) : '---');
+
+      html += `
+        <tr style="border-bottom: 1px solid #f1f5f9; background: #ffffff;">
+          <td style="text-align: center; padding: 10px 6px; font-weight: 700; color: #64748b;">${orderNum}</td>
+          <td style="padding: 10px 8px; font-weight: 600; color: #1e293b;">${c.district || '---'}</td>
+          <td style="padding: 10px 8px; color: #334155;">${c.communeName || '---'}</td>
+          <td style="padding: 10px 8px; color: #0f172a; font-weight: 600;">
+            ${stDisplay} ${stCode ? `<span style="font-size: 11px; color: #64748b; font-weight: normal;">[កូដ: ${toKhmerNum(stCode)}]</span>` : ''}
+          </td>
+          <td style="padding: 10px 8px; color: #0284c7; font-weight: 600;">${roleText}</td>
+          <td style="text-align: center; padding: 10px 6px;">${c.phone ? formatKhmerPhoneNumber(c.phone) : '---'}</td>
+          <td style="text-align: center; padding: 10px 6px; font-weight: 700; color: #047857;">${toKhmerNum(c.scoreShortlist || 0)}</td>
+          <td style="text-align: center; padding: 10px 6px; font-weight: 700; color: #b45309;">${interviewText}</td>
+          <td style="text-align: center; padding: 10px 6px; font-weight: 700; color: #1e293b;">${totalText}</td>
+          <td style="text-align: center; padding: 10px 6px; font-weight: 700; color: #4338ca;">${toKhmerNum(c.rank || c.orderInRole || 1)}</td>
+          <td style="text-align: center; padding: 10px 6px;">${statusBadge}</td>
+          <td style="text-align: center; padding: 10px 8px;">
+            <button type="button" class="btn btn-sm" style="background: #dc2626; color: #ffffff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(220,38,38,0.25); cursor: pointer;"
+              onclick="deleteDuplicateCandidate('${c.id}', '${escapeJs(c.name)}', '${escapeJs(stDisplay)}')">
+              <span>🗑️</span> <span>លុបចេញ</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function filterDuplicateCandidatesList() {
+  const query = normKhmerText(document.getElementById('dupSearchInput')?.value || '');
+  if (!query) {
+    renderDuplicateCandidates(currentDuplicateGroups);
+    return;
+  }
+
+  const filtered = currentDuplicateGroups.filter(g => {
+    if (normKhmerText(g.name).includes(query)) return true;
+    if (g.dob && g.dob.includes(query)) return true;
+    return g.candidates.some(c => {
+      const dist = normKhmerText(c.district || '');
+      const com = normKhmerText(c.communeName || '');
+      const st = normKhmerText(c.pollingStationName || '');
+      const code = String(c.pollingStationCode || '');
+      return dist.includes(query) || com.includes(query) || st.includes(query) || code.includes(query);
+    });
+  });
+
+  renderDuplicateCandidates(filtered);
+}
+
+async function deleteDuplicateCandidate(candId, candName, stationName) {
+  if (!candId) return;
+
+  const msgHtml = `
+    <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
+      <div style="font-weight: 700; color: #b91c1c; margin-bottom: 8px; font-size: 15px;">
+        ⚠️ លុបបេក្ខជនស្ទួនចេញពីការិយាល័យ
+      </div>
+      <div style="margin-bottom: 12px; color: #1e293b;">
+        តើលោកអ្នកពិតជាចង់លុបបេក្ខជន <strong>«${candName}»</strong> ចេញពី <strong>«${stationName}»</strong> មែនទេ?
+      </div>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; color: #166534; line-height: 1.6;">
+        👉 <strong>ចំណាំ ៖</strong> នៅពេលលុបបេក្ខជននេះចេញ បេក្ខជនម្នាក់ទៀតដែលនៅសល់នឹង<strong>លែងស្ទួន</strong> ហើយប្រព័ន្ធនឹង<strong>ដោះ High Light ពណ៌ក្រហមចេញវិញ</strong>ដោយស្វ័យប្រវត្តិ!
+      </div>
+    </div>
+  `;
+
+  const confirmed = await showModernPopup({
+    title: 'លុបបេក្ខជនស្ទួន',
+    message: msgHtml,
+    type: 'danger',
+    icon: '🗑️',
+    showCancel: true,
+    confirmText: 'លុបចេញ',
+    cancelText: 'បោះបង់',
+    isDanger: true,
+    isWide: false
+  });
+
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch('/api/candidates/' + candId, {
+      method: 'DELETE'
+    });
+    const result = await res.json();
+    if (!result.success) throw new Error(result.message || 'បរាជ័យក្នុងការលុប');
+
+    showModernAlert('✅ បានលុបបេក្ខជនដោយជោគជ័យ! បេក្ខជនម្នាក់ទៀតដែលនៅសល់ត្រូវបានដោះ High Light ក្រហមចេញវិញរួចរាល់។', {
+      title: 'ជោគជ័យ',
+      type: 'success'
+    });
+
+    // Reload duplicate candidates list
+    await loadDuplicateCandidatesList();
+    await updateDuplicateBadgeCount();
+
+    // If active scoring station is open, refresh scoring table so highlights update immediately
+    const activeStationId = document.getElementById('scoringStationSelect')?.value;
+    if (activeStationId) {
+      renderScoringTableForActiveStation();
+    }
+  } catch (err) {
+    showModernAlert('មានបញ្ហាក្នុងការលុប ៖ ' + err.message, {
+      title: 'កំហុស',
+      type: 'danger'
+    });
+  }
+}
+
 function hasCandidateRowData(tr) {
   if (!tr) return false;
   const name = tr.querySelector('.cand-name')?.value?.trim() || '';
@@ -3288,6 +3572,15 @@ window.clearCandidateRow = async function(btn) {
     let cand = currentCandidates.find(c => c.id === candId);
     if (cand) cand.isDuplicate = false;
 
+    // Delete candidate directly on server if already stored
+    if (candId && !candId.startsWith('temp_')) {
+      try {
+        await fetch('/api/candidates/' + candId, { method: 'DELETE' });
+      } catch (err) {
+        console.error('Error deleting candidate from server in clearCandidateRow:', err);
+      }
+    }
+
     tr.querySelector('.cand-name').value = '';
     tr.querySelector('.cand-gender').value = 'ប';
     tr.querySelector('.cand-dob').value = '';
@@ -3304,6 +3597,40 @@ window.clearCandidateRow = async function(btn) {
 
     onCandidateRowChange(tr.querySelector('.cand-name'));
     updateRowDeleteButtonState(tr);
+    updateDuplicateBadgeCount();
+
+    // Check if other rows in the active table also lost their duplicate status
+    const allRows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
+    allRows.forEach(async otherTr => {
+      if (otherTr.classList.contains('duplicate-highlight-row')) {
+        const oName = otherTr.querySelector('.cand-name')?.value?.trim();
+        const oGender = otherTr.querySelector('.cand-gender')?.value;
+        const oDob = otherTr.querySelector('.cand-dob')?.value?.trim();
+        if (oName && oDob) {
+          try {
+            const checkRes = await fetch('/api/candidates/check-duplicate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: oName,
+                gender: oGender,
+                dob: oDob,
+                excludeId: otherTr.getAttribute('data-cand-id')
+              })
+            });
+            const checkData = await checkRes.json();
+            if (checkData && !checkData.isDuplicate) {
+              otherTr.classList.remove('duplicate-highlight-row');
+              delete otherTr.dataset.isDuplicate;
+              delete otherTr.dataset.dupConfirmedSig;
+              const oId = otherTr.getAttribute('data-cand-id');
+              let oCand = currentCandidates.find(c => c.id === oId);
+              if (oCand) oCand.isDuplicate = false;
+            }
+          } catch(e) {}
+        }
+      }
+    });
   }
 };
 
@@ -3382,6 +3709,7 @@ async function saveBatchScores() {
     }, 2500);
 
     await renderScoringTableForActiveStation();
+    await updateDuplicateBadgeCount();
     await checkCloudStatus();
   } catch (err) {
     alert('មានបញ្ហាក្នុងការរក្សាទុក៖ ' + err.message);

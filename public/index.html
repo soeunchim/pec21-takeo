@@ -91,6 +91,7 @@
       <button class="tab-btn active" data-tab="tabDashboard">📊 ផ្ទាំងព័ត៌មាន (Dashboard)</button>
       <button class="tab-btn" data-tab="tabPollingStations">🏛️ ការិយាល័យបោះឆ្នោត (Stations)</button>
       <button class="tab-btn" data-tab="tabScoring">📝 បញ្ចូលឈ្មោះបេក្ខជន និងពិន្ទុ</button>
+      <button class="tab-btn" id="tabDuplicatesNav" data-tab="tabDuplicates">⚠️ បញ្ជីបេក្ខជនស្ទួន <span id="duplicateBadgeCount" class="badge" style="background:#dc2626;color:#fff;border-radius:10px;padding:2px 7px;font-size:11px;display:none;margin-left:4px;">0</span></button>
       <button class="tab-btn" data-tab="tabReports">🖨️ បោះពុម្ពរបាយការណ៍ (Print Forms)</button>
       <button class="tab-btn" id="tabUsersNav" data-tab="tabUsers">👥 គ្រប់គ្រងគណនី (Users)</button>
       <button class="tab-btn" id="tabSettingsNav" data-tab="tabSettings">⚙️ ការកំណត់ & Cloud (Settings)</button>
@@ -350,6 +351,37 @@
                 <!-- Dynamically grouped by 6 positions -->
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB: DUPLICATE CANDIDATES LIST (បញ្ជីបេក្ខជនស្ទួនទូទាំងខេត្ត)
+           ===================================================================== -->
+      <section id="tabDuplicates" class="page-section">
+        <div class="card" style="box-shadow: 0 4px 15px rgba(0,0,0,0.06); border-radius: 12px; border: 1px solid #cbd5e1;">
+          <div class="card-header" style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-bottom: 2px solid #fecdd3; padding: 14px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <h3 class="card-title" style="margin: 0; color: #991b1b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                <span>⚠️</span> <span>បញ្ជីបេក្ខជនស្ទួនទូទាំងខេត្ត (Duplicate Candidates List)</span>
+              </h3>
+              <span id="dupCountBadge" class="badge" style="font-size: 13px; font-weight: 700; background: #dc2626; color: #ffffff; padding: 4px 12px; border-radius: 20px; box-shadow: 0 2px 5px rgba(220,38,38,0.3);">
+                ស្ទួនសរុប ៖ ០ នាក់ (០ ក្រុម)
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <input type="text" id="dupSearchInput" class="form-control form-control-sm" placeholder="🔍 ស្វែងរកតាមឈ្មោះ, ស្រុក, ឃុំ, កូដ..." style="width: 260px; font-size: 13px; border-radius: 6px; padding: 6px 12px;" oninput="filterDuplicateCandidatesList()">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="loadDuplicateCandidatesList()" style="display: flex; align-items: center; gap: 5px; font-weight: 600;">
+                🔄 ផ្ទុកឡើងវិញ
+              </button>
+            </div>
+          </div>
+          <div class="card-body" style="padding: 20px;">
+            <div id="duplicateListContainer">
+              <div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;">
+                ⏳ កំពុងទាញយកទិន្នន័យបេក្ខជនស្ទួន...
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -995,6 +1027,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261016_status_left_v9"></script>
+  <script src="js/app.js?v=20261017_dup_tab_v10"></script>
 </body>
 </html>

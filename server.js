@@ -78,6 +78,9 @@ function loadLocalDatabase() {
       db.candidates = [];
     }
     normalizeDatabase();
+    if (refreshDuplicateStatuses()) {
+      saveLocalDatabase();
+    }
   } catch (err) {
     console.error('[DB] Load error:', err.message);
   }
@@ -175,6 +178,67 @@ function normalizeDatabase() {
       if (!c.district) c.district = st.district;
     }
   });
+}
+
+function normCandidateName(str) {
+  if (!str) return '';
+  return String(str).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/\s+/g, ' ');
+}
+
+function normCandidateDob(val) {
+  if (!val) return '';
+  let s = String(val).trim().replace(/[០-៩]/g, d => '០១២៣៤៥៦៧៨៩'.indexOf(d));
+  s = s.replace(/[\/\.]/g, '-');
+  const parts = s.split('-').map(p => p.trim()).filter(Boolean);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+    } else {
+      return parts[0].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[2];
+    }
+  }
+  return s.replace(/[^0-9]/g, '');
+}
+
+function normCandidateGender(g) {
+  if (!g) return 'ប';
+  const s = String(g).trim().toLowerCase();
+  if (s.includes('ស') || s === 'f' || s === 'female' || s.includes('ស្រី')) return 'ស';
+  return 'ប';
+}
+
+function getCandidateSignature(c) {
+  if (!c || !c.name || !c.dob) return '';
+  const n = normCandidateName(c.name);
+  const g = normCandidateGender(c.gender);
+  const d = normCandidateDob(c.dob);
+  if (!n || !d) return '';
+  return `${n}|${g}|${d}`;
+}
+
+function refreshDuplicateStatuses() {
+  if (!db || !Array.isArray(db.candidates)) return false;
+
+  const counts = new Map();
+  db.candidates.forEach(c => {
+    const sig = getCandidateSignature(c);
+    if (sig) {
+      counts.set(sig, (counts.get(sig) || 0) + 1);
+    }
+  });
+
+  let changed = false;
+  db.candidates.forEach(c => {
+    const sig = getCandidateSignature(c);
+    const shouldBeDup = sig ? ((counts.get(sig) || 0) > 1) : false;
+    if (!!c.isDuplicate !== shouldBeDup) {
+      c.isDuplicate = shouldBeDup;
+      c.updatedAt = new Date().toISOString();
+      changed = true;
+    }
+  });
+
+  return changed;
 }
 
 // Google Sheets Sync Functions
@@ -1323,6 +1387,76 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { success: true });
     }
 
+    // 11.3 GET /api/candidates/duplicates (List all grouped duplicate candidates)
+    if (pathname === '/api/candidates/duplicates' && req.method === 'GET') {
+      refreshDuplicateStatuses();
+      const all = db.candidates || [];
+      const dupMap = new Map();
+
+      all.forEach(c => {
+        if (!c.isDuplicate) return;
+        const sig = getCandidateSignature(c);
+        if (!sig) return;
+
+        const station = findPollingStation(c.pollingStationId);
+        const commune = (db.communes || []).find(cm => String(cm.code).padStart(3, '0') === String(c.communeCode || (station ? station.communeCode : '')).padStart(3, '0'));
+        const distName = c.district || (station ? station.district : (commune ? commune.district : ''));
+        const comName = c.communeName || (station ? station.communeName : (commune ? commune.name : ''));
+        const stCode = station ? (station.code || station.id) : (c.pollingStationId || '');
+        const stName = station ? (station.name || `ការិយាល័យលេខ ${station.code}`) : '';
+        const loc = station ? (station.location || '') : '';
+
+        const item = {
+          id: c.id,
+          name: c.name,
+          gender: c.gender || 'ប',
+          dob: c.dob,
+          phone: c.phone || '',
+          degree: c.degree || '',
+          role: c.role || '',
+          orderInRole: c.orderInRole || 1,
+          scoreDegree: c.scoreDegree || 0,
+          scoreExp: c.scoreExp || 0,
+          scoreShortlist: c.scoreShortlist || 0,
+          scoreInterview: c.scoreInterview || '',
+          scoreTotal: c.scoreTotal || '',
+          rank: c.rank || c.orderInRole || 1,
+          status: c.status || '',
+          pollingStationId: c.pollingStationId,
+          pollingStationCode: stCode,
+          pollingStationName: stName,
+          location: loc,
+          communeName: comName,
+          district: distName,
+          updatedAt: c.updatedAt || ''
+        };
+
+        if (!dupMap.has(sig)) {
+          dupMap.set(sig, {
+            signature: sig,
+            name: c.name,
+            gender: c.gender || 'ប',
+            dob: c.dob,
+            count: 0,
+            candidates: []
+          });
+        }
+        const group = dupMap.get(sig);
+        group.candidates.push(item);
+        group.count = group.candidates.length;
+      });
+
+      const groups = Array.from(dupMap.values()).filter(g => g.count > 1);
+      const totalDuplicateCandidates = groups.reduce((sum, g) => sum + g.count, 0);
+
+      return sendJSON(res, 200, {
+        success: true,
+        totalGroups: groups.length,
+        totalDuplicates: totalDuplicateCandidates,
+        groups
+      });
+    }
+
     // 12. POST /api/candidates (Add / Upsert Candidate)
     if (pathname === '/api/candidates' && req.method === 'POST') {
       const data = await parseBody(req);
@@ -1391,6 +1525,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       recalculatePollingStationRanks(station.id);
+      refreshDuplicateStatuses();
       saveLocalDatabase(true);
       syncToGoogleSheet('sync_all', { user: currentUser.username });
 
@@ -1542,6 +1677,7 @@ const server = http.createServer(async (req, res) => {
       });
 
       recalculatePollingStationRanks(station.id);
+      refreshDuplicateStatuses();
       saveLocalDatabase(true);
       syncToGoogleSheet('sync_all', { user: currentUser.username });
 
@@ -1564,7 +1700,8 @@ const server = http.createServer(async (req, res) => {
       db.candidates.splice(idx, 1);
 
       recalculatePollingStationRanks(psId);
-      saveLocalDatabase();
+      refreshDuplicateStatuses();
+      saveLocalDatabase(true);
       syncToGoogleSheet('sync_all', { user: currentUser.username });
 
       return sendJSON(res, 200, { success: true, message: 'បានលុបបេក្ខជនជោគជ័យ!' });

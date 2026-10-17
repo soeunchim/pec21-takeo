@@ -30061,31 +30061,5 @@
       "createdAt": "2026-10-14T08:26:03.374Z"
     }
   ],
-  "candidates": [
-    {
-      "id": "cand_ps_001_0001_a1_user",
-      "pollingStationId": "ps_001_0001",
-      "communeCode": "001",
-      "communeName": "អង្គរបូរី",
-      "district": "អង្គរបូរី",
-      "role": "ប្រធាន",
-      "roleCode": "a",
-      "orderInRole": 1,
-      "name": "ជីម សឿន",
-      "gender": "ប",
-      "dob": "11-04-1984",
-      "phone": "097 885 3337",
-      "degree": "បរិញ្ញាបត្រ",
-      "scoreDegree": 8,
-      "experience": "ការិយាល័យ 3 ដង",
-      "scoreExp": 12,
-      "scoreShortlist": 20,
-      "scoreInterview": "",
-      "scoreTotal": "",
-      "rank": 1,
-      "status": "",
-      "notes": "",
-      "updatedAt": "2026-10-16T13:25:28.905Z"
-    }
-  ]
+  "candidates": []
 }
