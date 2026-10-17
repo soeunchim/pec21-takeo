@@ -6635,10 +6635,13 @@ async function renderReportPreview() {
       });
     });
 
-    const bottomClosingHtml = `
-      <div class="final-roster-bottom-breakdown" style="margin-top: 10px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; page-break-inside: avoid; break-inside: avoid;">
-        <div style="font-weight: 700; margin-bottom: 6px;">
+    const bottomFooterHtml = `
+      <div class="final-roster-footer" style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; width: 100%; page-break-inside: avoid; break-inside: avoid;">
+        <div class="final-roster-bottom-breakdown" style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; font-weight: 700; line-height: 1.4; padding-top: 2px;">
           បញ្ឈប់បញ្ជីនេះត្រឹមចំនួន ${toKhmerNum(stats.grandTotal)} នាក់ ក្នុងនោះ ស្រី ${toKhmerNum(stats.grandFemale)} នាក់។
+        </div>
+        <div style="margin-left: auto;">
+          ${getOfficialSignatureBlock(ps, 'results')}
         </div>
       </div>
     `;
@@ -6666,8 +6669,7 @@ async function renderReportPreview() {
             ${rowsHtml}
           </tbody>
         </table>
-        ${bottomClosingHtml}
-        ${getOfficialSignatureBlock(ps, 'results')}
+        ${bottomFooterHtml}
       </div>
     `;
   }

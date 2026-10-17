@@ -1939,6 +1939,11 @@ tr.excel-row-active td.excel-calc-rank {
   }
 }
 
+.final-roster-footer .signature-section {
+  margin-top: 0 !important;
+  width: auto !important;
+}
+
 /* Save Success Toast Notification */
 .pec21-save-toast {
   position: fixed;
