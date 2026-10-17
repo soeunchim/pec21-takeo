@@ -7420,20 +7420,20 @@ function setupAutoPrintPagination() {
     midPageCap = 36;
     lastPageCap = 28;
     singlePageMaxRows = 22;
-  } else if (currentReportType === 'results') {
-    page1Cap = 28;
-    midPageCap = 36;
-    lastPageCap = 28;
+  } else if (currentReportType === 'results' || currentReportType === 'commune_results') {
+    page1Cap = 34;
+    midPageCap = 42;
+    lastPageCap = 38;
     singlePageMaxRows = 24;
   } else if (currentReportType === 'scoresheet') {
-    page1Cap = 28;
-    midPageCap = 36;
-    lastPageCap = 28;
+    page1Cap = 34;
+    midPageCap = 42;
+    lastPageCap = 38;
     singlePageMaxRows = 24;
   } else if (currentReportType === 'attendance') {
-    page1Cap = isLandscape ? 14 : 28;
-    midPageCap = isLandscape ? 18 : 36;
-    lastPageCap = isLandscape ? 14 : 28;
+    page1Cap = isLandscape ? 14 : 34;
+    midPageCap = isLandscape ? 18 : 42;
+    lastPageCap = isLandscape ? 14 : 38;
     singlePageMaxRows = isLandscape ? 12 : 24;
   }
 
