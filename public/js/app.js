@@ -5237,7 +5237,7 @@ function saveReportLogoConfig(cfg) {
   } catch (e) {}
 }
 
-function buildReportLetterheadHtml(ps) {
+function buildReportLetterheadHtml(ps, reportType = '') {
   const distSelect = document.getElementById('reportDistrictFilter');
   const comSelect = document.getElementById('reportCommuneFilter');
   const selDist = distSelect ? distSelect.value : '';
@@ -5260,6 +5260,27 @@ function buildReportLetterheadHtml(ps) {
       jurisdictionLine = getDistrictPrefix(selDist);
     }
   }
+
+  const isFinalRoster = (reportType === 'final_roster');
+  const customInstHeaderKey = isFinalRoster ? 'report_custom_inst_header_final_roster' : 'report_custom_inst_header';
+  const savedHeader = localStorage.getItem(customInstHeaderKey);
+
+  let defaultInstHeader = '';
+  if (isFinalRoster) {
+    defaultInstHeader = `
+      <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
+      <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
+    `;
+  } else {
+    defaultInstHeader = `
+      <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
+      <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
+      <div>${committeeTitle}</div>
+      <div>${jurisdictionLine}</div>
+    `;
+  }
+
+  const instBoxContent = (savedHeader && savedHeader.trim()) ? savedHeader : defaultInstHeader;
 
   return `
     <div class="letterhead" style="width: 100%; margin-bottom: 2px;">
@@ -5289,13 +5310,8 @@ function buildReportLetterheadHtml(ps) {
                 </div>
               </div>
               <!-- Box 1 (Left Institution Header): Left-aligned, Font Khmer OS Muol Light, Size: 10pt -->
-              <div class="report-inst-header-box" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
-                ${(localStorage.getItem('report_custom_inst_header') && localStorage.getItem('report_custom_inst_header').trim()) ? localStorage.getItem('report_custom_inst_header') : `
-                  <div>គណៈកម្មាធិការជាតិរៀបចំការបោះឆ្នោត</div>
-                  <div>គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ</div>
-                  <div>${committeeTitle}</div>
-                  <div>${jurisdictionLine}</div>
-                `}
+              <div class="report-inst-header-box" data-report-type="${reportType || ''}" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
+                ${instBoxContent}
               </div>
             </div>
           </td>
@@ -6623,13 +6639,13 @@ async function renderReportPreview() {
 
         rowsHtml += `
           <tr>
-            <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${khmerRowIdx}</td>
-            <td style="min-width: 170px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; border: 1px solid #000; padding: 3px 6px; font-weight: 600;">${candName}</td>
-            <td class="center" style="width: 45px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${candGender}</td>
-            <td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${role}</td>
-            <td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${communeCol}</td>
-            <td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${districtCol}</td>
-            <td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${stCodeCol}</td>
+            <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${khmerRowIdx}</td>
+            <td style="width: 140px; min-width: 135px; max-width: 145px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; border: 1px solid #000; padding: 3px 6px; font-weight: normal !important; text-align: left;">${candName}</td>
+            <td class="center" style="width: 40px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${candGender}</td>
+            <td style="width: 115px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; border: 1px solid #000; padding: 3px 6px;">${role}</td>
+            <td class="center" style="width: 140px; white-space: nowrap; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${communeCol}</td>
+            <td class="center" style="width: 120px; white-space: nowrap; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${districtCol}</td>
+            <td class="center" style="width: 110px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: center; border: 1px solid #000; padding: 3px 4px;">${stCodeCol}</td>
           </tr>
         `;
       });
@@ -6648,21 +6664,22 @@ async function renderReportPreview() {
 
     reportContentHtml = `
       <div class="print-paper-sheet">
-        <div style="text-align: center; margin-bottom: 10px;">
+        ${buildReportLetterheadHtml(ps, 'final_roster')}
+        <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 4px 0 6px 0;" title="ចំណងជើងរបាយការណ៍ ៖ អាចកែសម្រួលបាន">
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 13pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">បញ្ជីរាយនាម</div>
-          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត (គ.ក.ប) </div>
+          <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត ( គ.ក.ប )</div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
         </div>
-        <table class="final-roster-table official-print-table" style="margin-top: 4px;">
+        <table class="final-roster-table official-print-table" style="width: 100%; border-collapse: collapse; margin-top: 4px;">
           <thead>
             <tr>
-              <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ល.រ</th>
-              <th style="min-width: 170px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">គោត្តនាម និងនាម</th>
-              <th style="width: 45px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
-              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">មុខតំណែង</th>
-              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ឃុំ សង្កាត់</th>
-              <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ក្រុង ស្រុក</th>
-              <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">លេខកូដការិ.</th>
+              <th style="width: 40px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; text-align: center;">ល.រ</th>
+              <th style="width: 140px; min-width: 135px; max-width: 145px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; text-align: center;">គោត្តនាម និងនាម</th>
+              <th style="width: 40px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; text-align: center;">ភេទ</th>
+              <th style="width: 115px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; text-align: center;">មុខតំណែង</th>
+              <th style="width: 140px; white-space: nowrap; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; text-align: center;">ឃុំ សង្កាត់</th>
+              <th style="width: 120px; white-space: nowrap; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; text-align: center;">ក្រុង ស្រុក</th>
+              <th style="width: 110px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; text-align: center;">លេខកូដការិ.</th>
             </tr>
           </thead>
           <tbody>
@@ -7140,8 +7157,11 @@ function setupReportSignatureInteractions() {
     el.onfocus = () => { originalHtml = el.innerHTML.trim(); };
     el.onblur = () => {
       const valHtml = el.innerHTML.trim();
-      localStorage.setItem('report_custom_inst_header', valHtml);
-      document.querySelectorAll('.report-inst-header-box').forEach(target => {
+      const rType = el.getAttribute('data-report-type');
+      const storageKey = (rType === 'final_roster') ? 'report_custom_inst_header_final_roster' : 'report_custom_inst_header';
+      localStorage.setItem(storageKey, valHtml);
+      const selector = (rType === 'final_roster') ? '.report-inst-header-box[data-report-type="final_roster"]' : '.report-inst-header-box:not([data-report-type="final_roster"])';
+      document.querySelectorAll(selector).forEach(target => {
         if (target !== el) target.innerHTML = valHtml;
       });
       if (valHtml !== originalHtml) {
