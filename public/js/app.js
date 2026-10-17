@@ -6818,12 +6818,10 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
 
   let signatureContent = '';
   if (reportType === 'sortlist') {
-    // Report 1: 5-Member Committee Signatures Centered
-    signatureContent = `
-        <div class="editable-sig-committee" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលចំណងជើងគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
-          គណៈកម្មការសម្រាំងជ្រើសរើស គ.ក.ប
-        </div>
-        <div class="committee-signatures editable-sig-committee-list" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលសមាសភាពគណៈកម្មការ" style="display: inline-block; text-align: left; font-size: 9.5pt; line-height: 2.1; margin: 0 auto; white-space: nowrap;">
+    const savedCommittee = localStorage.getItem('report_sig_committee_sortlist');
+    const committeeTitle = (savedCommittee !== null && savedCommittee.trim() !== '') ? savedCommittee : 'គណៈកម្មការសម្រាំងជ្រើសរើស គ.ក.ប';
+    const savedList = localStorage.getItem('report_sig_list_sortlist');
+    const defaultList = `
           <div style="display: flex; align-items: baseline; white-space: nowrap;">
             <span style="width: 26px;">១-</span>
             <span style="width: 140px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
@@ -6854,16 +6852,30 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
             <span style="width: 75px; text-align: left;">សមាជិក</span>
             <span style="width: 120px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
           </div>
+    `;
+    const committeeListHtml = (savedList !== null && savedList.trim() !== '') ? savedList : defaultList;
+
+    signatureContent = `
+        <div class="editable-sig-committee" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលចំណងជើងគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
+          ${committeeTitle}
+        </div>
+        <div class="committee-signatures editable-sig-committee-list" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលសមាសភាពគណៈកម្មការ" style="display: inline-block; text-align: left; font-size: 9.5pt; line-height: 2.1; margin: 0 auto; white-space: nowrap;">
+          ${committeeListHtml}
         </div>
     `;
   } else {
     // Reports 2-6: ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប / ប្រធាន (Centered)
+    const savedCommittee = localStorage.getItem('report_sig_committee_other');
+    const committeeTitle = (savedCommittee !== null && savedCommittee.trim() !== '') ? savedCommittee : 'ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប';
+    const savedRole = localStorage.getItem('report_sig_role_other');
+    const roleTitle = (savedRole !== null && savedRole.trim() !== '') ? savedRole : 'ប្រធាន';
+
     signatureContent = `
         <div class="editable-sig-committee" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 4px; color: #000; text-align: center;">
-          ជ.គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប
+          ${committeeTitle}
         </div>
         <div class="editable-sig-role" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលមុខតំណែង" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 35px; color: #000; text-align: center;">
-          ប្រធាន
+          ${roleTitle}
         </div>
     `;
   }
@@ -6972,38 +6984,128 @@ function setupReportDateInteractions() {
   }
 
   getAllLunarDates().forEach(el => {
+    let orig = el.textContent.trim();
+    el.onfocus = () => { orig = el.textContent.trim(); };
     el.onblur = () => {
       const val = el.textContent.trim();
       setReportDateConfig(val, undefined);
       if (lunarInput) lunarInput.value = val;
       getAllLunarDates().forEach(targetEl => targetEl.textContent = val);
+      if (val !== orig) {
+        showSaveSuccessToast('បានរក្សាទុករួច');
+      }
     };
   });
 
   getAllSolarDates().forEach(el => {
+    let orig = el.textContent.trim();
+    el.onfocus = () => { orig = el.textContent.trim(); };
     el.onblur = () => {
       const val = el.textContent.trim();
       setReportDateConfig(undefined, val);
       if (solarInput) solarInput.value = val;
       getAllSolarDates().forEach(targetEl => targetEl.textContent = val);
+      if (val !== orig) {
+        showSaveSuccessToast('បានរក្សាទុករួច');
+      }
     };
   });
 }
 
+function showSaveSuccessToast(message = 'បានរក្សាទុករួច') {
+  let toast = document.getElementById('pec21SaveToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'pec21SaveToast';
+    toast.className = 'pec21-save-toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span style="font-size: 16px;">✅</span> <span>${message}</span>`;
+  toast.classList.add('show');
+
+  if (toast._timer) clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2200);
+}
+
 function setupReportSignatureInteractions() {
-  const syncElements = (selector) => {
+  const currentReportType = document.getElementById('reportTypeSelect')?.value || 'sortlist';
+
+  // 1. Committee Title
+  document.querySelectorAll('.editable-sig-committee').forEach(el => {
+    let originalText = el.innerText.trim();
+    el.onfocus = () => { originalText = el.innerText.trim(); };
+    el.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        el.blur();
+      }
+    };
+    el.onblur = () => {
+      const val = el.innerText.trim();
+      const storageKey = currentReportType === 'sortlist' ? 'report_sig_committee_sortlist' : 'report_sig_committee_other';
+      localStorage.setItem(storageKey, val);
+      document.querySelectorAll('.editable-sig-committee').forEach(target => {
+        if (target !== el) target.innerText = val;
+      });
+      if (val !== originalText) {
+        showSaveSuccessToast('បានរក្សាទុករួច');
+      }
+    };
+  });
+
+  // 2. Committee List (Report 1 SortList)
+  document.querySelectorAll('.editable-sig-committee-list').forEach(el => {
+    let originalHtml = el.innerHTML.trim();
+    el.onfocus = () => { originalHtml = el.innerHTML.trim(); };
+    el.onblur = () => {
+      const valHtml = el.innerHTML.trim();
+      localStorage.setItem('report_sig_list_sortlist', valHtml);
+      document.querySelectorAll('.editable-sig-committee-list').forEach(target => {
+        if (target !== el) target.innerHTML = valHtml;
+      });
+      if (valHtml !== originalHtml) {
+        showSaveSuccessToast('បានរក្សាទុករួច');
+      }
+    };
+  });
+
+  // 3. Role (Reports 2-6)
+  document.querySelectorAll('.editable-sig-role').forEach(el => {
+    let originalText = el.innerText.trim();
+    el.onfocus = () => { originalText = el.innerText.trim(); };
+    el.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        el.blur();
+      }
+    };
+    el.onblur = () => {
+      const val = el.innerText.trim();
+      localStorage.setItem('report_sig_role_other', val);
+      document.querySelectorAll('.editable-sig-role').forEach(target => {
+        if (target !== el) target.innerText = val;
+      });
+      if (val !== originalText) {
+        showSaveSuccessToast('បានរក្សាទុករួច');
+      }
+    };
+  });
+
+  // Live screen -> print view synchronization
+  const syncLive = (selector) => {
     const screenEl = document.querySelector(`.report-screen-view ${selector}`);
     const printEls = document.querySelectorAll(`.report-print-view ${selector}`);
     if (screenEl && printEls.length > 0) {
-      screenEl.oninput = screenEl.onblur = () => {
+      screenEl.oninput = () => {
         printEls.forEach(pel => pel.innerHTML = screenEl.innerHTML);
       };
     }
   };
-
-  syncElements('.editable-sig-committee');
-  syncElements('.editable-sig-committee-list');
-  syncElements('.editable-sig-role');
+  syncLive('.editable-sig-committee');
+  syncLive('.editable-sig-committee-list');
+  syncLive('.editable-sig-role');
 }
 
 function syncReportSignaturesBeforePrint() {
