@@ -5910,7 +5910,7 @@ async function renderReportPreview() {
                 </table>
               </div>
               <div class="report-page-footer">
-                - ១ -
+                ១/២
               </div>
             </div>
 
@@ -5929,7 +5929,7 @@ async function renderReportPreview() {
                 ${getOfficialSignatureBlock(ps, 'sortlist')}
               </div>
               <div class="report-page-footer">
-                - ២ -
+                ២/២
               </div>
             </div>
           </div>
@@ -7316,32 +7316,37 @@ function setupAutoPrintPagination() {
   const isLandscape = sheet.classList.contains('landscape');
 
   // Determine pagination thresholds per report type
-  let page1Cap = 24;
-  let midPageCap = 30;
-  let lastPageCap = 24;
+  let page1Cap = 18;
+  let midPageCap = 24;
+  let lastPageCap = 18;
 
   if (isLandscape) {
+    page1Cap = 12;
+    midPageCap = 15;
+    lastPageCap = 12;
+  } else if (currentReportType === 'final_roster') {
+    page1Cap = 18; // 3 stations of 6
+    midPageCap = 24; // 4 stations of 6
+    lastPageCap = 18; // 3 stations of 6 + bottom summary & signatures
+  } else if (currentReportType === 'notice') {
+    page1Cap = 18;
+    midPageCap = 22;
+    lastPageCap = 16;
+  } else if (currentReportType === 'results') {
     page1Cap = 18;
     midPageCap = 24;
     lastPageCap = 16;
-  } else if (currentReportType === 'final_roster') {
-    page1Cap = 24; // 4 stations of 6
-    midPageCap = 30; // 5 stations of 6
-    lastPageCap = 24;
-  } else if (currentReportType === 'notice') {
-    page1Cap = 20;
-    midPageCap = 28;
-    lastPageCap = 20;
-  } else if (currentReportType === 'results') {
-    page1Cap = 22;
-    midPageCap = 30;
-    lastPageCap = 20;
+  }
+
+  // Clean up any old single page footer first
+  const oldSingleFooter = sheet.querySelector('.report-single-page-footer');
+  if (oldSingleFooter) {
+    oldSingleFooter.remove();
   }
 
   // If total rows fit comfortably on 1 page (single page report)
   if (rows.length <= page1Cap) {
-    // Total pages = 1 -> No pagination needed!
-    // Unwrap screenView if previously wrapped so content is direct child of sheet and fully visible
+    // Total pages = 1 -> Single page report!
     const existingScreenView = sheet.querySelector('.report-screen-view');
     if (existingScreenView) {
       while (existingScreenView.firstChild) {
@@ -7354,6 +7359,12 @@ function setupAutoPrintPagination() {
       existingPrintView.remove();
     }
     sheet.classList.remove('print-has-pages');
+
+    // Single page footer: ១/១
+    const singleFooter = document.createElement('div');
+    singleFooter.className = 'report-page-footer report-single-page-footer';
+    singleFooter.textContent = `${toKhmerNum(1)}/${toKhmerNum(1)}`;
+    sheet.appendChild(singleFooter);
     return;
   }
 
@@ -7428,6 +7439,15 @@ function setupAutoPrintPagination() {
 
   const totalPages = pagesRows.length;
 
+  // On screen view: show page count indicator at bottom
+  let screenFooter = screenView.querySelector('.report-screen-page-indicator');
+  if (!screenFooter) {
+    screenFooter = document.createElement('div');
+    screenFooter.className = 'report-page-footer report-screen-page-indicator no-print';
+    screenView.appendChild(screenFooter);
+  }
+  screenFooter.textContent = `(របាយការណ៍នេះមានសរុប ${toKhmerNum(totalPages)} ទំព័រ ៖ ${toKhmerNum(1)}/${toKhmerNum(totalPages)} ដល់ ${toKhmerNum(totalPages)}/${toKhmerNum(totalPages)})`;
+
   // Build the .report-print-view element
   const printView = document.createElement('div');
   printView.className = 'report-print-view print-only';
@@ -7464,7 +7484,7 @@ function setupAutoPrintPagination() {
           ${pageFooterContent}
         </div>
         <div class="report-page-footer">
-          - ${toKhmerNum(pageNum)} -
+          ${toKhmerNum(pageNum)}/${toKhmerNum(totalPages)}
         </div>
       </div>
     `;
