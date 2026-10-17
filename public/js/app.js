@@ -275,6 +275,7 @@ function initModernPopupEvents() {
 // ==============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+  setReportTableRowPadding(getReportTableRowPadding());
   initModernPopupEvents();
   setupEventListeners();
   await checkAuthStatus();
@@ -5408,24 +5409,11 @@ function buildReportLetterheadHtml(ps, reportType = '') {
           <!-- Column 1 (35%): Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo, Left-Aligned -->
           <td style="width: 35%; border: none !important; vertical-align: top; padding: 0; text-align: left;">
             <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%;">
-              <!-- Logo Container with Toolbar -->
+              <!-- Logo Container (Drag with Mouse handle or Alt-drag, Click image to change) -->
               <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 2px;">
-                <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចដើម្បីប្តូរ Logo ឬអូសរំកិលទីតាំង">
+                <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចរូបភាពដើម្បីប្តូរ Logo ឬអូស Mouse ដើម្បីរំកិលទីតាំង">
                   <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="width: ${logoCfg.size}px; height: ${logoCfg.size}px; object-fit: contain; border-radius: 50%; display: block;">
                   <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
-                </div>
-                <!-- Interactive Controls (Hidden in Print) -->
-                <div class="report-logo-toolbar no-print" style="margin-top: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); width: fit-content;">
-                  <button type="button" id="btnUploadReportLogo" class="btn btn-secondary btn-xs" style="padding: 1px 5px; font-size: 10px; border-radius: 4px;" title="បញ្ចូល Logo ថ្មី">📷 ប្តូរ</button>
-                  <span style="color: #cbd5e1;">|</span>
-                  <span title="ពង្រីក/បង្រួម Logo">🔍</span>
-                  <input type="range" id="reportLogoSizeSlider" min="40" max="130" value="${logoCfg.size}" style="width: 50px; height: 12px; cursor: pointer;" title="ទំហំ Logo: ${logoCfg.size}px">
-                  <span style="color: #cbd5e1;">|</span>
-                  <span title="រំកិល ឆ្វេង-ស្តាំ">↔️</span>
-                  <input type="range" id="reportLogoXSlider" min="-80" max="80" value="${logoCfg.x}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល ឆ្វេង/ស្តាំ">
-                  <span title="រំកិល លើ-ក្រោម">↕️</span>
-                  <input type="range" id="reportLogoYSlider" min="-40" max="60" value="${logoCfg.y}" style="width: 40px; height: 12px; cursor: pointer;" title="រំកិល លើ/ក្រោម">
-                  <button type="button" id="btnResetReportLogo" class="btn btn-secondary btn-xs" style="padding: 0 4px; font-size: 10px; border-radius: 3px;" title="កំណត់ឡើងវិញ (Reset)">↺</button>
                 </div>
               </div>
               <!-- Box 1 (Left Institution Header): Left-aligned, Font Khmer OS Muol Light, Size: 10pt -->
@@ -6824,6 +6812,7 @@ async function renderReportPreview() {
   setupReportLogoInteractions();
   setupReportDateInteractions();
   setupReportSignatureInteractions();
+  setupReportTableRowHeightControls();
   setupAutoPrintPagination();
 }
 
@@ -7568,6 +7557,135 @@ function setupReportSignatureInteractions() {
 
   // Setup draggable boxes for all boxed sections in all reports
   setupDraggableReportBoxes();
+  setupReportTableRowHeightControls();
+}
+
+function getReportTableRowPadding() {
+  const saved = localStorage.getItem('report_table_row_padding');
+  return saved !== null ? parseInt(saved, 10) : 2;
+}
+
+function setReportTableRowPadding(paddingVal) {
+  const p = Math.max(0, Math.min(18, parseInt(paddingVal, 10) || 2));
+  document.documentElement.style.setProperty('--report-row-padding-v', `${p}px`);
+  localStorage.setItem('report_table_row_padding', String(p));
+  const label = document.getElementById('reportRowHeightLabel');
+  const slider = document.getElementById('reportRowHeightSlider');
+  if (label) label.textContent = `${p}px`;
+  if (slider) slider.value = p;
+  document.querySelectorAll('#printContainer table.official-print-table td, #printContainer table.official-print-table th').forEach(cell => {
+    cell.style.paddingTop = `${p}px`;
+    cell.style.paddingBottom = `${p}px`;
+  });
+}
+
+function setupReportTableRowHeightControls() {
+  const btnShrink = document.getElementById('btnShrinkReportRows');
+  const btnExpand = document.getElementById('btnExpandReportRows');
+  const slider = document.getElementById('reportRowHeightSlider');
+  const btnReset = document.getElementById('btnResetReportRows');
+  const currentP = getReportTableRowPadding();
+  setReportTableRowPadding(currentP);
+
+  if (btnShrink) {
+    btnShrink.onclick = (e) => {
+      e.preventDefault();
+      const p = Math.max(0, getReportTableRowPadding() - 1);
+      setReportTableRowPadding(p);
+      setupAutoPrintPagination();
+      showSaveSuccessToast(`បានបង្រួមកម្ពស់ជួរដេក ${p}px`);
+    };
+  }
+  if (btnExpand) {
+    btnExpand.onclick = (e) => {
+      e.preventDefault();
+      const p = Math.min(18, getReportTableRowPadding() + 1);
+      setReportTableRowPadding(p);
+      setupAutoPrintPagination();
+      showSaveSuccessToast(`បានពង្រីកកម្ពស់ជួរដេក ${p}px`);
+    };
+  }
+  if (slider) {
+    slider.oninput = (e) => {
+      setReportTableRowPadding(parseInt(e.target.value, 10));
+    };
+    slider.onchange = () => {
+      setupAutoPrintPagination();
+      showSaveSuccessToast(`បានកំណត់កម្ពស់ជួរដេក ${getReportTableRowPadding()}px`);
+    };
+  }
+  if (btnReset) {
+    btnReset.onclick = (e) => {
+      e.preventDefault();
+      setReportTableRowPadding(2);
+      setupAutoPrintPagination();
+      showSaveSuccessToast('បានកំណត់កម្ពស់ជួរដេកដើមវិញ (2px)');
+    };
+  }
+  setupInteractiveRowResizeOnTables();
+}
+
+function setupInteractiveRowResizeOnTables() {
+  const tables = document.querySelectorAll('#printContainer table.official-print-table');
+  tables.forEach(table => {
+    if (table.dataset.rowResizeBound) return;
+    table.dataset.rowResizeBound = 'true';
+
+    let isResizing = false;
+    let startY = 0;
+    let startPadding = 2;
+
+    table.addEventListener('mousedown', (e) => {
+      if (e.target.isContentEditable) return;
+      const cell = e.target.closest('td, th');
+      if (!cell) return;
+      const rect = cell.getBoundingClientRect();
+      if (e.clientY >= rect.bottom - 6) {
+        isResizing = true;
+        startY = e.clientY;
+        startPadding = getReportTableRowPadding();
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+        e.stopPropagation();
+
+        const onMouseMove = (ev) => {
+          if (!isResizing) return;
+          const dy = ev.clientY - startY;
+          const paddingDelta = Math.round(dy / 3);
+          const newPadding = Math.max(0, Math.min(18, startPadding + paddingDelta));
+          setReportTableRowPadding(newPadding);
+        };
+
+        const onMouseUp = () => {
+          if (!isResizing) return;
+          isResizing = false;
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          setupAutoPrintPagination();
+          showSaveSuccessToast(`បានកំណត់កម្ពស់ជួរដេក ${getReportTableRowPadding()}px`);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      }
+    });
+
+    table.addEventListener('mousemove', (e) => {
+      if (isResizing) return;
+      const cell = e.target.closest('td, th');
+      if (cell) {
+        const rect = cell.getBoundingClientRect();
+        if (e.clientY >= rect.bottom - 6) {
+          cell.style.cursor = 'row-resize';
+        } else {
+          cell.style.cursor = '';
+        }
+      }
+    });
+  });
 }
 
 function setupAutoPrintPagination() {
@@ -7646,6 +7764,16 @@ function setupAutoPrintPagination() {
     midPageCap = isLandscape ? 18 : 42;
     lastPageCap = isLandscape ? 14 : 38;
     singlePageMaxRows = isLandscape ? 12 : 24;
+  }
+
+  // Dynamically scale page row capacity when row height / vertical padding is customized
+  const currentRowPadding = getReportTableRowPadding();
+  if (currentRowPadding !== 2) {
+    const scale = 22 / Math.max(14, 22 + (currentRowPadding - 2) * 2);
+    page1Cap = Math.max(6, Math.floor(page1Cap * scale));
+    midPageCap = Math.max(8, Math.floor(midPageCap * scale));
+    lastPageCap = Math.max(6, Math.floor(lastPageCap * scale));
+    singlePageMaxRows = Math.max(6, Math.floor(singlePageMaxRows * scale));
   }
 
   // Clean up any old footers or indicators first
@@ -7805,6 +7933,8 @@ function setupAutoPrintPagination() {
 
   printView.innerHTML = printPagesHtml;
   sheet.appendChild(printView);
+  setReportTableRowPadding(currentRowPadding);
+  setupInteractiveRowResizeOnTables();
   applyAllSavedBoxPositions(printView);
 }
 

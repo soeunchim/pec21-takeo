@@ -85,6 +85,7 @@
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --font-body: 'Khmer OS Siemreap', 'Siemreap', 'Khmer OS', 'Khmer OS Battambang', 'Kantumruy Pro', sans-serif;
   --font-heading: 'Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', serif;
+  --report-row-padding-v: 2px;
 }
 
 * {
@@ -926,7 +927,10 @@ textarea,
   .official-print-table th,
   .official-print-table td {
     border: 1px solid black !important;
-    padding: 5px 6px !important;
+    padding-top: var(--report-row-padding-v, 2px) !important;
+    padding-bottom: var(--report-row-padding-v, 2px) !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
     color: black !important;
   }
 
@@ -1498,8 +1502,10 @@ tr.excel-row-active td.excel-calc-rank {
   font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
   font-size: 10.5pt !important;
   font-weight: normal !important;
-  padding: 5px 4px !important;
-  height: 29px !important;
+  padding-top: var(--report-row-padding-v, 2px) !important;
+  padding-bottom: var(--report-row-padding-v, 2px) !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
   line-height: 1.35 !important;
   vertical-align: middle !important;
 }
@@ -1630,8 +1636,12 @@ tr.excel-row-active td.excel-calc-rank {
     break-after: avoid !important;
   }
 
-  .report-print-page table.official-print-table td {
-    padding: 2px 4px !important;
+  .report-print-page table.official-print-table td,
+  .report-print-page table.official-print-table th {
+    padding-top: var(--report-row-padding-v, 2px) !important;
+    padding-bottom: var(--report-row-padding-v, 2px) !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
     line-height: 1.25 !important;
   }
 
@@ -1734,7 +1744,10 @@ tr.excel-row-active td.excel-calc-rank {
 .official-print-table th,
 .official-print-table td {
   border: 1px solid #000000 !important;
-  padding: 4px 6px;
+  padding-top: var(--report-row-padding-v, 2px) !important;
+  padding-bottom: var(--report-row-padding-v, 2px) !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
   color: #000000;
   vertical-align: middle;
 }
@@ -1840,7 +1853,10 @@ tr.excel-row-active td.excel-calc-rank {
     font-size: 11pt !important;
     font-weight: normal !important;
     text-align: center !important;
-    padding: 2px 4px !important;
+    padding-top: var(--report-row-padding-v, 2px) !important;
+    padding-bottom: var(--report-row-padding-v, 2px) !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
     line-height: 1.25 !important;
   }
 
@@ -1856,7 +1872,10 @@ tr.excel-row-active td.excel-calc-rank {
   body:not(.report-landscape-active) .official-print-table td {
     font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
     font-size: 11pt !important;
-    padding: 2px 4px !important;
+    padding-top: var(--report-row-padding-v, 2px) !important;
+    padding-bottom: var(--report-row-padding-v, 2px) !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
     line-height: 1.25 !important;
   }
 
