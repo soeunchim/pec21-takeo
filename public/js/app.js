@@ -5976,7 +5976,7 @@ async function renderReportPreview() {
                   </tbody>
                 </table>
               </div>
-              <div class="report-page-footer">
+              <div class="report-page-footer print-only">
                 ១/២
               </div>
             </div>
@@ -5995,7 +5995,7 @@ async function renderReportPreview() {
                 </table>
                 ${getOfficialSignatureBlock(ps, 'sortlist')}
               </div>
-              <div class="report-page-footer">
+              <div class="report-page-footer print-only">
                 ២/២
               </div>
             </div>
@@ -7585,7 +7585,7 @@ function setupAutoPrintPagination() {
           </table>
           ${pageFooterContent}
         </div>
-        <div class="report-page-footer">
+        <div class="report-page-footer print-only">
           ${toKhmerNum(pageNum)}/${toKhmerNum(totalPages)}
         </div>
       </div>
