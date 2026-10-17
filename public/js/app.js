@@ -2692,7 +2692,7 @@ async function checkCandidateDuplicateRow(tr) {
         // If duplicate was from server DB, mark other candidate as duplicate in DB
         if (duplicateFound.otherId) {
           try {
-            fetch('/api/candidates/mark-duplicate', {
+            await fetch('/api/candidates/mark-duplicate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ id: duplicateFound.otherId, isDuplicate: true })
@@ -2739,14 +2739,26 @@ async function checkCandidateDuplicateRow(tr) {
             if (saveRes.ok) {
               const resData = await saveRes.json();
               if (resData.candidate && resData.candidate.id) {
-                tr.setAttribute('data-cand-id', resData.candidate.id);
-                cand.id = resData.candidate.id;
+                candId = resData.candidate.id;
               }
             }
           } catch (saveErr) {
             console.error('Error auto-saving confirmed duplicate candidate:', saveErr);
           }
         }
+
+        // Re-render scoring table immediately so newly confirmed duplicate appears with red highlight and updated count
+        await renderScoringTableForActiveStation();
+        await updateDuplicateBadgeCount();
+
+        setTimeout(() => {
+          const targetTr = document.querySelector(`tr[data-role="${roleName}"][data-order="${order}"]`);
+          if (targetTr) {
+            targetTr.dataset.dupConfirmedSig = currentSig;
+            const phoneInput = targetTr.querySelector('.cand-phone');
+            if (phoneInput) phoneInput.focus();
+          }
+        }, 50);
 
         return true;
       } else {
@@ -3359,8 +3371,9 @@ async function renderScoringTableForActiveStation() {
         );
 
         const isDup = !!(cand.isDuplicate);
+        const dupSig = isDup && cand.name && cand.dob ? `${normKhmerText(cand.name)}|${normComparableGender(cand.gender)}|${normComparableDob(cand.dob)}` : '';
         tbody.innerHTML += `
-          <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}" class="${isDup ? 'duplicate-highlight-row' : ''}" data-is-duplicate="${isDup ? 'true' : 'false'}">
+          <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}" class="${isDup ? 'duplicate-highlight-row' : ''}" data-is-duplicate="${isDup ? 'true' : 'false'}" data-dup-confirmed-sig="${dupSig}">
             <td class="excel-col-order">${toKhmerNum(order)}</td>
             <td>
               <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
@@ -7861,6 +7874,7 @@ async function handleCandidateSubmit(e) {
       closeModal('modalCandidate');
       alert('បានបន្ថែមបេក្ខជនជោគជ័យ!');
       await renderScoringTableForActiveStation();
+      await updateDuplicateBadgeCount();
     } else {
       alert(data.message);
     }
