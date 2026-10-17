@@ -6814,37 +6814,37 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
     // Report 1: 5-Member Committee Signatures Centered
     signatureContent = `
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
-          គណៈកម្មការសម្ភាស៍ជ្រើសរើស គ.ក.ប
+          គណៈកម្មការសម្រាំងជ្រើសរើស គ.ក.ប
         </div>
         <div class="committee-signatures" style="display: inline-block; text-align: left; font-size: 9.5pt; line-height: 2.1; margin: 0 auto; white-space: nowrap;">
           <div style="display: flex; align-items: baseline; white-space: nowrap;">
             <span style="width: 26px;">១-</span>
             <span style="width: 140px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
-            <span style="width: 75px; text-align: center;">ប្រធាន</span>
+            <span style="width: 75px; text-align: left;">ប្រធាន</span>
             <span style="width: 120px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
           </div>
           <div style="display: flex; align-items: baseline; white-space: nowrap;">
             <span style="width: 26px;">២-</span>
             <span style="width: 140px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
-            <span style="width: 75px; text-align: center;">អនុប្រធាន</span>
+            <span style="width: 75px; text-align: left;">អនុប្រធាន</span>
             <span style="width: 120px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
           </div>
           <div style="display: flex; align-items: baseline; white-space: nowrap;">
             <span style="width: 26px;">៣-</span>
             <span style="width: 140px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
-            <span style="width: 75px; text-align: center;">សមាជិក</span>
+            <span style="width: 75px; text-align: left;">សមាជិក</span>
             <span style="width: 120px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
           </div>
           <div style="display: flex; align-items: baseline; white-space: nowrap;">
             <span style="width: 26px;">៤-</span>
             <span style="width: 140px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
-            <span style="width: 75px; text-align: center;">សមាជិក</span>
+            <span style="width: 75px; text-align: left;">សមាជិក</span>
             <span style="width: 120px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
           </div>
           <div style="display: flex; align-items: baseline; white-space: nowrap;">
             <span style="width: 26px;">៥-</span>
             <span style="width: 140px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
-            <span style="width: 75px; text-align: center;">សមាជិក</span>
+            <span style="width: 75px; text-align: left;">សមាជិក</span>
             <span style="width: 120px; overflow: hidden; letter-spacing: 2px;">.........................................</span>
           </div>
         </div>
