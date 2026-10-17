@@ -5836,9 +5836,9 @@ async function renderReportPreview() {
             const isEmpty = !c || !c.name;
             const khmerIdx = toKhmerNum(i);
             const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
-            const scoreDeg = c && c.scoreDegree !== undefined && c.scoreDegree !== '' ? c.scoreDegree : '';
-            const scoreExp = c && c.scoreExp !== undefined && c.scoreExp !== '' ? c.scoreExp : '';
-            const scoreTot = c && c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? c.scoreShortlist : '';
+            const scoreDeg = c && c.scoreDegree !== undefined && c.scoreDegree !== '' ? toKhmerNum(c.scoreDegree) : '';
+            const scoreExp = c && c.scoreExp !== undefined && c.scoreExp !== '' ? toKhmerNum(c.scoreExp) : '';
+            const scoreTot = c && c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? toKhmerNum(c.scoreShortlist) : '';
 
             const cName = sanitizeCandidateText(c ? (c.name || '') : '');
             const cDegree = sanitizeCandidateText(c ? (c.degree || '') : '');
@@ -5906,9 +5906,9 @@ async function renderReportPreview() {
           const isEmpty = !c || !c.name;
           const khmerIdx = toKhmerNum(i);
           const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
-          const scoreDeg = c && c.scoreDegree !== undefined && c.scoreDegree !== '' ? c.scoreDegree : '';
-          const scoreExp = c && c.scoreExp !== undefined && c.scoreExp !== '' ? c.scoreExp : '';
-          const scoreTot = c && c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? c.scoreShortlist : '';
+          const scoreDeg = c && c.scoreDegree !== undefined && c.scoreDegree !== '' ? toKhmerNum(c.scoreDegree) : '';
+          const scoreExp = c && c.scoreExp !== undefined && c.scoreExp !== '' ? toKhmerNum(c.scoreExp) : '';
+          const scoreTot = c && c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? toKhmerNum(c.scoreShortlist) : '';
 
           const cName = sanitizeCandidateText(c ? (c.name || '') : '');
           const cDegree = sanitizeCandidateText(c ? (c.degree || '') : '');
@@ -6312,13 +6312,13 @@ async function renderReportPreview() {
 
           if (c && c.name) {
             if (isAbsent) {
-              scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? Number(c.scoreShortlist).toFixed(2) : '0.00'}</td>`;
+              scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? toKhmerNum(Number(c.scoreShortlist).toFixed(2)) : toKhmerNum('0.00')}</td>`;
               scoreInterviewHtml = `<td class="center official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
               scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
             } else {
-              const sShort = c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? Number(c.scoreShortlist).toFixed(2) : '';
-              const sInt = c.scoreInterview !== undefined && c.scoreInterview !== '' ? Number(c.scoreInterview).toFixed(2) : '';
-              const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
+              const sShort = c.scoreShortlist !== undefined && c.scoreShortlist !== '' ? toKhmerNum(Number(c.scoreShortlist).toFixed(2)) : '';
+              const sInt = c.scoreInterview !== undefined && c.scoreInterview !== '' ? toKhmerNum(Number(c.scoreInterview).toFixed(2)) : '';
+              const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? toKhmerNum(Number(c.scoreTotal).toFixed(2)) : '';
               scoreShortlistHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sShort}</td>`;
               scoreInterviewHtml = `<td class="center" style="width: 110px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sInt}</td>`;
               scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
@@ -6466,23 +6466,23 @@ async function renderReportPreview() {
             if (c && c.name) {
               if (isAbsent) {
                 scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
-                statusHtml = `<td class="center official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
+                statusHtml = `<td class="official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">អវត្តមាន</td>`;
               } else {
-                const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
+                const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? toKhmerNum(Number(c.scoreTotal).toFixed(2)) : '';
                 scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
                 if (c.status === 'A-ជាប់') {
-                  statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">A-ជាប់</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">A-ជាប់</td>`;
                 } else if (c.status === 'B-បម្រុង') {
-                  statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">B-បម្រុង</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">B-បម្រុង</td>`;
                 } else if (c.status === 'C-បម្រុង' || c.status === 'C-បម្រុងបន្ទាប់') {
-                  statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">C-បម្រុងបន្ទាប់</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">C-បម្រុងបន្ទាប់</td>`;
                 } else {
-                  statusHtml = `<td class="center" style="width: 110px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c.status || ''}</td>`;
+                  statusHtml = `<td style="width: 110px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">${c.status || ''}</td>`;
                 }
               }
             } else {
               scoreTotalHtml = `<td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
-              statusHtml = `<td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
+              statusHtml = `<td style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;"></td>`;
             }
 
             rowsHtml += `
@@ -6569,23 +6569,23 @@ async function renderReportPreview() {
           if (c && c.name) {
             if (isAbsent) {
               scoreTotalHtml = `<td class="center official-absent-cell" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
-              statusHtml = `<td class="center official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">អវត្តមាន</td>`;
+              statusHtml = `<td class="official-absent-cell" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">អវត្តមាន</td>`;
             } else {
-              const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? Number(c.scoreTotal).toFixed(2) : '';
+              const sTot = c.scoreTotal !== undefined && c.scoreTotal !== '' ? toKhmerNum(Number(c.scoreTotal).toFixed(2)) : '';
               scoreTotalHtml = `<td class="center" style="width: 95px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${sTot}</td>`;
               if (c.status === 'A-ជាប់') {
-                statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">A-ជាប់</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: 700; color: #15803d; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">A-ជាប់</td>`;
               } else if (c.status === 'B-បម្រុង') {
-                statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">B-បម្រុង</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: 700; color: #1e40af; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">B-បម្រុង</td>`;
               } else if (c.status === 'C-បម្រុង' || c.status === 'C-បម្រុងបន្ទាប់') {
-                statusHtml = `<td class="center" style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">C-បម្រុងបន្ទាប់</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: 700; color: #6b21a8; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">C-បម្រុងបន្ទាប់</td>`;
               } else {
-                statusHtml = `<td class="center" style="width: 110px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c.status || ''}</td>`;
+                statusHtml = `<td style="width: 110px; font-weight: normal; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;">${c.status || ''}</td>`;
               }
             }
           } else {
             scoreTotalHtml = `<td class="center" style="width: 95px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
-            statusHtml = `<td class="center" style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>`;
+            statusHtml = `<td style="width: 110px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; text-align: left !important; padding-left: 10px !important;"></td>`;
           }
 
           rowsHtml += `

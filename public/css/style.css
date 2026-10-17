@@ -2023,6 +2023,8 @@ tr.excel-row-active td.excel-calc-rank {
   transition: all 0.2s ease;
 }
 
+.report-inst-header-box,
+.report-inst-header-box *,
 .report-inst-header-box div {
   font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important;
   font-size: 10pt !important;
