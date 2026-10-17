@@ -1461,15 +1461,11 @@ tr.excel-row-active td.excel-calc-rank {
 .print-only {
   display: none !important;
 }
-.report-page-footer {
-  display: block;
-  text-align: center;
-  font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-  font-size: 11pt !important;
-  font-weight: 700 !important;
-  color: #000 !important;
-  margin-top: 12px;
-  padding: 4px 0;
+/* Screen mode: Hide ALL report page footers completely on the Form (only show in print) */
+.report-page-footer,
+.report-single-page-footer,
+.report-screen-page-indicator {
+  display: none !important;
 }
 
 /* Landscape Mode Table Styling (Applies on Screen and Print) */

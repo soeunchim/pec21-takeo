@@ -7374,16 +7374,20 @@ function setupAutoPrintPagination() {
   }
 
   // 1. Locate the master data table (either in .report-screen-view or directly in sheet)
-  // NEVER select chunked tables from .report-print-view!
+  // 1. Locate the master data table (with class .official-print-table, NEVER the layout/letterhead table)
   let table = null;
   const existingScreenView = sheet.querySelector('.report-screen-view');
   if (existingScreenView) {
-    table = existingScreenView.querySelector('table');
+    table = existingScreenView.querySelector('table.official-print-table') || Array.from(existingScreenView.querySelectorAll('table')).find(t => !t.closest('.letterhead'));
   }
   if (!table) {
     const printView = sheet.querySelector('.report-print-view');
-    const allTables = Array.from(sheet.querySelectorAll('table'));
+    const allTables = Array.from(sheet.querySelectorAll('table.official-print-table'));
     table = allTables.find(t => !printView || !printView.contains(t));
+  }
+  if (!table) {
+    const allTables = Array.from(sheet.querySelectorAll('table'));
+    table = allTables.find(t => !t.closest('.letterhead') && (!sheet.querySelector('.report-print-view') || !sheet.querySelector('.report-print-view').contains(t)));
   }
   if (!table) return;
 
@@ -7433,7 +7437,7 @@ function setupAutoPrintPagination() {
     singlePageMaxRows = isLandscape ? 12 : 24;
   }
 
-  // Clean up any old single page footers or page indicators first
+  // Clean up any old footers or indicators first
   Array.from(sheet.querySelectorAll('.report-single-page-footer, .report-screen-page-indicator')).forEach(el => el.remove());
   Array.from(sheet.children).forEach(el => {
     if (el && el.classList && (el.classList.contains('report-single-page-footer') || el.classList.contains('report-page-footer'))) {
@@ -7459,9 +7463,9 @@ function setupAutoPrintPagination() {
       document.body.classList.remove('report-multipage-active');
     }
 
-    // Single page footer: ១/១
+    // Single page footer: ១/១ (Print-only, completely hidden on the screen Form)
     const singleFooter = document.createElement('div');
-    singleFooter.className = 'report-page-footer report-single-page-footer';
+    singleFooter.className = 'report-page-footer report-single-page-footer print-only';
     singleFooter.textContent = `${toKhmerNum(1)}/${toKhmerNum(1)}`;
     sheet.appendChild(singleFooter);
     return;
@@ -7544,14 +7548,7 @@ function setupAutoPrintPagination() {
 
   const totalPages = pagesRows.length;
 
-  // On screen view: show page count indicator at bottom
-  let screenFooter = screenView.querySelector('.report-screen-page-indicator');
-  if (!screenFooter) {
-    screenFooter = document.createElement('div');
-    screenFooter.className = 'report-page-footer report-screen-page-indicator no-print';
-    screenView.appendChild(screenFooter);
-  }
-  screenFooter.textContent = `(របាយការណ៍នេះមានសរុប ${toKhmerNum(totalPages)} ទំព័រ ៖ ${toKhmerNum(1)}/${toKhmerNum(totalPages)} ដល់ ${toKhmerNum(totalPages)}/${toKhmerNum(totalPages)})`;
+  // On screen Form: No page number is shown (page numbers only display when printing)
 
   // Build the .report-print-view element
   const printView = document.createElement('div');
