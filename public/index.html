@@ -673,6 +673,45 @@
               <input type="text" id="settingMandate" class="form-control">
             </div>
 
+            <!-- Telegram Bot Notification Section -->
+            <div class="form-group" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 16px; margin-top: 18px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #bbf7d0; padding-bottom: 8px;">
+                <label class="form-label" style="font-weight: 700; color: #166534; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                  ✈️ ការជូនដំណឹងតាម Telegram (Telegram Bot Notifications)
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #15803d; cursor: pointer; margin: 0;">
+                  <input type="checkbox" id="settingTelegramEnabled" checked style="width: 17px; height: 17px; cursor: pointer;">
+                  បើកដំណើរការ
+                </label>
+              </div>
+              <p style="color: #374151; font-size: 12.5px; line-height: 1.5; margin-bottom: 12px;">
+                🔔 ប្រព័ន្ធនឹងផ្ញើសារជូនដំណឹងតាមរយៈ Telegram Bot ដោយស្វ័យប្រវត្តិនៅពេលគណនីទាំងអស់ធ្វើការ <strong>Login (ចូលប្រព័ន្ធ)</strong> ឬ <strong>Logout (ចាកចេញ)</strong> (លើកលែងតែគណនី SuperAdmin)។
+              </p>
+              
+              <div style="margin-bottom: 12px;">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #1f2937;">Telegram Bot Token</label>
+                <input type="text" id="settingTelegramBotToken" class="form-control" placeholder="ឧ. 123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">
+                  💡 Bot Token ទទួលបានពី Telegram <strong>@BotFather</strong>។
+                </small>
+              </div>
+
+              <div style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #1f2937;">Telegram Chat ID (User / Group / Channel ID)</label>
+                <input type="text" id="settingTelegramChatId" class="form-control" placeholder="ឧ. 987654321 ឬ -100123456789">
+                <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">
+                  💡 Chat ID ផ្ទាល់ខ្លួន ឬ Group / Channel ID (អាចឆែកតាមរយៈ Telegram <strong>@userinfobot</strong> ឬ <strong>@getmyid_bot</strong>)។
+                </small>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button type="button" id="btnTestTelegram" class="btn btn-outline" style="border: 1px solid #16a34a; color: #166534; background: white; font-weight: 600; font-size: 12px; padding: 6px 14px;">
+                  🔔 សាកល្បងផ្ញើសារ Telegram (Test Notification)
+                </button>
+                <span id="telegramTestResult" style="font-size: 12px; font-weight: 600; display: none;"></span>
+              </div>
+            </div>
+
             <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
               <button id="btnSaveSettings" class="btn btn-primary">រក្សាទុកការកំណត់ (Save Settings)</button>
               <a href="/api/backup" class="btn btn-secondary" download>📥 Backup Data (JSON)</a>
@@ -1027,6 +1066,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261017_fix_footer_pos_v24"></script>
+  <script src="js/app.js?v=20261017_telegram_notify_v25"></script>
 </body>
 </html>

@@ -684,6 +684,143 @@ function parseBody(req) {
 }
 
 // ==============================================================================
+// Telegram Bot Notification Helpers
+// ==============================================================================
+
+function toKhmerNum(num) {
+  if (num === null || num === undefined) return '';
+  const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+  return String(num).replace(/[0-9]/g, d => khmerDigits[parseInt(d, 10)]);
+}
+
+function formatKhmerDateTime(d = new Date()) {
+  try {
+    const options = {
+      timeZone: 'Asia/Phnom_Penh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    };
+    const formatter = new Intl.DateTimeFormat('en-GB', options);
+    const parts = formatter.formatToParts(d);
+    const partMap = {};
+    parts.forEach(p => partMap[p.type] = p.value);
+    
+    const dateStr = `${toKhmerNum(partMap.day)}-${toKhmerNum(partMap.month)}-${toKhmerNum(partMap.year)}`;
+    const timeStr = `${toKhmerNum(partMap.hour)}:${toKhmerNum(partMap.minute)}:${toKhmerNum(partMap.second)}`;
+    return `${dateStr} វេលាម៉ោង ${timeStr}`;
+  } catch (e) {
+    return d.toISOString();
+  }
+}
+
+function getKhmerRoleLabel(role) {
+  const map = {
+    'SuperAdmin': 'អភិបាលជាន់ខ្ពស់ (SuperAdmin)',
+    'Admin': 'អ្នកគ្រប់គ្រងទូទៅ (Admin PEC21)',
+    'PEC21': 'មន្ត្រី គ.ខ.ប ២១ (PEC Staff)',
+    'Trainer': 'គ្រូប្រចាំក្រុងស្រុក (Trainer)',
+    'Commune': 'គណៈកម្មការឃុំ/សង្កាត់'
+  };
+  return map[role] || role || 'អ្នកប្រើប្រាស់';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.socket ? req.socket.remoteAddress : (req.connection ? req.connection.remoteAddress : '127.0.0.1');
+}
+
+async function sendTelegramNotification(messageText, overrideToken = null, overrideChatId = null) {
+  try {
+    const token = overrideToken || (db.settings && db.settings.telegramBotToken) || process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = overrideChatId || (db.settings && db.settings.telegramChatId) || process.env.TELEGRAM_CHAT_ID;
+    const enabled = (overrideToken && overrideChatId) 
+      ? true 
+      : (db.settings ? (db.settings.telegramNotifyEnabled !== false) : true);
+
+    if (!enabled || !token || !chatId) {
+      return { success: false, reason: 'Telegram notifications not configured or disabled' };
+    }
+
+    const cleanToken = String(token).trim();
+    const cleanChatId = String(chatId).trim();
+    if (!cleanToken || !cleanChatId) return { success: false, reason: 'Token or ChatId empty' };
+
+    const postData = JSON.stringify({
+      chat_id: cleanChatId,
+      text: messageText,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true
+    });
+
+    return new Promise((resolve) => {
+      const options = {
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${cleanToken}/sendMessage`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        },
+        timeout: 10000
+      };
+
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(body);
+            if (parsed.ok) {
+              resolve({ success: true, data: parsed });
+            } else {
+              console.error('[Telegram] API response error:', parsed);
+              resolve({ success: false, error: parsed });
+            }
+          } catch (e) {
+            resolve({ success: false, error: body });
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        console.error('[Telegram] Request error:', err.message);
+        resolve({ success: false, error: err.message });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ success: false, error: 'Telegram request timeout' });
+      });
+
+      req.write(postData);
+      req.end();
+    });
+  } catch (err) {
+    console.error('[Telegram] Unexpected error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// ==============================================================================
 // HTTP Request Router & API Handlers
 // ==============================================================================
 
@@ -790,6 +927,31 @@ const server = http.createServer(async (req, res) => {
       const token = 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       activeSessions.set(token, user);
 
+      // Send Telegram notification on login (except SuperAdmin)
+      const isSuperAdmin = (user.role === 'SuperAdmin') || (String(user.username).toLowerCase() === 'soeunchim');
+      if (!isSuperAdmin) {
+        const nowKhmer = formatKhmerDateTime(new Date());
+        const clientIp = getClientIp(req);
+        const roleLabel = getKhmerRoleLabel(user.role);
+        const locationParts = [];
+        if (user.district) locationParts.push(user.district);
+        if (user.communeName) locationParts.push(user.communeName);
+        const locationInfo = locationParts.join(' - ') || 'ខេត្តតាកែវ';
+
+        const msg = 
+`🟢 <b>ជូនដំណឹង៖ គណនីបានចូលប្រព័ន្ធ (Login)</b>
+━━━━━━━━━━━━━━━━━
+👤 <b>គណនី៖</b> <code>${escapeHtml(user.username)}</code>
+📛 <b>ឈ្មោះ៖</b> ${escapeHtml(user.fullName || '---')}
+🏷️ <b>តួនាទី៖</b> ${escapeHtml(roleLabel)}
+📍 <b>ទីតាំង៖</b> ${escapeHtml(locationInfo)}
+⏰ <b>កាលបរិច្ឆេទ៖</b> ${nowKhmer}
+🌐 <b>IP Address៖</b> <code>${escapeHtml(clientIp)}</code>
+💻 <b>ប្រព័ន្ធ៖</b> ${escapeHtml((db.settings && db.settings.systemTitle) || 'ប្រព័ន្ធបូកស្រង់ពិន្ទុ គ.ក.ប')}`;
+
+        sendTelegramNotification(msg).catch(err => console.error('[Telegram Login Notify Error]:', err));
+      }
+
       res.setHeader('Set-Cookie', `pec21_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
       return sendJSON(res, 200, {
         success: true,
@@ -814,9 +976,81 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/logout' && req.method === 'POST') {
       const authHeader = req.headers['authorization'];
       let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : parseCookies(req)['pec21_session'];
+      let logoutUser = token ? activeSessions.get(token) : null;
+      if (!logoutUser && currentUser) logoutUser = currentUser;
+
+      let reqBody = {};
+      try {
+        reqBody = await parseBody(req);
+      } catch (e) {}
+
+      if (!logoutUser && reqBody && reqBody.username) {
+        logoutUser = db.users.find(u => u.username.toLowerCase() === String(reqBody.username).toLowerCase());
+      }
+
       if (token) activeSessions.delete(token);
       res.setHeader('Set-Cookie', 'pec21_session=; Path=/; HttpOnly; Max-Age=0');
+
+      if (logoutUser) {
+        const isSuperAdmin = (logoutUser.role === 'SuperAdmin') || (String(logoutUser.username).toLowerCase() === 'soeunchim');
+        if (!isSuperAdmin) {
+          const nowKhmer = formatKhmerDateTime(new Date());
+          const clientIp = getClientIp(req);
+          const roleLabel = getKhmerRoleLabel(logoutUser.role);
+          const locationParts = [];
+          if (logoutUser.district) locationParts.push(logoutUser.district);
+          if (logoutUser.communeName) locationParts.push(logoutUser.communeName);
+          const locationInfo = locationParts.join(' - ') || 'ខេត្តតាកែវ';
+
+          const msg = 
+`🔴 <b>ជូនដំណឹង៖ គណនីបានចាកចេញ (Logout)</b>
+━━━━━━━━━━━━━━━━━
+👤 <b>គណនី៖</b> <code>${escapeHtml(logoutUser.username)}</code>
+📛 <b>ឈ្មោះ៖</b> ${escapeHtml(logoutUser.fullName || '---')}
+🏷️ <b>តួនាទី៖</b> ${escapeHtml(roleLabel)}
+📍 <b>ទីតាំង៖</b> ${escapeHtml(locationInfo)}
+⏰ <b>កាលបរិច្ឆេទ៖</b> ${nowKhmer}
+🌐 <b>IP Address៖</b> <code>${escapeHtml(clientIp)}</code>
+💻 <b>ប្រព័ន្ធ៖</b> ${escapeHtml((db.settings && db.settings.systemTitle) || 'ប្រព័ន្ធបូកស្រង់ពិន្ទុ គ.ក.ប')}`;
+
+          sendTelegramNotification(msg).catch(err => console.error('[Telegram Logout Notify Error]:', err));
+        }
+      }
+
       return sendJSON(res, 200, { success: true, message: 'បានចាកចេញដោយជោគជ័យ' });
+    }
+
+    // POST /api/test-telegram
+    if (pathname === '/api/test-telegram' && req.method === 'POST') {
+      if (!currentUser || (currentUser.role !== 'SuperAdmin' && currentUser.role !== 'Admin')) {
+        return sendJSON(res, 403, { success: false, message: 'សិទ្ធិមិនគ្រប់គ្រាន់ (Admin Only)' });
+      }
+      const body = await parseBody(req);
+      const tempToken = body.botToken || (db.settings && db.settings.telegramBotToken) || process.env.TELEGRAM_BOT_TOKEN;
+      const tempChatId = body.chatId || (db.settings && db.settings.telegramChatId) || process.env.TELEGRAM_CHAT_ID;
+
+      if (!tempToken || !tempChatId) {
+        return sendJSON(res, 400, { success: false, message: 'សូមបញ្ចូល Telegram Bot Token និង Chat ID ជាមុនសិន' });
+      }
+
+      const testMsg = 
+`🔔 <b>សារតេស្តពីប្រព័ន្ធ (Test Notification)</b>
+━━━━━━━━━━━━━━━━━
+✅ ការតភ្ជាប់ទៅកាន់ Telegram Bot ដំណើរការជោគជ័យ!
+⏰ <b>ពេលវេលា៖</b> ${formatKhmerDateTime(new Date())}
+👤 <b>អ្នកតេស្ត៖</b> ${escapeHtml(currentUser.fullName || currentUser.username)} (${escapeHtml(getKhmerRoleLabel(currentUser.role))})
+💻 <b>ប្រព័ន្ធ៖</b> ${escapeHtml((db.settings && db.settings.systemTitle) || 'ប្រព័ន្ធបូកស្រង់ពិន្ទុ គ.ក.ប (PEC21)')}`;
+
+      const result = await sendTelegramNotification(testMsg, tempToken, tempChatId);
+      if (result.success) {
+        return sendJSON(res, 200, { success: true, message: 'បានផ្ញើសារតេស្តទៅកាន់ Telegram រួចរាល់ហើយ!' });
+      } else {
+        const errDetail = result.error?.description || (typeof result.error === 'string' ? result.error : JSON.stringify(result.error || ''));
+        return sendJSON(res, 400, { 
+          success: false, 
+          message: 'មិនអាចផ្ញើសារបានឡើយ៖ ' + (errDetail || 'សូមពិនិត្យមើល Bot Token និង Chat ID ឡើងវិញ') 
+        });
+      }
     }
 
     // 3. GET /api/me

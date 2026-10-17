@@ -447,7 +447,12 @@ function setupEventListeners() {
       icon: '🚪'
     });
     if (ok) {
-      await fetch('/api/logout', { method: 'POST' });
+      const u = currentUser ? currentUser.username : '';
+      await fetch('/api/logout', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u })
+      });
       currentUser = null;
       showLoginScreen();
     }
@@ -639,6 +644,60 @@ function setupEventListeners() {
 
   const btnManualSync = document.getElementById('btnManualGoogleSync');
   if (btnManualSync) btnManualSync.addEventListener('click', handleManualGoogleSync);
+
+  // Telegram Test Notification Button
+  const btnTestTelegram = document.getElementById('btnTestTelegram');
+  if (btnTestTelegram) {
+    btnTestTelegram.addEventListener('click', async () => {
+      const botToken = document.getElementById('settingTelegramBotToken')?.value.trim() || '';
+      const chatId = document.getElementById('settingTelegramChatId')?.value.trim() || '';
+      const resultSpan = document.getElementById('telegramTestResult');
+
+      if (!botToken || !chatId) {
+        alert('⚠️ សូមបញ្ចូល Telegram Bot Token និង Chat ID ជាមុនសិន!');
+        return;
+      }
+
+      btnTestTelegram.disabled = true;
+      btnTestTelegram.textContent = 'កំពុងផ្ញើសារតេស្ត...';
+      if (resultSpan) {
+        resultSpan.style.display = 'inline';
+        resultSpan.style.color = '#0284c7';
+        resultSpan.textContent = '⏳ កំពុងតភ្ជាប់...';
+      }
+
+      try {
+        const res = await fetch('/api/test-telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ botToken, chatId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (resultSpan) {
+            resultSpan.style.color = '#16a34a';
+            resultSpan.textContent = '✅ ' + data.message;
+          }
+          alert('✅ ' + data.message);
+        } else {
+          if (resultSpan) {
+            resultSpan.style.color = '#dc2626';
+            resultSpan.textContent = '❌ ' + data.message;
+          }
+          alert('❌ ' + data.message);
+        }
+      } catch (err) {
+        if (resultSpan) {
+          resultSpan.style.color = '#dc2626';
+          resultSpan.textContent = '❌ ' + err.message;
+        }
+        alert('❌ កំហុស៖ ' + err.message);
+      } finally {
+        btnTestTelegram.disabled = false;
+        btnTestTelegram.textContent = '🔔 សាកល្បងផ្ញើសារ Telegram (Test Notification)';
+      }
+    });
+  }
 
   // Logo Upload & Reset Listeners
   const headerBrandLogo = document.getElementById('headerBrandLogo');
@@ -8093,6 +8152,12 @@ async function loadSettingsForm() {
       document.getElementById('settingGoogleSheetUrl').value = s.googleSheetUrl || '';
       document.getElementById('settingPecName').value = s.pecName || '';
       document.getElementById('settingMandate').value = s.mandateTitle || '';
+      const teleCheck = document.getElementById('settingTelegramEnabled');
+      if (teleCheck) teleCheck.checked = (s.telegramNotifyEnabled !== false);
+      const teleTokenInput = document.getElementById('settingTelegramBotToken');
+      if (teleTokenInput) teleTokenInput.value = s.telegramBotToken || '';
+      const teleChatIdInput = document.getElementById('settingTelegramChatId');
+      if (teleChatIdInput) teleChatIdInput.value = s.telegramChatId || '';
       updateAppLogos(s.logoUrl);
     }
   } catch (e) {
@@ -8113,7 +8178,10 @@ async function handleSaveSettings() {
     googleSheetUrl: rawUrl,
     pecName: document.getElementById('settingPecName').value.trim(),
     mandateTitle: document.getElementById('settingMandate').value.trim(),
-    logoUrl: document.getElementById('settingLogoUrl')?.value || ''
+    logoUrl: document.getElementById('settingLogoUrl')?.value || '',
+    telegramNotifyEnabled: document.getElementById('settingTelegramEnabled')?.checked !== false,
+    telegramBotToken: document.getElementById('settingTelegramBotToken')?.value.trim() || '',
+    telegramChatId: document.getElementById('settingTelegramChatId')?.value.trim() || ''
   };
 
   try {
