@@ -7393,29 +7393,48 @@ function setupAutoPrintPagination() {
   const isLandscape = sheet.classList.contains('landscape');
 
   // Determine pagination thresholds per report type
-  let page1Cap = 18;
-  let midPageCap = 18;
-  let lastPageCap = 18;
+  let page1Cap = 30;
+  let midPageCap = 36;
+  let lastPageCap = 30;
+  let singlePageMaxRows = 24;
 
   if (isLandscape) {
-    page1Cap = 12;
-    midPageCap = 15;
-    lastPageCap = 12;
+    page1Cap = 14;
+    midPageCap = 18;
+    lastPageCap = 14;
+    singlePageMaxRows = 12;
   } else if (currentReportType === 'final_roster') {
-    page1Cap = 18; // 3 stations of 6 candidates
-    midPageCap = 18; // 3 stations of 6 candidates
-    lastPageCap = 18; // 3 stations of 6 candidates + bottom summary & signatures
+    page1Cap = 36; // 6 stations of 6 candidates
+    midPageCap = 42; // 7 stations of 6 candidates
+    lastPageCap = 36; // 6 stations of 6 candidates + bottom summary & signatures
+    singlePageMaxRows = 30; // up to 5 stations of 6 candidates + bottom summary & signatures on 1 page
+    if (rows.length > singlePageMaxRows && rows.length <= 36) {
+      page1Cap = 24; // If 6 stations (36 rows), split cleanly into 24 and 12 across 2 pages
+    }
   } else if (currentReportType === 'notice') {
-    page1Cap = 18;
-    midPageCap = 18;
-    lastPageCap = 18;
+    page1Cap = 28;
+    midPageCap = 36;
+    lastPageCap = 28;
+    singlePageMaxRows = 22;
   } else if (currentReportType === 'results') {
-    page1Cap = 18;
-    midPageCap = 18;
-    lastPageCap = 18;
+    page1Cap = 30;
+    midPageCap = 36;
+    lastPageCap = 28;
+    singlePageMaxRows = 24;
+  } else if (currentReportType === 'scoresheet') {
+    page1Cap = 30;
+    midPageCap = 36;
+    lastPageCap = 28;
+    singlePageMaxRows = 24;
+  } else if (currentReportType === 'attendance') {
+    page1Cap = isLandscape ? 14 : 30;
+    midPageCap = isLandscape ? 18 : 36;
+    lastPageCap = isLandscape ? 14 : 28;
+    singlePageMaxRows = isLandscape ? 12 : 24;
   }
 
-  // Clean up any old single page footers first
+  // Clean up any old single page footers or page indicators first
+  Array.from(sheet.querySelectorAll('.report-single-page-footer, .report-screen-page-indicator')).forEach(el => el.remove());
   Array.from(sheet.children).forEach(el => {
     if (el && el.classList && (el.classList.contains('report-single-page-footer') || el.classList.contains('report-page-footer'))) {
       el.remove();
@@ -7423,7 +7442,7 @@ function setupAutoPrintPagination() {
   });
 
   // If total rows fit comfortably on 1 page (single page report)
-  if (rows.length <= page1Cap) {
+  if (rows.length <= singlePageMaxRows) {
     // Total pages = 1 -> Single page report!
     if (existingScreenView) {
       while (existingScreenView.firstChild) {
@@ -7512,9 +7531,14 @@ function setupAutoPrintPagination() {
   if (pagesRows.length > 1) {
     const lastChunk = pagesRows[pagesRows.length - 1];
     if (lastChunk.length > lastPageCap) {
-      const splitPoint = Math.max(1, lastChunk.length - lastPageCap);
-      const overflow = lastChunk.splice(splitPoint);
-      pagesRows.push(overflow);
+      let splitPoint = Math.max(1, lastChunk.length - lastPageCap);
+      if (currentReportType === 'final_roster' && splitPoint % 6 !== 0) {
+        splitPoint = Math.ceil(splitPoint / 6) * 6;
+      }
+      if (splitPoint < lastChunk.length) {
+        const overflow = lastChunk.splice(splitPoint);
+        pagesRows.push(overflow);
+      }
     }
   }
 

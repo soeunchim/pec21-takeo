@@ -1570,17 +1570,27 @@ tr.excel-row-active td.excel-calc-rank {
   }
 
   .print-paper-sheet.landscape .report-print-page {
-    height: 196mm !important;
-    min-height: 196mm !important;
-    max-height: 196mm !important;
-    padding-bottom: 10mm !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    min-height: 198mm !important;
+    max-height: 200mm !important;
+    padding-bottom: 8mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .print-paper-sheet:not(.landscape) .report-print-page {
-    height: 282mm !important;
-    min-height: 282mm !important;
-    max-height: 282mm !important;
-    padding-bottom: 12mm !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    min-height: 286mm !important;
+    max-height: 288mm !important;
+    padding-bottom: 10mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .report-print-page-1 {
