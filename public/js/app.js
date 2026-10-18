@@ -1644,35 +1644,172 @@ async function restoreAllCandidatesFromBrowser() {
 }
 window.restoreAllCandidatesFromBrowser = restoreAllCandidatesFromBrowser;
 
-async function handleUploadBackupJSON(e) {
+let pendingRestoreFile = null;
+
+function handleUploadBackupFile(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
-  if (!confirm(`តើលោកអ្នកពិតជាចង់ស្ដារទិន្នន័យពីឯកសារ "${file.name}" មែនទេ? ទិន្នន័យបច្ចុប្បន្ននឹងត្រូវបានជំនួសដោយទិន្នន័យពីឯកសារ Backup នេះ។`)) {
-    e.target.value = '';
+  pendingRestoreFile = file;
+
+  const infoBox = document.getElementById('restoreFileInfoBox');
+  const inputEl = document.getElementById('restoreBackupPasswordInput');
+  const errEl = document.getElementById('restorePasswordError');
+  const btnSubmit = document.getElementById('btnSubmitRestoreBackup');
+
+  if (infoBox) {
+    const isZip = file.name.toLowerCase().endsWith('.zip');
+    const safeName = String(file.name).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    infoBox.innerHTML = `
+      <div><strong>📁 ឯកសារ ៖</strong> ${safeName}</div>
+      <div style="margin-top: 4px; font-size: 11.5px; color: #64748b;">
+        ទំហំ ៖ ${(file.size / 1024).toFixed(1)} KB ${isZip ? '• 🔒 ឯកសារ ZIP ការពារដោយ Password' : '• 📄 ឯកសារ JSON'}
+      </div>
+    `;
+  }
+  if (inputEl) {
+    inputEl.value = '';
+    inputEl.type = 'password';
+  }
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+  if (btnSubmit) {
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = '🚀 ស្ដារទិន្នន័យ (Restore)';
+  }
+
+  if (typeof openModal === 'function') {
+    openModal('modalRestorePassword');
+  } else {
+    const modal = document.getElementById('modalRestorePassword');
+    if (modal) modal.classList.add('active');
+  }
+  setTimeout(() => { if (inputEl) inputEl.focus(); }, 150);
+}
+window.handleUploadBackupFile = handleUploadBackupFile;
+window.handleUploadBackupJSON = handleUploadBackupFile; // backward compatibility
+
+function toggleRestorePasswordEye() {
+  const inputEl = document.getElementById('restoreBackupPasswordInput');
+  if (inputEl) {
+    inputEl.type = inputEl.type === 'password' ? 'text' : 'password';
+  }
+}
+window.toggleRestorePasswordEye = toggleRestorePasswordEye;
+
+async function handleFormRestoreBackup(e) {
+  if (e) e.preventDefault();
+  if (!pendingRestoreFile) return;
+
+  const inputEl = document.getElementById('restoreBackupPasswordInput');
+  const errEl = document.getElementById('restorePasswordError');
+  const btnSubmit = document.getElementById('btnSubmitRestoreBackup');
+  const password = inputEl ? inputEl.value.trim() : '';
+
+  if (!password) {
+    if (errEl) {
+      errEl.textContent = 'សូមបញ្ចូលលេខសម្ងាត់ SuperAdmin!';
+      errEl.style.display = 'block';
+    }
     return;
   }
+
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = '⏳ កំពុងផ្ទៀងផ្ទាត់ និងស្ដារ...';
+  }
+  if (errEl) errEl.style.display = 'none';
+
   try {
-    const text = await file.text();
-    const json = JSON.parse(text);
+    const file = pendingRestoreFile;
+    const isZip = file.name.toLowerCase().endsWith('.zip');
+
+    let payload = {};
+    if (isZip) {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = reader.result || '';
+          const b64 = res.substr(res.indexOf(',') + 1);
+          resolve(b64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      payload = {
+        fileData: base64,
+        fileName: file.name,
+        password: password
+      };
+    } else {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      payload = {
+        jsonData: json,
+        fileName: file.name,
+        password: password
+      };
+    }
+
     const res = await fetch('/api/restore', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(json)
+      body: JSON.stringify(payload)
     });
+
     const result = await res.json();
     if (result.success) {
-      alert(result.message || 'បានស្ដារទិន្នន័យជោគជ័យ!');
+      if (typeof closeModal === 'function') {
+        closeModal('modalRestorePassword');
+      } else {
+        const modal = document.getElementById('modalRestorePassword');
+        if (modal) modal.classList.remove('active');
+      }
+      const fileInput = document.getElementById('backupFileInput');
+      if (fileInput) fileInput.value = '';
+      pendingRestoreFile = null;
+
+      if (typeof showModernPopup === 'function') {
+        await showModernPopup({
+          title: 'ស្ដារទិន្នន័យជោគជ័យ!',
+          message: result.message || 'បានស្ដារទិន្នន័យដោយជោគជ័យ!',
+          type: 'success',
+          icon: '✅',
+          showCancel: false,
+          confirmText: 'យល់ព្រម'
+        });
+      } else {
+        alert(result.message || 'បានស្ដារទិន្នន័យជោគជ័យ!');
+      }
       window.location.reload();
     } else {
-      alert('បរាជ័យក្នុងការស្ដារ ៖ ' + result.message);
+      if (errEl) {
+        errEl.textContent = result.message || 'លេខសម្ងាត់មិនត្រឹមត្រូវ!';
+        errEl.style.display = 'block';
+      } else {
+        alert(result.message || 'លេខសម្ងាត់មិនត្រឹមត្រូវ!');
+      }
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = '🚀 ស្ដារទិន្នន័យ (Restore)';
+      }
     }
   } catch (err) {
-    alert('មានបញ្ហាក្នុងការអានឯកសារ JSON ៖ ' + err.message);
-  } finally {
-    e.target.value = '';
+    if (errEl) {
+      errEl.textContent = 'កំហុសបច្ចេកទេស ៖ ' + err.message;
+      errEl.style.display = 'block';
+    } else {
+      alert('កំហុសបច្ចេកទេស ៖ ' + err.message);
+    }
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = '🚀 ស្ដារទិន្នន័យ (Restore)';
+    }
   }
 }
-window.handleUploadBackupJSON = handleUploadBackupJSON;
+window.handleFormRestoreBackup = handleFormRestoreBackup;
 
 function checkAndShowBrowserRecoveryBanner(serverCandidateCount) {
   const localCandidates = getAllLocalBackupCandidates();

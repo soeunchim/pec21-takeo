@@ -830,11 +830,13 @@
 
             <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
               <button id="btnSaveSettings" class="btn btn-primary">រក្សាទុកការកំណត់ (Save Settings)</button>
-              <a href="/api/backup" class="btn btn-secondary" download>📥 Backup Data (JSON)</a>
-              <button type="button" class="btn btn-warning" onclick="document.getElementById('jsonBackupFileInput').click()" style="background: #f59e0b; color: white; border: none; font-weight: 600;" title="បញ្ចូលឯកសារ Backup JSON ដើម្បីស្ដារទិន្នន័យ">
-                📤 ស្ដារទិន្នន័យពី JSON (Restore)
+              <a href="/api/backup" class="btn btn-secondary" download title="ទាញយកឯកសារ Backup ជា ZIP ការពារដោយលេខសម្ងាត់ SuperAdmin">
+                📥 Backup Data (ZIP ការពារដោយ Password)
+              </a>
+              <button type="button" class="btn btn-warning" onclick="document.getElementById('backupFileInput').click()" style="background: #f59e0b; color: white; border: none; font-weight: 600;" title="បញ្ចូលឯកសារ Backup ZIP ឬ JSON ដើម្បីស្ដារទិន្នន័យ">
+                📤 ស្ដារទិន្នន័យ (Restore ZIP / JSON)
               </button>
-              <input type="file" id="jsonBackupFileInput" accept=".json" style="display:none;" onchange="handleUploadBackupJSON(event)">
+              <input type="file" id="backupFileInput" accept=".zip,.json" style="display:none;" onchange="handleUploadBackupFile(event)">
               <button type="button" class="btn btn-outline" onclick="restoreAllCandidatesFromBrowser()" title="ស្ដារបេក្ខជនទាំងអស់ពី Browser Backup">
                 🔄 ស្ដារបេក្ខជនពី Browser Backup
               </button>
@@ -1102,6 +1104,43 @@
     </div>
   </div>
 
+  <!-- Modal: Restore Password Prompt -->
+  <div id="modalRestorePassword" class="modal-overlay">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header" style="background: #f8fafc; border-bottom: 1.5px solid #cbd5e1;">
+        <h3 style="font-family: var(--font-heading); font-size: 14.5px; color: #1e3a8a; display: flex; align-items: center; gap: 8px;">
+          🔐 ស្ដារទិន្នន័យពី Backup (Restore)
+        </h3>
+        <button type="button" class="btn-close" onclick="closeModal('modalRestorePassword')">&times;</button>
+      </div>
+      <form id="formRestoreBackup" onsubmit="event.preventDefault(); handleFormRestoreBackup(event);">
+        <div class="modal-body" style="padding: 20px;">
+          <div id="restoreFileInfoBox" style="background: #f1f5f9; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; color: #334155; margin-bottom: 16px; border: 1px solid #cbd5e1; word-break: break-all;">
+          </div>
+          <div style="font-size: 13px; color: #475569; margin-bottom: 12px; line-height: 1.5;">
+            🛡️ សូមបញ្ចូល<strong>លេខសម្ងាត់របស់គណនី SuperAdmin</strong> ដើម្បីពន្លា និងស្ដារទិន្នន័យ ៖
+          </div>
+          <div class="form-group">
+            <label class="form-label">លេខសម្ងាត់ SuperAdmin (Password)</label>
+            <div style="position: relative;">
+              <input type="password" id="restoreBackupPasswordInput" class="form-control" required placeholder="បញ្ចូលលេខសម្ងាត់ SuperAdmin" style="padding-right: 42px; font-size: 14px;">
+              <button type="button" onclick="toggleRestorePasswordEye()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b;" title="បង្ហាញ/លាក់លេខសម្ងាត់">
+                👁️
+              </button>
+            </div>
+          </div>
+          <div id="restorePasswordError" style="color: var(--danger); font-size: 13px; margin-top: 10px; display: none; background: #fef2f2; padding: 8px 12px; border-radius: 6px; border: 1px solid #fecaca;"></div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalRestorePassword')">បោះបង់</button>
+          <button type="submit" id="btnSubmitRestoreBackup" class="btn btn-warning" style="background: #f59e0b; color: white; border: none; font-weight: 700;">
+            🚀 ស្ដារទិន្នន័យ (Restore)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal: Excel Import Preview -->
   <div id="modalExcelImport" class="modal-overlay">
     <div class="modal-content" style="max-width: 950px; width: 95%;">
@@ -1186,6 +1225,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_mobile_ui_v61"></script>
+  <script src="js/app.js?v=20261018_backup_zip_pw_v62"></script>
 </body>
 </html>

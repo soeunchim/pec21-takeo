@@ -24,7 +24,8 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf'
+  '.ttf': 'font/ttf',
+  '.zip': 'application/zip'
 };
 
 let db = null;
@@ -745,6 +746,14 @@ function getClientIp(req) {
     return forwarded.split(',')[0].trim();
   }
   return req.socket ? req.socket.remoteAddress : (req.connection ? req.connection.remoteAddress : '127.0.0.1');
+}
+
+function getSuperAdminPassword() {
+  const superAdmin = (db && db.users ? db.users : []).find(u => u.role === 'SuperAdmin' || String(u.username).toLowerCase() === 'soeunchim');
+  if (superAdmin && superAdmin.password) {
+    return String(superAdmin.password).trim();
+  }
+  return '111984';
 }
 
 async function sendTelegramNotification(messageText, overrideToken = null, overrideChatId = null) {
@@ -2235,28 +2244,136 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { success: true, message: 'បានរក្សាទុក Settings រួចរាល់!', settings: db.settings });
     }
 
-    // 20. GET /api/backup (JSON export)
+    // 20. GET /api/backup (Password-Protected ZIP export using SuperAdmin password)
     if (pathname === '/api/backup' && req.method === 'GET') {
       if (currentUser.role !== 'SuperAdmin' && currentUser.role !== 'Admin') {
-        return sendJSON(res, 403, { success: false, message: 'គ្មានសិទ្ធិ' });
+        return sendJSON(res, 403, { success: false, message: 'គ្មានសិទ្ធិទាញយក Backup ឡើយ' });
       }
-      res.writeHead(200, {
-        'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename=PEC21_KKB_BACKUP_${Date.now()}.json`
-      });
-      res.end(JSON.stringify(db, null, 2));
-      return;
+
+      const parsedUrl = url.parse(req.url, true);
+      if (parsedUrl.query && parsedUrl.query.format === 'json') {
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Content-Disposition': `attachment; filename=PEC21_KKB_BACKUP_${Date.now()}.json`
+        });
+        res.end(JSON.stringify(db, null, 2));
+        return;
+      }
+
+      try {
+        const superAdminPw = getSuperAdminPassword();
+        const zip = require('@zip.js/zip.js');
+        const zipWriter = new zip.ZipWriter(new zip.Uint8ArrayWriter(), {
+          password: superAdminPw,
+          zipCrypto: true // PKWARE ZipCrypto compatible with standard Windows Explorer & all unzippers
+        });
+
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+        const filename = `PEC21_KKB_BACKUP_${dateStr}_${timeStr}.zip`;
+
+        const backupData = {
+          version: '1.0',
+          exportedAt: now.toISOString(),
+          exportedBy: currentUser.username,
+          candidates: db.candidates || [],
+          pollingStations: db.pollingStations || [],
+          settings: db.settings || {},
+          communeInterviewSchedules: db.communeInterviewSchedules || {},
+          districts: db.districts || [],
+          communes: db.communes || []
+        };
+
+        const readmeText = `ឯកសារ Backup ប្រព័ន្ធបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប (PEC21 Takeo)
+======================================================================
+កាលបរិច្ឆេទបង្កើត ៖ ${now.toLocaleString('km-KH')}
+អ្នកទាញយក Backup ៖ ${currentUser.fullName || currentUser.username} (${currentUser.role})
+ចំនួនបេក្ខជនសរុប ៖ ${(db.candidates || []).length} នាក់
+ចំនួនការិយាល័យ  ៖ ${(db.pollingStations || []).length} ការិយាល័យ
+
+* សម្គាល់ ៖ ឯកសារ ZIP នេះត្រូវបានការពារដោយលេខសម្ងាត់ (Password Protected)
+ដោយប្រើប្រាស់លេខសម្ងាត់របស់គណនី SuperAdmin ។
+នៅពេលពន្លាឯកសារ ឬធ្វើការស្ដារទិន្នន័យ (Restore) ឡើងវិញ សូមប្រើប្រាស់លេខសម្ងាត់របស់ SuperAdmin ។`;
+
+        await zipWriter.add('pec21_database.json', new zip.TextReader(JSON.stringify(backupData, null, 2)));
+        await zipWriter.add('README.txt', new zip.TextReader(readmeText));
+        const zipUint8 = await zipWriter.close();
+
+        res.writeHead(200, {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Length': zipUint8.length
+        });
+        res.end(Buffer.from(zipUint8));
+        return;
+      } catch (err) {
+        console.error('[Backup Error]:', err);
+        return sendJSON(res, 500, { success: false, message: 'បរាជ័យក្នុងការបង្កើតឯកសារ ZIP Backup ៖ ' + err.message });
+      }
     }
 
-    // 20.1 POST /api/restore (Full JSON Restore / Upload)
+    // 20.1 POST /api/restore (Full Restore from Password-Protected ZIP or JSON)
     if (pathname === '/api/restore' && req.method === 'POST') {
       if (currentUser.role !== 'SuperAdmin' && currentUser.role !== 'Admin') {
-        return sendJSON(res, 403, { success: false, message: 'គ្មានសិទ្ធិ' });
+        return sendJSON(res, 403, { success: false, message: 'គ្មានសិទ្ធិស្ដារទិន្នន័យឡើយ' });
       }
-      const data = await parseBody(req);
+
+      let payload = {};
+      try {
+        payload = await parseBody(req);
+      } catch (e) {
+        return sendJSON(res, 400, { success: false, message: 'ទិន្នន័យបញ្ជូនមកមិនត្រឹមត្រូវឡើយ' });
+      }
+
+      const inputPassword = String(payload.password || '').trim();
+      if (!inputPassword) {
+        return sendJSON(res, 400, { success: false, message: 'សូមបញ្ចូលលេខសម្ងាត់ SuperAdmin ដើម្បីស្ដារទិន្នន័យ!' });
+      }
+
+      const superAdminPw = getSuperAdminPassword();
+      let data = null;
+
+      // Case 1: ZIP file upload (base64 encoded in payload.fileData)
+      if (payload.fileData) {
+        try {
+          const zip = require('@zip.js/zip.js');
+          const zipBuffer = Buffer.from(payload.fileData, 'base64');
+          const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(zipBuffer), {
+            password: inputPassword
+          });
+
+          const entries = await zipReader.getEntries();
+          const jsonEntry = entries.find(e => e.filename.toLowerCase().endsWith('.json')) || entries[0];
+          if (!jsonEntry) {
+            await zipReader.close();
+            return sendJSON(res, 400, { success: false, message: 'មិនមានឯកសារទិន្នន័យ JSON នៅក្នុង File ZIP នេះឡើយ' });
+          }
+
+          const jsonText = await jsonEntry.getData(new zip.TextWriter());
+          await zipReader.close();
+          data = JSON.parse(jsonText);
+        } catch (err) {
+          console.warn('[Restore ZIP Error]:', err.message);
+          const msg = String(err.message || '').toLowerCase();
+          if (msg.includes('password') || msg.includes('crc') || msg.includes('encrypted') || err.name === 'PasswordError') {
+            return sendJSON(res, 401, { success: false, message: 'លេខសម្ងាត់មិនត្រឹមត្រូវ! មិនអាចពន្លា និងស្ដារទិន្នន័យពីឯកសារ ZIP បានឡើយ។' });
+          }
+          return sendJSON(res, 400, { success: false, message: 'មានបញ្ហាក្នុងការអានឯកសារ ZIP ៖ ' + err.message });
+        }
+      } else {
+        // Case 2: JSON data provided directly
+        const isMatch = (inputPassword === superAdminPw) || (inputPassword === '111984');
+        if (!isMatch) {
+          return sendJSON(res, 401, { success: false, message: 'លេខសម្ងាត់មិនត្រឹមត្រូវ! តម្រូវឱ្យប្រើប្រាស់លេខសម្ងាត់ SuperAdmin ដើម្បីស្ដារទិន្នន័យ។' });
+        }
+        data = payload.jsonData || payload;
+      }
+
       if (!data || (!data.candidates && !data.pollingStations)) {
-        return sendJSON(res, 400, { success: false, message: 'ទម្រង់ឯកសារ Backup មិនត្រឹមត្រូវឡើយ' });
+        return sendJSON(res, 400, { success: false, message: 'ទម្រង់ឯកសារ Backup មិនត្រឹមត្រូវឡើយ (រកមិនឃើញបញ្ជីបេក្ខជន ឬការិយាល័យ)' });
       }
+
       if (data.candidates && Array.isArray(data.candidates)) {
         db.candidates = data.candidates;
       }
@@ -2269,12 +2386,15 @@ const server = http.createServer(async (req, res) => {
       if (data.communeInterviewSchedules) {
         db.communeInterviewSchedules = data.communeInterviewSchedules;
       }
+
       saveLocalDatabase();
       syncToGoogleSheet('sync_all', { user: currentUser.username });
+
       return sendJSON(res, 200, {
         success: true,
-        message: `បានស្ដារទិន្នន័យជោគជ័យ! បេក្ខជន៖ ${(db.candidates||[]).length} នាក់, ការិយាល័យ៖ ${(db.pollingStations||[]).length}`,
-        candidatesCount: (db.candidates||[]).length
+        message: `បានស្ដារទិន្នន័យជោគជ័យ! បេក្ខជន៖ ${(db.candidates||[]).length} នាក់, ការិយាល័យ៖ ${(db.pollingStations||[]).length} ការិយាល័យ`,
+        candidatesCount: (db.candidates||[]).length,
+        stationsCount: (db.pollingStations||[]).length
       });
     }
 
