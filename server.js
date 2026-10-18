@@ -46,7 +46,7 @@ try {
 // Helper: Detect Network Interfaces & Storage Environments (Localhost, Local Wi-Fi, Cloud)
 function getNetworkInfo() {
   const isCloud = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || (process.env.NODE_ENV === 'production' && !process.env.LOCAL_DEV));
-  const cloudUrl = process.env.RENDER_EXTERNAL_URL || 'https://pec21-takeo.onrender.com';
+  const cloudUrl = process.env.RENDER_EXTERNAL_URL || 'https://pollingstationpec21.onrender.com';
   
   let localIp = '127.0.0.1';
   const interfaces = os.networkInterfaces();
@@ -2512,7 +2512,7 @@ server.listen(PORT, async () => {
   await initCloudSync();
 
   // Automatic Self-Ping for Render (Keep-Alive: prevents 15-min inactivity spin down)
-  const targetUrl = process.env.RENDER_EXTERNAL_URL || 'https://pec21-takeo.onrender.com';
+  const targetUrl = process.env.RENDER_EXTERNAL_URL || 'https://pollingstationpec21.onrender.com';
   if (process.env.RENDER || process.env.NODE_ENV === 'production' || process.env.RENDER_EXTERNAL_URL) {
     const PING_INTERVAL_MS = 10 * 60 * 1000; // Ping every 10 minutes (threshold is 15 minutes)
     setInterval(() => {

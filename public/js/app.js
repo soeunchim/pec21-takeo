@@ -1580,8 +1580,20 @@ function renderStorageModesUI(netInfo, settings) {
   const modalWifiText = document.getElementById('modalWifiUrlText');
   if (modalWifiText) modalWifiText.textContent = window.currentWifiUrl;
 
+  const currentCloud = window.location.origin.includes('onrender.com') ? window.location.origin : 'https://pollingstationpec21.onrender.com';
+  const resolvedCloudUrl = (netInfo && netInfo.cloudUrl && !netInfo.cloudUrl.includes('pec21-takeo')) ? netInfo.cloudUrl : currentCloud;
+
   const modeCloudText = document.getElementById('modeCloudUrlText');
-  if (modeCloudText) modeCloudText.textContent = netInfo.cloudUrl || 'https://pec21-takeo.onrender.com';
+  if (modeCloudText) modeCloudText.textContent = resolvedCloudUrl;
+
+  const btnOpenCloudUrl = document.getElementById('btnOpenCloudUrl');
+  if (btnOpenCloudUrl) btnOpenCloudUrl.href = resolvedCloudUrl;
+
+  const modalCloudLink = document.getElementById('modalCloudLink');
+  if (modalCloudLink) {
+    modalCloudLink.href = resolvedCloudUrl;
+    modalCloudLink.textContent = resolvedCloudUrl.replace(/^https?:\/\//, '');
+  }
 
   const modeGsText = document.getElementById('modeGoogleSheetStatusText');
   if (modeGsText) {
@@ -1723,7 +1735,8 @@ function setStorageMode(mode) {
   } else if (mode === 'local_wifi') {
     openStorageModesModal();
   } else if (mode === 'online_cloud') {
-    const cloudUrl = (window.currentNetworkInfo && window.currentNetworkInfo.cloudUrl) || 'https://pec21-takeo.onrender.com';
+    const currentCloud = window.location.origin.includes('onrender.com') ? window.location.origin : 'https://pollingstationpec21.onrender.com';
+    const cloudUrl = (window.currentNetworkInfo && window.currentNetworkInfo.cloudUrl && !window.currentNetworkInfo.cloudUrl.includes('pec21-takeo')) ? window.currentNetworkInfo.cloudUrl : currentCloud;
     if (window.location.origin.includes('onrender.com')) {
       showToast('info', '🌐 លោកអ្នកកំពុងដំណើរការលើ Online Cloud រួចជាស្រេចហើយ។');
     } else {

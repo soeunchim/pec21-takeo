@@ -11,7 +11,7 @@ echo.
 echo   [+] កំពុងចាប់ផ្តើម Server (Starting Server on Port 3027)...
 echo   [+] របៀបទី ១ ៖ Localhost (ម៉ាស៊ីនផ្ទាល់)  -^> http://localhost:3027
 echo   [+] របៀបទី ២ ៖ តាម Wi-Fi តែមួយ         -^> សូមមើល IP ក្នុង log ខាងក្រោម
-echo   [+] របៀបទី ៣ ៖ Online Cloud            -^> https://pec21-takeo.onrender.com
+echo   [+] របៀបទី ៣ ៖ Online Cloud            -^> https://pollingstationpec21.onrender.com
 echo   [+] របៀបទី ៤ ៖ Storage Google Sheet     -^> កំណត់ក្នុងផ្ទាំង Settings
 echo.
 echo ======================================================================
