@@ -480,15 +480,17 @@ window.handleLoginSubmit = async function(e) {
     const data = await res.json();
     if (data.success) {
       currentUser = data.user;
-      showAppShell();
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'ជោគជ័យ! កំពុងផ្ទុកទិន្នន័យ...';
+      }
+      // Reset active tab to default dashboard so new user starts clean
       try {
-        await loadInitialData();
-      } catch (loadErr) {
-        console.warn('Initial data load warning:', loadErr);
-      }
-      if (currentUser.mustChangePassword) {
-        openChangePasswordModal(true);
-      }
+        localStorage.removeItem('pec21_active_tab');
+      } catch (e) {}
+      // Refresh page so each user cleanly captures their own assigned role and data
+      window.location.reload();
+      return true;
     } else {
       if (errBox) {
         errBox.textContent = data.message || 'Login failed';
@@ -527,13 +529,21 @@ function setupEventListeners() {
     });
     if (ok) {
       const u = currentUser ? currentUser.username : '';
-      await fetch('/api/logout', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u })
-      });
+      try {
+        await fetch('/api/logout', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u })
+        });
+      } catch (logoutErr) {
+        console.warn('Logout request warning:', logoutErr);
+      }
       currentUser = null;
-      showLoginScreen();
+      try {
+        localStorage.removeItem('pec21_active_tab');
+      } catch (e) {}
+      // Refresh page so all memory, filters, and cached permissions are completely cleared
+      window.location.reload();
     }
   });
 
