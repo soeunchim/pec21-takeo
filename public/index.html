@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261018_excel_btn_khmer_v56">
+  <link rel="stylesheet" href="css/style.css?v=20261018_save_btn_right_v57">
   <link rel="icon" type="image/x-icon" href="favicon.ico?v=20261018">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=20261018">
   <link rel="icon" type="image/jpeg" href="img/nec_logo.jpg?v=20261018">
@@ -312,9 +312,6 @@
           <!-- Scoring Action Toolbar (Right below station selector box, above table) -->
           <div class="scoring-actions-toolbar" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; padding: 5px 8px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 6px;">
             <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
-              <button id="btnSaveBatchScores" class="btn btn-success" style="font-weight: 700; padding: 5px 14px; font-size: 12.5px; box-shadow: 0 1px 3px rgba(22, 101, 52, 0.25); display: inline-flex; align-items: center; gap: 4px;" title="រក្សាទុកទិន្នន័យទាំងអស់ចូលប្រព័ន្ធ">
-                💾 រក្សាទុកទិន្នន័យ
-              </button>
               <button id="btnOpenAddCandidateModal" class="btn btn-primary" style="font-weight: 600; padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" title="បន្ថែមបេក្ខជនថ្មី">
                 ➕ បន្ថែមបេក្ខជន
               </button>
@@ -332,6 +329,9 @@
               <input type="file" id="excelFileInput" accept=".xlsx, .xlsm, .xls" style="display: none;">
               <button id="btnManualScoringSync" class="btn btn-secondary" style="font-weight: 600; padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" title="ទាញយកទិន្នន័យចុងក្រោយបង្អស់ពី Server">
                 🔄 Sync ទិន្នន័យ
+              </button>
+              <button id="btnSaveBatchScores" class="btn btn-success" style="font-weight: 700; padding: 5px 14px; font-size: 12.5px; box-shadow: 0 1px 3px rgba(22, 101, 52, 0.25); display: inline-flex; align-items: center; gap: 4px;" title="រក្សាទុកទិន្នន័យទាំងអស់ចូលប្រព័ន្ធ">
+                💾 រក្សាទុកទិន្នន័យ
               </button>
             </div>
           </div>
@@ -1189,6 +1189,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_excel_btn_khmer_v56"></script>
+  <script src="js/app.js?v=20261018_save_btn_right_v57"></script>
 </body>
 </html>
