@@ -1495,43 +1495,7 @@ async function checkCloudStatus() {
       updateAppLogos(appSettings.logoUrl);
 
       // Determine active storage mode & update header badge
-      if (appSettings.googleSheetUrl && (appSettings.storageMode === 'google_sheet' || appSettings.autoSyncGoogleSheet)) {
-        // Mode 4: Google Sheet
-        badge.textContent = 'Storage: Google Sheet';
-        if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
-        if (pulse) {
-          pulse.className = 'pulse-dot';
-          pulse.style.backgroundColor = '#06b6d4';
-          pulse.style.boxShadow = '0 0 8px #06b6d4';
-        }
-      } else if (isLanWifi) {
-        // Mode 2: Local Wi-Fi
-        badge.textContent = 'Storage: Local Wi-Fi';
-        if (badgeContainer) badgeContainer.title = `ប្រព័ន្ធកំពុងដំណើរការលើ Wi-Fi (${window.location.host}) (ចុចដើម្បីមើលព័ត៌មាន & QR Code)`;
-        if (pulse) {
-          pulse.className = 'pulse-dot';
-          pulse.style.backgroundColor = '#f59e0b';
-          pulse.style.boxShadow = '0 0 8px #f59e0b';
-        }
-      } else if (isCloud) {
-        // Mode 3: Online Database (Cloud)
-        badge.textContent = 'Storage: Online Database';
-        if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើ Online Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
-        if (pulse) {
-          pulse.className = 'pulse-dot';
-          pulse.style.backgroundColor = '#10b981';
-          pulse.style.boxShadow = '0 0 8px #10b981';
-        }
-      } else {
-        // Mode 1: Local Database
-        badge.textContent = 'Storage: Local Database';
-        if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើម៉ាស៊ីនផ្ទាល់ Localhost:3027 (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
-        if (pulse) {
-          pulse.className = 'pulse-dot';
-          pulse.style.backgroundColor = '#22c55e';
-          pulse.style.boxShadow = '0 0 8px #22c55e';
-        }
-      }
+      updateStorageHeaderBadge(appSettings);
 
       // Update storage modes panel if present
       renderStorageModesUI(data.networkInfo, appSettings);
@@ -1608,15 +1572,25 @@ function renderStorageModesUI(netInfo, settings) {
   }
 
   // Determine active mode index: 1 (Local), 2 (Wifi), 3 (Cloud), 4 (GoogleSheet)
+  const explicitMode = (settings && settings.storageMode) || localStorage.getItem('pec21_storage_mode') || '';
+
   let activeMode = 1;
-  if (settings && settings.googleSheetUrl && (settings.storageMode === 'google_sheet' || settings.autoSyncGoogleSheet)) {
+  if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
     activeMode = 4;
-  } else if (isLanWifi) {
-    activeMode = 2;
-  } else if (isCloud) {
+  } else if (explicitMode === 'online_cloud') {
     activeMode = 3;
-  } else {
+  } else if (explicitMode === 'local') {
     activeMode = 1;
+  } else {
+    if (settings && settings.googleSheetUrl && settings.storageMode === 'google_sheet') {
+      activeMode = 4;
+    } else if (isLanWifi) {
+      activeMode = 2;
+    } else if (isCloud) {
+      activeMode = 3;
+    } else {
+      activeMode = 1;
+    }
   }
 
   const activeBadge = document.getElementById('currentActiveModeText');
@@ -1666,7 +1640,7 @@ function renderStorageModesUI(netInfo, settings) {
       btn.style.pointerEvents = 'auto';
       btn.style.opacity = '1';
       if (c.mode === 4) {
-        btn.textContent = 'កំណត់ Google Sheet';
+        btn.textContent = (settings && settings.googleSheetUrl) ? 'ជ្រើសរើសរបៀបនេះ' : 'កំណត់ Google Sheet';
       } else {
         btn.textContent = 'ជ្រើសរើសរបៀបនេះ';
       }
@@ -1715,17 +1689,137 @@ function closeStorageModesModal() {
   if (modal) modal.style.display = 'none';
 }
 
-function copyWifiUrl() {
-  const wifiUrl = window.currentWifiUrl || (window.currentNetworkInfo ? window.currentNetworkInfo.wifiUrl : window.location.href);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(wifiUrl).then(() => {
-      showToast('success', 'បានចម្លងអាសយដ្ឋាន Wi-Fi URL រួចរាល់ ៖ ' + wifiUrl);
-    }).catch(() => {
-      prompt('សូមចម្លងអាសយដ្ឋាន Wi-Fi URL នេះ ៖', wifiUrl);
-    });
-  } else {
-    prompt('សូមចម្លងអាសយដ្ឋាន Wi-Fi URL នេះ ៖', wifiUrl);
+function fallbackCopyText(text) {
+  try {
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    input.style.top = '-9999px';
+    input.setAttribute('readonly', '');
+    document.body.appendChild(input);
+    input.focus();
+    input.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(input);
+    return ok;
+  } catch (e) {
+    return false;
   }
+}
+
+async function copyWifiUrl() {
+  const wifiUrl = window.currentWifiUrl || (window.currentNetworkInfo ? window.currentNetworkInfo.wifiUrl : `http://${window.location.hostname}:3027`);
+
+  let copied = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(wifiUrl);
+      copied = true;
+    } else {
+      copied = fallbackCopyText(wifiUrl);
+    }
+  } catch (err) {
+    copied = fallbackCopyText(wifiUrl);
+  }
+
+  showWifiUrlPopup(wifiUrl, copied);
+}
+
+function showWifiUrlPopup(wifiUrl, initiallyCopied = false) {
+  const cleanUrl = String(wifiUrl || '').replace(/"/g, '&quot;');
+  const msgHtml = `
+    <div style="text-align: left; margin-top: 2px;">
+      <div style="font-size: 13px; color: #475569; margin-bottom: 12px; line-height: 1.6; text-align: center;">
+        សូមប្រើប្រាស់អាសយដ្ឋានខាងក្រោម សម្រាប់ទូរស័ព្ទដៃ ឬកុំព្យូទ័រដែលភ្ជាប់ <strong>Wi-Fi ឬ Hotspot តែមួយ</strong> ៖
+      </div>
+      
+      <div style="display: flex; gap: 6px; align-items: stretch; margin-bottom: 10px;">
+        <input type="text" id="modernCopyUrlInput" readonly value="${cleanUrl}" 
+          style="flex: 1; font-family: monospace; font-size: 13px; font-weight: 700; color: #0369a1; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 9px 12px; outline: none; cursor: pointer; text-overflow: ellipsis;"
+          onclick="this.select();" title="ចុចដើម្បី Select" />
+        <button type="button" id="btnModernDoCopy" class="btn btn-primary" 
+          style="font-size: 12.5px; font-weight: 700; padding: 9px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #2563eb; color: #fff; border: none; cursor: pointer;">
+          📋 ចម្លង
+        </button>
+      </div>
+
+      <div id="copySuccessFeedback" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: ${initiallyCopied ? '#16a34a' : '#64748b'}; font-weight: 600; margin-bottom: 14px; min-height: 20px;">
+        ${initiallyCopied ? '✅ បានចម្លងអាសយដ្ឋានចូល Clipboard រួចរាល់!' : '💡 ចុចប៊ូតុង «ចម្លង» ឬចុចលើប្រអប់ដើម្បីចម្លង'}
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 14px;">
+        <button type="button" id="btnModernOpenQr" 
+          style="background: #f0fdf4; color: #166534; border: 1.5px solid #86efac; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+          📱 បង្ហាញ QR Code សម្រាប់ទូរស័ព្ទ Scan
+        </button>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 8px 12px; font-size: 11.5px; color: #64748b; line-height: 1.55; text-align: center;">
+        ទូរស័ព្ទដៃដែលភ្ជាប់ Wi-Fi តែមួយ អាចចូលប្រើបានភ្លាមៗដោយ<strong>មិនបាច់មាន Internet</strong> ឡើយ។
+      </div>
+    </div>
+  `.trim();
+
+  showModernPopup({
+    title: '📶 អាសយដ្ឋានភ្ជាប់តាម Wi-Fi',
+    message: msgHtml,
+    icon: '📶',
+    type: 'info',
+    showCancel: false,
+    confirmText: 'យល់ព្រម',
+    isWide: false
+  });
+
+  setTimeout(() => {
+    const input = document.getElementById('modernCopyUrlInput');
+    const btn = document.getElementById('btnModernDoCopy');
+    const qrBtn = document.getElementById('btnModernOpenQr');
+    const feedback = document.getElementById('copySuccessFeedback');
+
+    if (input) {
+      input.focus();
+      input.select();
+    }
+    if (qrBtn) {
+      qrBtn.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        closeModernPopup(true);
+        setTimeout(openStorageModesModal, 150);
+      };
+    }
+    if (btn) {
+      btn.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(wifiUrl).then(() => {
+            if (feedback) {
+              feedback.style.color = '#16a34a';
+              feedback.innerHTML = '✅ បានចម្លងអាសយដ្ឋានចូល Clipboard រួចរាល់!';
+            }
+            btn.innerHTML = '✅ បានចម្លង!';
+            btn.style.background = '#16a34a';
+            setTimeout(() => {
+              btn.innerHTML = '📋 ចម្លង';
+              btn.style.background = '#2563eb';
+            }, 2500);
+          }).catch(() => {
+            const ok = fallbackCopyText(wifiUrl);
+            if (ok && feedback) {
+              feedback.style.color = '#16a34a';
+              feedback.innerHTML = '✅ បានចម្លងអាសយដ្ឋានចូល Clipboard រួចរាល់!';
+            }
+          });
+        } else {
+          const ok = fallbackCopyText(wifiUrl);
+          if (ok && feedback) {
+            feedback.style.color = '#16a34a';
+            feedback.innerHTML = '✅ បានចម្លងអាសយដ្ឋានចូល Clipboard រួចរាល់!';
+          }
+        }
+      };
+    }
+  }, 50);
 }
 
 function openLocalUrl() {
@@ -1752,26 +1846,151 @@ function launchLocalDatabase() {
   openLocalUrl();
 }
 
-function setStorageMode(mode) {
+function updateStorageHeaderBadge(settings) {
+  const badge = document.getElementById('cloudStatusText');
+  const badgeContainer = document.getElementById('cloudStatusBadge');
+  const pulse = document.getElementById('cloudStatusPulse');
+  if (!badge) return;
+
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isLanWifi = (window.location.port === '3027' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) && !isLocalhost;
+  const isCloud = !isLocalhost && !isLanWifi;
+
+  const explicitMode = (settings && settings.storageMode) || localStorage.getItem('pec21_storage_mode') || '';
+
+  if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
+    badge.textContent = 'Storage: Google Sheet';
+    if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#06b6d4';
+      pulse.style.boxShadow = '0 0 8px #06b6d4';
+    }
+  } else if (explicitMode === 'online_cloud') {
+    badge.textContent = 'Storage: Online Database';
+    if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើ Online Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#10b981';
+      pulse.style.boxShadow = '0 0 8px #10b981';
+    }
+  } else if (settings && settings.googleSheetUrl && settings.storageMode === 'google_sheet') {
+    badge.textContent = 'Storage: Google Sheet';
+    if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#06b6d4';
+      pulse.style.boxShadow = '0 0 8px #06b6d4';
+    }
+  } else if (isLanWifi) {
+    badge.textContent = 'Storage: Local Wi-Fi';
+    if (badgeContainer) badgeContainer.title = `ប្រព័ន្ធកំពុងដំណើរការលើ Wi-Fi (${window.location.host}) (ចុចដើម្បីមើលព័ត៌មាន & QR Code)`;
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#f59e0b';
+      pulse.style.boxShadow = '0 0 8px #f59e0b';
+    }
+  } else if (isCloud) {
+    badge.textContent = 'Storage: Online Database';
+    if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើ Online Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#10b981';
+      pulse.style.boxShadow = '0 0 8px #10b981';
+    }
+  } else {
+    badge.textContent = 'Storage: Local Database';
+    if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើម៉ាស៊ីនផ្ទាល់ Localhost:3027 (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#22c55e';
+      pulse.style.boxShadow = '0 0 8px #22c55e';
+    }
+  }
+}
+
+async function setStorageMode(mode) {
   if (mode === 'local') {
     openLocalUrl();
+    return;
   } else if (mode === 'local_wifi') {
     openStorageModesModal();
-  } else if (mode === 'online_cloud') {
-    const currentCloud = window.location.origin.includes('onrender.com') ? window.location.origin : 'https://pollingstationpec21.onrender.com';
-    const cloudUrl = (window.currentNetworkInfo && window.currentNetworkInfo.cloudUrl && !window.currentNetworkInfo.cloudUrl.includes('pec21-takeo')) ? window.currentNetworkInfo.cloudUrl : currentCloud;
-    if (window.location.origin.includes('onrender.com')) {
-      showToast('info', '🌐 លោកអ្នកកំពុងដំណើរការលើ Online Cloud រួចជាស្រេចហើយ។');
-    } else {
+    return;
+  }
+
+  const isCloud = window.location.origin.includes('onrender.com') || (window.currentNetworkInfo && window.currentNetworkInfo.isCloud);
+
+  if (mode === 'online_cloud') {
+    // Mode 3: Online Database
+    localStorage.setItem('pec21_storage_mode', 'online_cloud');
+    if (!appSettings) appSettings = {};
+    appSettings.storageMode = 'online_cloud';
+    appSettings.autoSyncGoogleSheet = false;
+
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storageMode: 'online_cloud', autoSyncGoogleSheet: false })
+      });
+    } catch (e) {}
+
+    renderStorageModesUI(window.currentNetworkInfo, appSettings);
+    updateStorageHeaderBadge(appSettings);
+    showToast('success', '🌐 បានប្តូរមកប្រើប្រាស់ របៀបទី ៣ ៖ Storage: Online Database រួចរាល់!');
+
+    if (!isCloud) {
+      const currentCloud = window.location.origin.includes('onrender.com') ? window.location.origin : 'https://pollingstationpec21.onrender.com';
+      const cloudUrl = (window.currentNetworkInfo && window.currentNetworkInfo.cloudUrl && !window.currentNetworkInfo.cloudUrl.includes('pec21-takeo')) ? window.currentNetworkInfo.cloudUrl : currentCloud;
       window.open(cloudUrl, '_blank');
     }
-  } else if (mode === 'google_sheet') {
+    return;
+  }
+
+  if (mode === 'google_sheet') {
+    // Mode 4: Google Sheet
     const gsInput = document.getElementById('settingGoogleSheetUrl');
-    if (gsInput) {
-      gsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      gsInput.focus();
-      showToast('info', '📊 សូមបញ្ចូល Google Apps Script Web App URL រួចចុច រក្សាទុកការកំណត់ ដើម្បីបើកដំណើរការ Google Sheet Sync។');
+    const enteredUrl = gsInput ? gsInput.value.trim() : '';
+    const activeUrl = (appSettings && appSettings.googleSheetUrl) ? appSettings.googleSheetUrl.trim() : enteredUrl;
+
+    if (!activeUrl) {
+      if (gsInput) {
+        gsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        gsInput.focus();
+      }
+      showModernPopup({
+        title: '⚠️ មិនទាន់មាន Google Apps Script URL',
+        message: 'សូមបញ្ចូល Google Apps Script Web App URL នៅខាងក្រោម រួចចុច <strong>រក្សាទុកការកំណត់</strong> ជាមុនសិន ទើបអាចបើកដំណើរការរបៀបទី ៤ បាន។',
+        icon: '⚠️',
+        type: 'warning',
+        confirmText: 'យល់ព្រម'
+      });
+      return;
     }
+
+    localStorage.setItem('pec21_storage_mode', 'google_sheet');
+    if (!appSettings) appSettings = {};
+    appSettings.storageMode = 'google_sheet';
+    appSettings.autoSyncGoogleSheet = true;
+
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storageMode: 'google_sheet', autoSyncGoogleSheet: true })
+      });
+    } catch (e) {}
+
+    renderStorageModesUI(window.currentNetworkInfo, appSettings);
+    updateStorageHeaderBadge(appSettings);
+    showToast('success', '📊 បានប្តូរមកប្រើប្រាស់ របៀបទី ៤ ៖ Storage: Google Sheet រួចរាល់!');
+
+    // Trigger sync
+    if (typeof syncGoogleSheets === 'function') {
+      syncGoogleSheets();
+    }
+    return;
   }
 }
 

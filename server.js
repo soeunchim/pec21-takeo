@@ -455,6 +455,10 @@ function syncToGoogleSheet(action = 'sync_all', extra = {}) {
   const endpoint = getGoogleSheetEndpoint();
   if (!endpoint) return Promise.resolve(null);
 
+  if (db && db.settings && db.settings.storageMode === 'online_cloud' && action !== 'manual_sync') {
+    return Promise.resolve(null);
+  }
+
   if (sheetSyncTimer) clearTimeout(sheetSyncTimer);
   return new Promise((resolve) => {
     sheetSyncTimer = setTimeout(async () => {
@@ -2275,13 +2279,15 @@ const server = http.createServer(async (req, res) => {
 
     // 19. POST /api/settings (SuperAdmin only)
     if (pathname === '/api/settings' && req.method === 'POST') {
-      if (currentUser.role !== 'SuperAdmin') {
+      const data = await parseBody(req);
+      if (currentUser.role !== 'SuperAdmin' && !(currentUser.role === 'Admin' && data.storageMode)) {
         return sendJSON(res, 403, { success: false, message: 'មានតែ SuperAdmin ទើបអាចកែប្រែ Settings បាន' });
       }
-      const data = await parseBody(req);
       db.settings = { ...db.settings, ...data };
       saveLocalDatabase(true);
-      syncToGoogleSheet('sync_all', { user: currentUser.username });
+      if (db.settings.storageMode === 'google_sheet') {
+        syncToGoogleSheet('sync_all', { user: currentUser.username });
+      }
       return sendJSON(res, 200, { success: true, message: 'បានរក្សាទុក Settings រួចរាល់!', settings: db.settings });
     }
 
