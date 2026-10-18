@@ -2454,7 +2454,8 @@ const server = http.createServer(async (req, res) => {
 loadLocalDatabase();
 server.listen(PORT, async () => {
   console.log(`================================================================`);
-  console.log(`  ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧ (PEC21)`);
+  console.log(`  PEC21 TAKEO - KKB EXAM SCORE SYSTEM 2027`);
+  console.log(`  ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧`);
   console.log(`  Server is actively listening on port: ${PORT}`);
   console.log(`  Local Access: http://localhost:${PORT}`);
   console.log(`================================================================`);
