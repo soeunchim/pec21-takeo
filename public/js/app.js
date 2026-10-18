@@ -1574,6 +1574,9 @@ function renderStorageModesUI(netInfo, settings) {
   const modeLocalText = document.getElementById('modeLocalUrlText');
   if (modeLocalText) modeLocalText.textContent = netInfo.localhostUrl || 'http://localhost:3027';
 
+  const btnOpenLocalUrl = document.getElementById('btnOpenLocalUrl');
+  if (btnOpenLocalUrl) btnOpenLocalUrl.href = netInfo.localhostUrl || 'http://localhost:3027';
+
   const modeWifiText = document.getElementById('modeWifiUrlText');
   if (modeWifiText) modeWifiText.textContent = window.currentWifiUrl;
 
@@ -1725,67 +1728,33 @@ function copyWifiUrl() {
   }
 }
 
-async function launchLocalDatabase(event) {
-  if (event && event.preventDefault) event.preventDefault();
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+function openLocalUrl() {
+  const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (window.location.port === '3027' || window.location.port === '');
   if (isLocal) {
-    showToast('info', '💻 លោកអ្នកកំពុងដំណើរការលើ Storage: Local Database រួចជាស្រេចហើយ។');
+    showToast('success', '💻 លោកអ្នកកំពុងដំណើរការលើ Storage: Local Database (http://localhost:3027) ស្រាប់ហើយ។');
     return;
   }
 
-  showToast('info', '⏳ កំពុងតភ្ជាប់ និងបើកដំណើរការ Local Database...');
-
-  // 1. Check if localhost:3027 is already answering
-  let isRunning = false;
+  // Trigger silent wake up protocol in background if needed
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1200);
-    await fetch('http://localhost:3027/api/settings', { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
-    clearTimeout(timeoutId);
-    isRunning = true;
-  } catch (e) {
-    isRunning = false;
-  }
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = 'kkb://start';
+    document.body.appendChild(iframe);
+    setTimeout(() => { try { iframe.remove(); } catch(e){} }, 1000);
+  } catch(e) {}
 
-  if (isRunning) {
-    // Already running, open directly!
-    window.open('http://localhost:3027', '_blank');
-  } else {
-    // Trigger registered Windows protocol kkb://start to launch node server silently in background
-    try {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = 'kkb://start';
-      document.body.appendChild(iframe);
-      setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 2500);
-    } catch (e) {}
+  // Open synchronously so browser popup blocker NEVER blocks it!
+  window.open('http://localhost:3027', '_blank');
+}
 
-    showToast('success', '🚀 កំពុងដំណើរការ Server មូលដ្ឋានដោយស្វ័យប្រវត្តិតាម Windows Background...');
-
-    // Poll localhost:3027 and open as soon as ready
-    let attempts = 0;
-    const interval = setInterval(async () => {
-      attempts++;
-      try {
-        const c2 = new AbortController();
-        const t2 = setTimeout(() => c2.abort(), 800);
-        await fetch('http://localhost:3027/api/settings', { mode: 'no-cors', signal: c2.signal });
-        clearTimeout(t2);
-        clearInterval(interval);
-        window.open('http://localhost:3027', '_blank');
-      } catch (e2) {
-        if (attempts >= 4) {
-          clearInterval(interval);
-          window.open('http://localhost:3027', '_blank');
-        }
-      }
-    }, 700);
-  }
+function launchLocalDatabase() {
+  openLocalUrl();
 }
 
 function setStorageMode(mode) {
   if (mode === 'local') {
-    launchLocalDatabase();
+    openLocalUrl();
   } else if (mode === 'local_wifi') {
     openStorageModesModal();
   } else if (mode === 'online_cloud') {

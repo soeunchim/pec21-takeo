@@ -760,11 +760,11 @@
                   </p>
                 </div>
                 <div>
-                  <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px; cursor: pointer;" onclick="launchLocalDatabase(event)" title="ចុចដើម្បីដំណើរការ Local Database">
+                  <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px; cursor: pointer;" onclick="openLocalUrl()" title="ចុចដើម្បីបើក Local Database">
                     <code style="color: #0369a1; font-weight: 600; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeLocalUrlText">http://localhost:3027</code>
-                    <a id="btnOpenLocalUrl" href="javascript:void(0)" onclick="launchLocalDatabase(event)" style="font-size: 10.5px; font-weight: 700; color: #2563eb; text-decoration: none; flex-shrink: 0;">បើក ↗</a>
+                    <a id="btnOpenLocalUrl" href="http://localhost:3027" target="_blank" onclick="event.stopPropagation();" style="font-size: 10.5px; font-weight: 700; color: #2563eb; text-decoration: none; flex-shrink: 0;">បើក ↗</a>
                   </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="launchLocalDatabase(event)" id="btnSelectModeLocal" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('local')" id="btnSelectModeLocal" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
                     ជ្រើសរើសរបៀបនេះ
                   </button>
                 </div>
@@ -1397,6 +1397,6 @@
   <!-- Standalone Offline QR Code Library -->
   <script src="js/qrcode.min.js"></script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_new_cloud_url_v65"></script>
+  <script src="js/app.js?v=20261018_fix_local_open_v66"></script>
 </body>
 </html>
