@@ -2247,6 +2247,36 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 20.1 POST /api/restore (Full JSON Restore / Upload)
+    if (pathname === '/api/restore' && req.method === 'POST') {
+      if (currentUser.role !== 'SuperAdmin' && currentUser.role !== 'Admin') {
+        return sendJSON(res, 403, { success: false, message: 'គ្មានសិទ្ធិ' });
+      }
+      const data = await parseBody(req);
+      if (!data || (!data.candidates && !data.pollingStations)) {
+        return sendJSON(res, 400, { success: false, message: 'ទម្រង់ឯកសារ Backup មិនត្រឹមត្រូវឡើយ' });
+      }
+      if (data.candidates && Array.isArray(data.candidates)) {
+        db.candidates = data.candidates;
+      }
+      if (data.pollingStations && Array.isArray(data.pollingStations) && data.pollingStations.length > 0) {
+        db.pollingStations = data.pollingStations;
+      }
+      if (data.settings) {
+        db.settings = { ...db.settings, ...data.settings };
+      }
+      if (data.communeInterviewSchedules) {
+        db.communeInterviewSchedules = data.communeInterviewSchedules;
+      }
+      saveLocalDatabase();
+      syncToGoogleSheet('sync_all', { user: currentUser.username });
+      return sendJSON(res, 200, {
+        success: true,
+        message: `បានស្ដារទិន្នន័យជោគជ័យ! បេក្ខជន៖ ${(db.candidates||[]).length} នាក់, ការិយាល័យ៖ ${(db.pollingStations||[]).length}`,
+        candidatesCount: (db.candidates||[]).length
+      });
+    }
+
     // 21. POST /api/candidates/batch-restore-all (Restore multiple candidates from browser backup)
     if (pathname === '/api/candidates/batch-restore-all' && req.method === 'POST') {
       const payload = await parseBody(req);

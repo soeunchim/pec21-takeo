@@ -6,7 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261018_muol_force_v48">
+  <link rel="stylesheet" href="css/style.css?v=20261018_data_sync_v49">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗳️</text></svg>">
 </head>
 <body>
@@ -804,6 +804,10 @@
             <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
               <button id="btnSaveSettings" class="btn btn-primary">រក្សាទុកការកំណត់ (Save Settings)</button>
               <a href="/api/backup" class="btn btn-secondary" download>📥 Backup Data (JSON)</a>
+              <button type="button" class="btn btn-warning" onclick="document.getElementById('jsonBackupFileInput').click()" style="background: #f59e0b; color: white; border: none; font-weight: 600;" title="បញ្ចូលឯកសារ Backup JSON ដើម្បីស្ដារទិន្នន័យ">
+                📤 ស្ដារទិន្នន័យពី JSON (Restore)
+              </button>
+              <input type="file" id="jsonBackupFileInput" accept=".json" style="display:none;" onchange="handleUploadBackupJSON(event)">
               <button type="button" class="btn btn-outline" onclick="restoreAllCandidatesFromBrowser()" title="ស្ដារបេក្ខជនទាំងអស់ពី Browser Backup">
                 🔄 ស្ដារបេក្ខជនពី Browser Backup
               </button>
@@ -1155,6 +1159,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_muol_force_v48"></script>
+  <script src="js/app.js?v=20261018_data_sync_v49"></script>
 </body>
 </html>

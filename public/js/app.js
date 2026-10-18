@@ -1607,6 +1607,36 @@ async function restoreAllCandidatesFromBrowser() {
 }
 window.restoreAllCandidatesFromBrowser = restoreAllCandidatesFromBrowser;
 
+async function handleUploadBackupJSON(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  if (!confirm(`តើលោកអ្នកពិតជាចង់ស្ដារទិន្នន័យពីឯកសារ "${file.name}" មែនទេ? ទិន្នន័យបច្ចុប្បន្ននឹងត្រូវបានជំនួសដោយទិន្នន័យពីឯកសារ Backup នេះ។`)) {
+    e.target.value = '';
+    return;
+  }
+  try {
+    const text = await file.text();
+    const json = JSON.parse(text);
+    const res = await fetch('/api/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(json)
+    });
+    const result = await res.json();
+    if (result.success) {
+      alert(result.message || 'បានស្ដារទិន្នន័យជោគជ័យ!');
+      window.location.reload();
+    } else {
+      alert('បរាជ័យក្នុងការស្ដារ ៖ ' + result.message);
+    }
+  } catch (err) {
+    alert('មានបញ្ហាក្នុងការអានឯកសារ JSON ៖ ' + err.message);
+  } finally {
+    e.target.value = '';
+  }
+}
+window.handleUploadBackupJSON = handleUploadBackupJSON;
+
 function checkAndShowBrowserRecoveryBanner(serverCandidateCount) {
   const localCandidates = getAllLocalBackupCandidates();
   const existingBanner = document.getElementById('browserRecoveryBanner');
