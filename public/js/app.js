@@ -1571,11 +1571,15 @@ function renderStorageModesUI(netInfo, settings) {
     }
   }
 
-  // Determine active mode index: 1 (Local), 2 (Wifi), 3 (Cloud), 4 (GoogleSheet)
+  // Determine active mode index: 1 (Local), 2 (Wifi), 3 (Cloud), 4 (GoogleSheet), 34 (Dual)
   const explicitMode = (settings && settings.storageMode) || localStorage.getItem('pec21_storage_mode') || '';
 
   let activeMode = 1;
-  if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
+  const isDual = (explicitMode === 'dual');
+
+  if (isDual) {
+    activeMode = 34;
+  } else if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
     activeMode = 4;
   } else if (explicitMode === 'online_cloud') {
     activeMode = 3;
@@ -1593,10 +1597,35 @@ function renderStorageModesUI(netInfo, settings) {
     }
   }
 
+  // Update dual storage banner card if present
+  const dualCard = document.getElementById('dualStorageOptionCard');
+  const dualBtn = document.getElementById('btnSelectModeDual');
+  const dualBadge = document.getElementById('badgeDualActiveStatus');
+  if (dualCard && dualBtn) {
+    if (isDual) {
+      dualCard.style.borderColor = '#16a34a';
+      dualCard.style.backgroundColor = '#ecfdf5';
+      dualCard.style.boxShadow = '0 4px 14px rgba(22,163,74,0.15)';
+      dualBtn.textContent = '✅ កំពុងប្រើទាំងពីរព្រមគ្នា';
+      dualBtn.className = 'btn btn-sm btn-success fw-bold';
+      if (dualBadge) dualBadge.style.display = 'inline-block';
+    } else {
+      dualCard.style.borderColor = '#cbd5e1';
+      dualCard.style.backgroundColor = '#f8fafc';
+      dualCard.style.boxShadow = 'none';
+      dualBtn.textContent = '🔄 បើកប្រើទាំងពីរព្រមគ្នា';
+      dualBtn.className = 'btn btn-sm btn-outline-success fw-bold';
+      if (dualBadge) dualBadge.style.display = 'none';
+    }
+  }
+
   const activeBadge = document.getElementById('currentActiveModeText');
   const activePulse = document.getElementById('currentActivePulse');
   if (activeBadge) {
-    if (activeMode === 1) {
+    if (isDual) {
+      activeBadge.textContent = 'កំពុងដំណើរការ៖ ៣ & ៤. Online DB + Google Sheet (Dual Storage)';
+      if (activePulse) activePulse.style.backgroundColor = '#10b981';
+    } else if (activeMode === 1) {
       activeBadge.textContent = 'កំពុងដំណើរការ៖ ១. Storage: Local Database';
       if (activePulse) activePulse.style.backgroundColor = '#22c55e';
     } else if (activeMode === 2) {
@@ -1624,7 +1653,19 @@ function renderStorageModesUI(netInfo, settings) {
     const btn = document.getElementById(c.btnId);
     if (!el || !btn) return;
 
-    if (c.mode === activeMode) {
+    if (isDual && (c.mode === 3 || c.mode === 4)) {
+      el.style.borderColor = '#16a34a';
+      el.style.backgroundColor = '#f0fdf4';
+      el.style.boxShadow = '0 4px 14px rgba(22,163,74,0.12)';
+      btn.className = 'btn btn-sm btn-success';
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+      if (c.mode === 3) {
+        btn.textContent = '✅ កំពុងប្រើប្រាស់ (Online DB)';
+      } else {
+        btn.textContent = '✅ កំពុង Sync ព្រមគ្នា (Google Sheet)';
+      }
+    } else if (c.mode === activeMode) {
       el.style.borderColor = '#16a34a';
       el.style.backgroundColor = '#f0fdf4';
       el.style.boxShadow = '0 4px 14px rgba(22,163,74,0.15)';
@@ -1859,7 +1900,15 @@ function updateStorageHeaderBadge(settings) {
 
   const explicitMode = (settings && settings.storageMode) || localStorage.getItem('pec21_storage_mode') || '';
 
-  if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
+  if (explicitMode === 'dual') {
+    badge.textContent = 'Storage: Online DB + Google Sheet';
+    if (badgeContainer) badgeContainer.title = 'ទិន្នន័យត្រូវបានរក្សាទុកក្នុង Online Database ផង និង Sync ទៅ Google Sheets ផងក្នុងពេលតែមួយ (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#10b981';
+      pulse.style.boxShadow = '0 0 8px #10b981';
+    }
+  } else if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
     badge.textContent = 'Storage: Google Sheet';
     if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
     if (pulse) {
@@ -1920,6 +1969,50 @@ async function setStorageMode(mode) {
   }
 
   const isCloud = window.location.origin.includes('onrender.com') || (window.currentNetworkInfo && window.currentNetworkInfo.isCloud);
+
+  if (mode === 'dual') {
+    // Mode 3 + Mode 4: Online Database + Google Sheet simultaneous real-time sync!
+    const gsInput = document.getElementById('settingGoogleSheetUrl');
+    const enteredUrl = gsInput ? gsInput.value.trim() : '';
+    const activeUrl = (appSettings && appSettings.googleSheetUrl) ? appSettings.googleSheetUrl.trim() : enteredUrl;
+
+    if (!activeUrl) {
+      if (gsInput) {
+        gsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        gsInput.focus();
+      }
+      showModernPopup({
+        title: '⚠️ មិនទាន់មាន Google Apps Script URL',
+        message: 'ដើម្បីដំណើរការទាំងពីរព្រមគ្នាបាន សូមបញ្ចូល <strong>Google Apps Script Web App URL</strong> នៅខាងក្រោម រួចចុច <strong>រក្សាទុកការកំណត់</strong> ជាមុនសិន។',
+        icon: '⚠️',
+        type: 'warning',
+        confirmText: 'យល់ព្រម'
+      });
+      return;
+    }
+
+    localStorage.setItem('pec21_storage_mode', 'dual');
+    if (!appSettings) appSettings = {};
+    appSettings.storageMode = 'dual';
+    appSettings.autoSyncGoogleSheet = true;
+
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storageMode: 'dual', autoSyncGoogleSheet: true })
+      });
+    } catch (e) {}
+
+    renderStorageModesUI(window.currentNetworkInfo, appSettings);
+    updateStorageHeaderBadge(appSettings);
+    showToast('success', '⚡ បានបើកដំណើរការ Dual Storage (Online Database + Google Sheet ព្រមគ្នា) រួចរាល់!');
+
+    if (typeof syncGoogleSheets === 'function') {
+      syncGoogleSheets();
+    }
+    return;
+  }
 
   if (mode === 'online_cloud') {
     // Mode 3: Online Database
