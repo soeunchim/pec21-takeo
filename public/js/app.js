@@ -906,6 +906,7 @@ function setupEventListeners() {
   const btnFilterStations = document.getElementById('btnFilterStations');
   if (btnFilterStations) {
     btnFilterStations.addEventListener('click', () => {
+      currentStationPage = 1;
       renderPollingStationsTable();
     });
   }
@@ -916,6 +917,7 @@ function setupEventListeners() {
 
   if (filterDistSelect) {
     filterDistSelect.addEventListener('change', () => {
+      currentStationPage = 1;
       // Dynamically filter commune options
       const selDist = filterDistSelect.value;
       if (filterComSelect) {
@@ -931,12 +933,14 @@ function setupEventListeners() {
 
   if (filterComSelect) {
     filterComSelect.addEventListener('change', () => {
+      currentStationPage = 1;
       renderPollingStationsTable();
     });
   }
 
   if (searchStationKw) {
     searchStationKw.addEventListener('input', () => {
+      currentStationPage = 1;
       renderPollingStationsTable();
     });
   }
@@ -2780,6 +2784,30 @@ async function batchCreateForSelectedCommune(forcedCommuneCode = null) {
 }
 window.batchCreateForSelectedCommune = batchCreateForSelectedCommune;
 
+let currentStationPage = 1;
+let stationPageSize = 150;
+
+function changeStationPage(page) {
+  currentStationPage = parseInt(page, 10) || 1;
+  renderPollingStationsTable();
+  const table = document.querySelector('#tabPollingStations .table-responsive');
+  if (table) {
+    table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+window.changeStationPage = changeStationPage;
+
+function changeStationPageSize(size) {
+  if (size === 'all') {
+    stationPageSize = 999999;
+  } else {
+    stationPageSize = parseInt(size, 10) || 150;
+  }
+  currentStationPage = 1;
+  renderPollingStationsTable();
+}
+window.changeStationPageSize = changeStationPageSize;
+
 function renderPollingStationsTable() {
   const tbody = document.getElementById('pollingStationsTableBody');
   tbody.innerHTML = '';
@@ -2906,10 +2934,14 @@ function renderPollingStationsTable() {
     return;
   }
 
-  // Display limit when unfiltered to maintain snappy UI rendering
-  const isFiltered = Boolean(filterDist || filterCom || searchKw);
-  const displayLimit = isFiltered ? 500 : 150;
-  const displayList = filtered.slice(0, displayLimit);
+  const totalStations = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalStations / stationPageSize));
+  if (currentStationPage > totalPages) currentStationPage = totalPages;
+  if (currentStationPage < 1) currentStationPage = 1;
+
+  const startIndex = (currentStationPage - 1) * stationPageSize;
+  const endIndex = Math.min(startIndex + stationPageSize, totalStations);
+  const displayList = filtered.slice(startIndex, endIndex);
 
   displayList.forEach(ps => {
     const comLabel = getCommunePrefix(ps.communeName, ps.district);
@@ -2937,11 +2969,70 @@ function renderPollingStationsTable() {
     `;
   });
 
-  if (filtered.length > displayLimit) {
+  // Pagination Footer Row (Exact location requested by user)
+  if (totalStations > 0) {
+    const isFirstPage = currentStationPage <= 1;
+    const isLastPage = currentStationPage >= totalPages;
+
+    const prevBtnHtml = `
+      <button type="button" 
+              class="btn btn-secondary btn-sm" 
+              onclick="changeStationPage(${currentStationPage - 1})" 
+              ${isFirstPage ? 'disabled style="opacity: 0.5; cursor: not-allowed; padding: 6px 14px; font-weight: 600; font-size: 13.5px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #94a3b8; display: inline-flex; align-items: center; gap: 6px;"' : 'style="cursor: pointer; padding: 6px 14px; font-weight: 600; font-size: 13.5px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #1e293b; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"'}
+              title="ថយទៅទំព័រមុន">
+        <span>⬅️ ថយក្រោយ</span>
+      </button>
+    `;
+
+    const nextBtnHtml = `
+      <button type="button" 
+              class="btn btn-secondary btn-sm" 
+              onclick="changeStationPage(${currentStationPage + 1})" 
+              ${isLastPage ? 'disabled style="opacity: 0.5; cursor: not-allowed; padding: 6px 14px; font-weight: 600; font-size: 13.5px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #94a3b8; display: inline-flex; align-items: center; gap: 6px;"' : 'style="cursor: pointer; padding: 6px 14px; font-weight: 600; font-size: 13.5px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #1e293b; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"'}
+              title="ទៅទំព័របន្ទាប់">
+        <span>បន្ទាប់ ➡️</span>
+      </button>
+    `;
+
+    const pageSizeHtml = `
+      <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #475569;">
+        <span>ក្នុង១ទំព័រ៖</span>
+        <select onchange="changeStationPageSize(this.value)" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; background: #fff; cursor: pointer; font-family: inherit;">
+          <option value="50" ${stationPageSize === 50 ? 'selected' : ''}>៥០</option>
+          <option value="100" ${stationPageSize === 100 ? 'selected' : ''}>១០០</option>
+          <option value="150" ${stationPageSize === 150 ? 'selected' : ''}>១៥០</option>
+          <option value="300" ${stationPageSize === 300 ? 'selected' : ''}>៣០០</option>
+          <option value="500" ${stationPageSize === 500 ? 'selected' : ''}>៥០០</option>
+          <option value="all" ${stationPageSize >= totalStations ? 'selected' : ''}>ទាំងអស់ (${toKhmerNum(totalStations)})</option>
+        </select>
+      </div>
+    `;
+
+    const pageBadgeHtml = `
+      <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 48px; height: 32px; padding: 0 12px; background: var(--primary, #1e40af); color: #fff; border-radius: 6px; font-weight: 700; font-size: 13.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        ${toKhmerNum(currentStationPage)} / ${toKhmerNum(totalPages)}
+      </span>
+    `;
+
     tbody.innerHTML += `
-      <tr style="background: #f8fafc; font-style: italic; color: #64748b; text-align: center;">
-        <td colspan="${colSpan}" style="padding: 12px;">
-          ℹ️ បង្ហាញ ${displayLimit} ក្នុងចំណោម ${filtered.length.toLocaleString()} ការិយាល័យ។ សូមប្រើប្រអប់ស្វែងរក ឬជ្រើសរើសតម្រងក្រុង-ស្រុក/ឃុំ-សង្កាត់ ដើម្បីមើលចំការិយាល័យដែលត្រូវការ។
+      <tr class="polling-stations-pagination-row" style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
+        <td colspan="${colSpan}" style="padding: 14px 18px;">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="font-size: 13.5px; color: #334155; display: flex; align-items: center; gap: 8px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #e0f2fe; color: #0284c7; font-weight: bold; font-size: 13px;">ℹ️</span>
+              <span>
+                បង្ហាញពីទី <strong>${toKhmerNum(startIndex + 1)}</strong> ដល់ <strong>${toKhmerNum(endIndex)}</strong> ក្នុងចំណោម <strong>${toKhmerNum(totalStations)}</strong> ការិយាល័យ
+                <span style="color: #94a3b8; margin: 0 4px;">|</span>
+                ទំព័រទី <strong>${toKhmerNum(currentStationPage)}</strong> នៃ <strong>${toKhmerNum(totalPages)}</strong>
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              ${pageSizeHtml}
+              ${prevBtnHtml}
+              ${pageBadgeHtml}
+              ${nextBtnHtml}
+            </div>
+          </div>
         </td>
       </tr>
     `;
