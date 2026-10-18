@@ -4744,7 +4744,7 @@ function initReportSelectorBar() {
       const titleEl = document.getElementById('activeReportSheetTitle');
       if (titleEl) {
         const titles = {
-          'sortlist': '📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (សម្រាំងពាក្យ) [📄 ក្រដាសផ្តេក - Landscape]',
+          'sortlist': '📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (សម្រាំងពាក្យបេក្ខ) [📄 ក្រដាសផ្តេក - Landscape]',
           'notice': '📢 សន្លឹក ២ ៖ សេចក្តីជូនដំណឹងបេក្ខជនសម្ភាសន៍ (Notice)',
           'attendance': '✍️ សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ជ្រើសរើស គ.ក.ប (Attendance)',
           'scoresheet': '📝 សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប (Score Sheet)',
