@@ -3021,6 +3021,71 @@ tr.excel-row-active td.excel-calc-rank {
   }
 }
 
+/* ==========================================================================
+   Settings Sub-tabs Navigation
+   ========================================================================== */
+.settings-subtabs-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.settings-subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.settings-subtab-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.settings-subtab-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+}
+
+.settings-subtab-btn[data-subtab="subtabDanger"].active {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #b91c1c;
+  box-shadow: 0 3px 10px rgba(220, 38, 38, 0.25);
+}
+
+.settings-subtab-btn[data-subtab="subtabDanger"]:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #f87171;
+}
+
+.settings-subtab-content {
+  animation: fadeInSubtab 0.25s ease-in-out;
+}
+
+@keyframes fadeInSubtab {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
 
 
 

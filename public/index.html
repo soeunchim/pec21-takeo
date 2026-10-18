@@ -718,285 +718,409 @@
       <!-- =====================================================================
            TAB 6: SETTINGS & GOOGLE SHEETS
            ===================================================================== -->
+      <!-- =====================================================================
+           TAB 6: SETTINGS & SYSTEM CONFIGURATION
+           ===================================================================== -->
       <section id="tabSettings" class="page-section">
         <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">⚙️ ការកំណត់ប្រព័ន្ធ & Google Sheets Cloud Sync</h3>
-            <button id="btnManualGoogleSync" class="btn btn-success">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 6px;">
+            <h3 class="card-title" style="margin: 0; font-size: 16px; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; gap: 8px;">
+              ⚙️ ការកំណត់ប្រព័ន្ធ (System Configuration & Cloud Settings)
+            </h3>
+            <button id="btnManualGoogleSync" class="btn btn-success btn-sm" style="font-weight: 600; padding: 6px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
               ⚡ ធ្វើសមកាលកម្មភ្លាមៗ (Sync Google Sheets Now)
             </button>
           </div>
 
-          <!-- Storage Modes Selection Section (1 Horizontal Row) -->
-          <div class="storage-modes-panel" style="width: 100%; background: white; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-              <div>
-                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-                  💾 របៀបដំណើរការ & ទីតាំងផ្ទុកទិន្នន័យ (Storage Modes)
-                </h4>
-                <p style="margin: 3px 0 0 0; font-size: 12px; color: #64748b;">
-                  ប្រព័ន្ធគាំទ្រដំណើរការបាន ៤ របៀប ៖ ម៉ាស៊ីនផ្ទាល់ (Local), តាម Wi-Fi តែមួយ, Online Cloud, និង Google Sheet
-                </p>
-              </div>
-              <div id="currentActiveModeBadge" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; background: #dcfce7; color: #166534; border: 1px solid #86efac; cursor: pointer;" onclick="openStorageModesModal()" title="ចុចដើម្បីមើលព័ត៌មានលម្អិត & QR Code">
-                <span class="pulse-dot" id="currentActivePulse" style="width: 8px; height: 8px; background: #22c55e;"></span>
-                <span id="currentActiveModeText">កំពុងដំណើរការ៖ Storage: Local Database</span>
-              </div>
-            </div>
-
-            <div class="storage-options-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 6px;">
-              <!-- Mode 1: Local Database Standalone -->
-              <div class="storage-card" id="cardModeLocal" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                    <span style="font-size: 22px;">💻</span>
-                    <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ១</span>
-                  </div>
-                  <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="១. Storage: Local Database">
-                    ១. Storage: Local Database
-                  </h5>
-                  <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
-                    ប្រើលើម៉ាស៊ីនតែមួយ (Offline)។ មិនបាច់មាន Internet, ល្បឿនលឿន និងទិន្នន័យរក្សាទុកលើកុំព្យូទ័រនេះផ្ទាល់។
-                  </p>
-                </div>
-                <div>
-                  <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px; cursor: pointer;" onclick="openLocalUrl()" title="ចុចដើម្បីបើក Local Database">
-                    <code style="color: #0369a1; font-weight: 600; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeLocalUrlText">http://localhost:3027</code>
-                    <a id="btnOpenLocalUrl" href="http://localhost:3027" target="_blank" onclick="event.stopPropagation();" style="font-size: 10.5px; font-weight: 700; color: #2563eb; text-decoration: none; flex-shrink: 0;">បើក ↗</a>
-                  </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('local')" id="btnSelectModeLocal" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
-                    ជ្រើសរើសរបៀបនេះ
-                  </button>
-                </div>
-              </div>
-
-              <!-- Mode 2: Local Database via Same Wi-Fi -->
-              <div class="storage-card" id="cardModeWifi" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                    <span style="font-size: 22px;">📶</span>
-                    <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ២</span>
-                  </div>
-                  <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="២. Storage: Local Wi-Fi តែមួយ">
-                    ២. Storage: Local Wi-Fi តែមួយ
-                  </h5>
-                  <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
-                    ទិន្នន័យលើកុំព្យូទ័រមេ ប៉ុន្តែទូរស័ព្ទដៃ ឬកុំព្យូទ័រភ្ជាប់ Wi-Fi ឬ Hotspot តែមួយ ចូលប្រើបាន (មិនបាច់មាន Internet)។
-                  </p>
-                </div>
-                <div>
-                  <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
-                    <code style="color: #0369a1; font-weight: 600; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeWifiUrlText">http://...:3027</code>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="copyWifiUrl()" style="font-size: 9.5px; padding: 2px 4px; flex-shrink: 0;">ចម្លង</button>
-                  </div>
-                  <div style="display: flex; gap: 4px;">
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('local_wifi')" id="btnSelectModeWifi" style="flex: 1; font-size: 11px; font-weight: 600; padding: 5px 2px;">
-                      ជ្រើសរើស
-                    </button>
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="openStorageModesModal()" title="បង្ហាញ QR Code សម្រាប់ទូរស័ព្ទដៃ Scan ចូល" style="font-size: 11px; padding: 5px 6px; font-weight: 600;">
-                      📱 QR
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Mode 3: Online Database (Cloud) -->
-              <div class="storage-card" id="cardModeCloud" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                    <span style="font-size: 22px;">🌐</span>
-                    <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ៣</span>
-                  </div>
-                  <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="៣. Storage: Online Database">
-                    ៣. Storage: Online Database
-                  </h5>
-                  <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
-                    ដំណើរការលើ Cloud Server (Render) អាចចូលប្រើពីគ្រប់ទីកន្លែងទូទាំងប្រទេសតាមរយៈ Internet។
-                  </p>
-                </div>
-                <div>
-                  <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
-                    <code style="color: #0369a1; font-weight: 600; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeCloudUrlText">https://...</code>
-                    <a id="btnOpenCloudUrl" href="https://pollingstationpec21.onrender.com" target="_blank" style="font-size: 10.5px; font-weight: 700; color: #2563eb; text-decoration: none; flex-shrink: 0;">បើក ↗</a>
-                  </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('online_cloud')" id="btnSelectModeCloud" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
-                    ជ្រើសរើសរបៀបនេះ
-                  </button>
-                </div>
-              </div>
-
-              <!-- Mode 4: Google Sheet -->
-              <div class="storage-card" id="cardModeGoogleSheet" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                    <span style="font-size: 22px;">📊</span>
-                    <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ៤</span>
-                  </div>
-                  <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="៤. Storage: Google Sheet">
-                    ៤. Storage: Google Sheet
-                  </h5>
-                  <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
-                    រក្សាទុក និង Sync ទិន្នន័យ (Real-time Sync) ទៅកាន់ Google Sheet តាមរយៈ Google Apps Script Web App។
-                  </p>
-                </div>
-                <div>
-                  <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    <span id="modeGoogleSheetStatusText" style="color: #64748b; font-size: 10px;">មិនទាន់កំណត់ URL</span>
-                  </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('google_sheet')" id="btnSelectModeGoogleSheet" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
-                    កំណត់ Google Sheet
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dual Storage Mode Option (Online DB + Google Sheet Sync) -->
-            <div id="dualStorageOptionCard" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; transition: all 0.2s ease;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 22px;">⚡</span>
-                <div>
-                  <div style="font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
-                    <span>ដំណើរការទាំងពីរព្រមគ្នា (Dual Storage)</span>
-                    <span id="badgeDualActiveStatus" style="display: none; background: #22c55e; color: white; font-size: 10px; padding: 1px 7px; border-radius: 6px; font-weight: 700;">សកម្ម</span>
-                  </div>
-                  <div style="font-size: 11px; color: #64748b; line-height: 1.45;">
-                    រក្សាទុកក្នុង <strong>Online Database (Cloud)</strong> ផង និងធ្វើសមកាលកម្មស្វ័យប្រវត្តទៅ <strong>Google Sheet</strong> ផងក្នុងពេលតែមួយ (Real-time Dual Sync)។
-                  </div>
-                </div>
-              </div>
-              <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="setStorageMode('dual')" id="btnSelectModeDual" style="font-size: 11.5px; padding: 6px 14px; border-radius: 8px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.06); transition: all 0.15s ease;">
-                🔄 បើកប្រើទាំងពីរព្រមគ្នា
-              </button>
-            </div>
-          </div>
-
-          <div style="max-width: 750px;">
-
-            <!-- Logo & Favicon Configuration Section -->
-            <div class="form-group" style="background: #f8fafc; border: 1.5px dashed #3b82f6; border-radius: 10px; padding: 16px 18px; margin-bottom: 22px;">
-              <label class="form-label" style="font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                🖼️ រូបសញ្ញាស្ថាប័ន & Icon លើ Browser Tab (Institution Logo & Favicon)
-              </label>
-              <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
-                <!-- Main Preview Circle -->
-                <div style="width: 70px; height: 70px; border-radius: 50%; border: 2.5px solid #3b82f6; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.12); flex-shrink: 0; padding: 2px;" title="ទម្រង់រូបសញ្ញាដើម">
-                  <img id="settingLogoPreview" src="img/nec_logo.jpg" alt="Logo Preview" style="width: 100%; height: 100%; object-fit: contain;">
-                </div>
-
-                <!-- Browser Tab Simulation Preview -->
-                <div style="background: #e2e8f0; border-radius: 8px 8px 0 0; padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; border-bottom: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" title="ការបង្ហាញលើ Browser Tab">
-                  <span style="font-size: 11px; color: #64748b; font-weight: 600;">ទម្រង់លើ Tab ៖</span>
-                  <div style="background: white; border-radius: 6px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1;">
-                    <img id="tabSimLogoPreview" src="img/nec_logo.jpg" style="width: 16px; height: 16px; object-fit: contain;">
-                    <span style="font-size: 11px; font-weight: 600; color: #334155;">ប្រព័ន្ធបូកស្រង់ពិន្ទុ...</span>
-                  </div>
-                </div>
-
-                <!-- Controls -->
-                <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 230px;">
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-primary btn-sm" style="font-weight: 600; display: inline-flex; align-items: center; gap: 5px;" onclick="document.getElementById('settingLogoFileInput').click()">
-                      📤 ជ្រើសរើស Icon / Logo ថ្មី (Upload Icon)
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnResetLogoDefault" title="ប្រើប្រាស់ Logo គ.ជ.ប ដើម">
-                      🔄 ប្រើ Logo / Icon ដើម
-                    </button>
-                  </div>
-                  <input type="file" id="settingLogoFileInput" accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp, image/x-icon" style="display: none;">
-                  <input type="hidden" id="settingLogoUrl" value="">
-                  <small style="color: #64748b; font-size: 11.5px; line-height: 1.5;">
-                    💡 គាំទ្ររូបភាពប្រភេទ PNG, JPG, ICO, ឬ SVG។ នៅពេលលោកអ្នកផ្លាស់ប្តូរ ប្រព័ន្ធនឹងធ្វើការ Update រូប Icon លើ Tab Browser, ក្បាលទំព័រខាងលើ, និងក្បាលសន្លឹករបាយការណ៍ដោយស្វ័យប្រវត្តិតែម្តង។
-                  </small>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Google Apps Script Web App URL (Google Sheets Database Endpoint)</label>
-              <input type="url" id="settingGoogleSheetUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
-              <small style="color: var(--text-muted); display: block; margin-top: 4px;">
-                💡 យក URL ដែលបានពីការ Deploy ឯកសារ <code>google-apps-script.gs</code> ក្នុង Google Sheet របស់អ្នក។
-              </small>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">ចំណងជើងស្ថាប័នរៀបចំការបោះឆ្នោត</label>
-              <input type="text" id="settingPecName" class="form-control">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">ចំណងជើងនីតិកាលបោះឆ្នោត</label>
-              <input type="text" id="settingMandate" class="form-control">
-            </div>
-
-            <!-- Telegram Bot Notification Section -->
-            <div class="form-group" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 16px; margin-top: 18px; margin-bottom: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #bbf7d0; padding-bottom: 8px;">
-                <label class="form-label" style="font-weight: 700; color: #166534; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px;">
-                  ✈️ ការជូនដំណឹងតាម Telegram (Telegram Bot Notifications)
-                </label>
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #15803d; cursor: pointer; margin: 0;">
-                  <input type="checkbox" id="settingTelegramEnabled" checked style="width: 17px; height: 17px; cursor: pointer;">
-                  បើកដំណើរការ
-                </label>
-              </div>
-              <p style="color: #374151; font-size: 12.5px; line-height: 1.5; margin-bottom: 12px;">
-                🔔 ប្រព័ន្ធនឹងផ្ញើសារជូនដំណឹងតាមរយៈ Telegram Bot ដោយស្វ័យប្រវត្តិនៅពេលគណនីទាំងអស់ធ្វើការ <strong>Login (ចូលប្រព័ន្ធ)</strong> ឬ <strong>Logout (ចាកចេញ)</strong> (លើកលែងតែគណនី SuperAdmin)។
-              </p>
-              
-              <div style="margin-bottom: 12px;">
-                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #1f2937;">Telegram Bot Token</label>
-                <input type="text" id="settingTelegramBotToken" class="form-control" placeholder="ឧ. 123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
-                <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">
-                  💡 Bot Token ទទួលបានពី Telegram <strong>@BotFather</strong>។
-                </small>
-              </div>
-
-              <div style="margin-bottom: 14px;">
-                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #1f2937;">Telegram Chat ID (User / Group / Channel ID)</label>
-                <input type="text" id="settingTelegramChatId" class="form-control" placeholder="ឧ. 987654321 ឬ -100123456789">
-                <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">
-                  💡 Chat ID ផ្ទាល់ខ្លួន ឬ Group / Channel ID (អាចឆែកតាមរយៈ Telegram <strong>@userinfobot</strong> ឬ <strong>@getmyid_bot</strong>)។
-                </small>
-              </div>
-
-              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <button type="button" id="btnTestTelegram" class="btn btn-outline" style="border: 1px solid #16a34a; color: #166534; background: white; font-weight: 600; font-size: 12px; padding: 6px 14px;">
-                  🔔 សាកល្បងផ្ញើសារ Telegram (Test Notification)
-                </button>
-                <span id="telegramTestResult" style="font-size: 12px; font-weight: 600; display: none;"></span>
-              </div>
-            </div>
-
-            <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-              <button id="btnSaveSettings" class="btn btn-primary">រក្សាទុកការកំណត់ (Save Settings)</button>
-              <a href="/api/backup" class="btn btn-secondary" download title="ទាញយកឯកសារ Backup ជា ZIP ការពារដោយលេខសម្ងាត់ SuperAdmin">
-                📥 Backup Data (ZIP ការពារដោយ Password)
-              </a>
-              <button type="button" class="btn btn-warning" onclick="document.getElementById('backupFileInput').click()" style="background: #f59e0b; color: white; border: none; font-weight: 600;" title="បញ្ចូលឯកសារ Backup ZIP ឬ JSON ដើម្បីស្ដារទិន្នន័យ">
-                📤 ស្ដារទិន្នន័យ (Restore ZIP / JSON)
-              </button>
-              <input type="file" id="backupFileInput" accept=".zip,.json" style="display:none;" onchange="handleUploadBackupFile(event)">
-              <button type="button" class="btn btn-outline" onclick="restoreAllCandidatesFromBrowser()" title="ស្ដារបេក្ខជនទាំងអស់ពី Browser Backup">
-                🔄 ស្ដារបេក្ខជនពី Browser Backup
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Danger Zone / Data Reset -->
-        <div class="card" style="border: 1px solid #ef4444; margin-top: 20px;">
-          <div class="card-header" style="background: #fef2f2; border-bottom: 1px solid #fecaca;">
-            <h3 class="card-title" style="color: #b91c1c;">⚠️ តំបន់គ្រោះថ្នាក់ ៖ Reset សម្អាតទិន្នន័យទាំងអស់ (Reset All Data)</h3>
-          </div>
-          <div style="padding: 18px 20px;">
-            <p style="color: #334155; font-size: 14px; margin-bottom: 14px; line-height: 1.6;">
-              មុខងារនេះនឹងសម្អាតទិន្នន័យ<strong>ការិយាល័យបោះឆ្នោតទាំងអស់ និងពិន្ទុបេក្ខជនទាំងអស់</strong>ឱ្យទៅជាទទេស្អាត (០ ការិយាល័យ, ០ បេក្ខជន) ដោយរក្សាទុកតែគណនីអ្នកប្រើប្រាស់ប៉ុណ្ណោះ។ ទិន្នន័យនឹងនៅតែទទេស្អាត លុះត្រាតែលោកអ្នកធ្វើការបង្កើតថ្មី ឬចុចប៊ូតុងបង្កើតឡើងវិញ។
-            </p>
-            <button id="btnResetAllData" class="btn btn-danger" type="button" style="font-weight: 700; padding: 10px 20px;">
-              🗑️ Reset សម្អាតទិន្នន័យទាំងអស់ឱ្យទទេស្អាត (Reset All Data)
+          <!-- Settings Sub-tabs Navigation Bar -->
+          <div class="settings-subtabs-nav" id="settingsSubTabsNav">
+            <button type="button" class="settings-subtab-btn active" data-subtab="subtabStorage" onclick="switchSettingsSubTab('subtabStorage')">
+              💾 ទីតាំងផ្ទុក & Cloud Sync
+            </button>
+            <button type="button" class="settings-subtab-btn" data-subtab="subtabBranding" onclick="switchSettingsSubTab('subtabBranding')">
+              🏛️ រូបសញ្ញា & ស្ថាប័ន
+            </button>
+            <button type="button" class="settings-subtab-btn" data-subtab="subtabTelegram" onclick="switchSettingsSubTab('subtabTelegram')">
+              ✈️ ការជូនដំណឹង Telegram
+            </button>
+            <button type="button" class="settings-subtab-btn" data-subtab="subtabBackup" onclick="switchSettingsSubTab('subtabBackup')">
+              🛡️ Backup & ស្ដារទិន្នន័យ
+            </button>
+            <button type="button" class="settings-subtab-btn" data-subtab="subtabDanger" onclick="switchSettingsSubTab('subtabDanger')">
+              ⚠️ តំបន់គ្រោះថ្នាក់ (Reset)
             </button>
           </div>
+
+          <!-- =================================================================
+               SUB-TAB 1: 💾 STORAGE & CLOUD SYNC
+               ================================================================= -->
+          <div id="subtabStorage" class="settings-subtab-content">
+            <!-- Storage Modes Selection Section (1 Horizontal Row) -->
+            <div class="storage-modes-panel" style="width: 100%; background: white; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    💾 របៀបដំណើរការ & ទីតាំងផ្ទុកទិន្នន័យ (Storage Modes)
+                  </h4>
+                  <p style="margin: 3px 0 0 0; font-size: 12px; color: #64748b;">
+                    ប្រព័ន្ធគាំទ្រដំណើរការបាន ៤ របៀប ៖ ម៉ាស៊ីនផ្ទាល់ (Local), តាម Wi-Fi តែមួយ, Online Cloud, និង Google Sheet
+                  </p>
+                </div>
+                <div id="currentActiveModeBadge" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; background: #dcfce7; color: #166534; border: 1px solid #86efac; cursor: pointer;" onclick="openStorageModesModal()" title="ចុចដើម្បីមើលព័ត៌មានលម្អិត & QR Code">
+                  <span class="pulse-dot" id="currentActivePulse" style="width: 8px; height: 8px; background: #22c55e;"></span>
+                  <span id="currentActiveModeText">កំពុងដំណើរការ៖ Storage: Local Database</span>
+                </div>
+              </div>
+
+              <div class="storage-options-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 6px;">
+                <!-- Mode 1: Local Database Standalone -->
+                <div class="storage-card" id="cardModeLocal" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <span style="font-size: 22px;">💻</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ១</span>
+                    </div>
+                    <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="១. Storage: Local Database">
+                      ១. Storage: Local Database
+                    </h5>
+                    <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
+                      ប្រើលើម៉ាស៊ីនតែមួយ (Offline)។ មិនបាច់មាន Internet, ល្បឿនលឿន និងទិន្នន័យរក្សាទុកលើកុំព្យូទ័រនេះផ្ទាល់។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px; cursor: pointer;" onclick="openLocalUrl()" title="ចុចដើម្បីបើក Local Database">
+                      <code style="color: #0369a1; font-weight: 600; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeLocalUrlText">http://localhost:3027</code>
+                      <a id="btnOpenLocalUrl" href="http://localhost:3027" target="_blank" onclick="event.stopPropagation();" style="font-size: 10.5px; font-weight: 700; color: #2563eb; text-decoration: none; flex-shrink: 0;">បើក ↗</a>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('local')" id="btnSelectModeLocal" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
+                      ជ្រើសរើសរបៀបនេះ
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mode 2: Local Database via Same Wi-Fi -->
+                <div class="storage-card" id="cardModeWifi" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <span style="font-size: 22px;">📶</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ២</span>
+                    </div>
+                    <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="២. Storage: Local Wi-Fi តែមួយ">
+                      ២. Storage: Local Wi-Fi តែមួយ
+                    </h5>
+                    <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
+                      ទិន្នន័យលើកុំព្យូទ័រមេ ប៉ុន្តែទូរស័ព្ទដៃ ឬកុំព្យូទ័រភ្ជាប់ Wi-Fi ឬ Hotspot តែមួយ ចូលប្រើបាន (មិនបាច់មាន Internet)។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                      <code style="color: #0369a1; font-weight: 600; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeWifiUrlText">http://...:3027</code>
+                      <button type="button" class="btn btn-sm btn-outline" onclick="copyWifiUrl()" style="font-size: 9.5px; padding: 2px 4px; flex-shrink: 0;">ចម្លង</button>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                      <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('local_wifi')" id="btnSelectModeWifi" style="flex: 1; font-size: 11px; font-weight: 600; padding: 5px 2px;">
+                        ជ្រើសរើស
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="openStorageModesModal()" title="បង្ហាញ QR Code សម្រាប់ទូរស័ព្ទដៃ Scan ចូល" style="font-size: 11px; padding: 5px 6px; font-weight: 600;">
+                        📱 QR
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mode 3: Online Database (Cloud) -->
+                <div class="storage-card" id="cardModeCloud" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <span style="font-size: 22px;">🌐</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ៣</span>
+                    </div>
+                    <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="៣. Storage: Online Database">
+                      ៣. Storage: Online Database
+                    </h5>
+                    <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
+                      ដំណើរការលើ Cloud Server (Render) អាចចូលប្រើពីគ្រប់ទីកន្លែងទូទាំងប្រទេសតាមរយៈ Internet។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                      <code style="color: #0369a1; font-weight: 600; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeCloudUrlText">https://...</code>
+                      <a id="btnOpenCloudUrl" href="https://pollingstationpec21.onrender.com" target="_blank" style="font-size: 10.5px; font-weight: 700; color: #2563eb; text-decoration: none; flex-shrink: 0;">បើក ↗</a>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('online_cloud')" id="btnSelectModeCloud" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
+                      ជ្រើសរើសរបៀបនេះ
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mode 4: Google Sheet -->
+                <div class="storage-card" id="cardModeGoogleSheet" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 10px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <span style="font-size: 22px;">📊</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 10.5px; padding: 2px 6px; border-radius: 8px; font-weight: 700;">របៀបទី ៤</span>
+                    </div>
+                    <h5 style="margin: 0 0 4px 0; font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="៤. Storage: Google Sheet">
+                      ៤. Storage: Google Sheet
+                    </h5>
+                    <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b; line-height: 1.45; min-height: 48px;">
+                      រក្សាទុក និង Sync ទិន្នន័យ (Real-time Sync) ទៅកាន់ Google Sheet តាមរយៈ Google Apps Script Web App។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 10.5px; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <span id="modeGoogleSheetStatusText" style="color: #64748b; font-size: 10px;">មិនទាន់កំណត់ URL</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('google_sheet')" id="btnSelectModeGoogleSheet" style="width: 100%; font-size: 11px; font-weight: 600; padding: 5px;">
+                      ជ្រើសរើសរបៀបនេះ
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dual Storage Mode Option (Online DB + Google Sheet Sync) -->
+              <div id="dualStorageOptionCard" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; transition: all 0.2s ease;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 22px;">⚡</span>
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                      <span>ដំណើរការទាំងពីរព្រមគ្នា (Dual Storage)</span>
+                      <span id="badgeDualActiveStatus" style="display: none; background: #22c55e; color: white; font-size: 10px; padding: 1px 7px; border-radius: 6px; font-weight: 700;">សកម្ម</span>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; line-height: 1.45;">
+                      រក្សាទុកក្នុង <strong>Online Database (Cloud)</strong> ផង និងធ្វើសមកាលកម្មស្វ័យប្រវត្តទៅ <strong>Google Sheet</strong> ផងក្នុងពេលតែមួយ (Real-time Dual Sync)។
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="setStorageMode('dual')" id="btnSelectModeDual" style="font-size: 11.5px; padding: 6px 14px; border-radius: 8px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.06); transition: all 0.15s ease;">
+                  🔄 បើកប្រើទាំងពីរព្រមគ្នា
+                </button>
+              </div>
+            </div>
+
+            <!-- Google Apps Script Web App URL Input Section -->
+            <div style="max-width: 750px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+                  📊 Google Apps Script Web App URL (Google Sheets Database Endpoint)
+                </label>
+                <div style="margin-top: 6px;">
+                  <input type="url" id="settingGoogleSheetUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                </div>
+                <small style="color: var(--text-muted); display: block; margin-top: 6px; line-height: 1.45;">
+                  💡 យក URL ដែលបានពីការ Deploy ឯកសារ <code>google-apps-script.gs</code> ក្នុង Google Sheet របស់អ្នក (សូមកំណត់ Who has access: Anyone)។
+                </small>
+              </div>
+            </div>
+
+            <!-- Save Action Button -->
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+              <button id="btnSaveSettings" class="btn btn-primary" type="button" style="font-weight: 700; padding: 9px 22px; display: inline-flex; align-items: center; gap: 6px;">
+                💾 រក្សាទុកការកំណត់ (Save Settings)
+              </button>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               SUB-TAB 2: 🏛️ BRANDING & IDENTITY
+               ================================================================= -->
+          <div id="subtabBranding" class="settings-subtab-content" style="display: none;">
+            <div style="max-width: 750px;">
+              <!-- Logo & Favicon Configuration Section -->
+              <div class="form-group" style="background: #f8fafc; border: 1.5px dashed #3b82f6; border-radius: 10px; padding: 16px 18px; margin-bottom: 22px;">
+                <label class="form-label" style="font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  🖼️ រូបសញ្ញាស្ថាប័ន & Icon លើ Browser Tab (Institution Logo & Favicon)
+                </label>
+                <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+                  <!-- Main Preview Circle -->
+                  <div style="width: 70px; height: 70px; border-radius: 50%; border: 2.5px solid #3b82f6; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.12); flex-shrink: 0; padding: 2px;" title="ទម្រង់រូបសញ្ញាដើម">
+                    <img id="settingLogoPreview" src="img/nec_logo.jpg" alt="Logo Preview" style="width: 100%; height: 100%; object-fit: contain;">
+                  </div>
+
+                  <!-- Browser Tab Simulation Preview -->
+                  <div style="background: #e2e8f0; border-radius: 8px 8px 0 0; padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; border-bottom: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" title="ការបង្ហាញលើ Browser Tab">
+                    <span style="font-size: 11px; color: #64748b; font-weight: 600;">ទម្រង់លើ Tab ៖</span>
+                    <div style="background: white; border-radius: 6px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1;">
+                      <img id="tabSimLogoPreview" src="img/nec_logo.jpg" style="width: 16px; height: 16px; object-fit: contain;">
+                      <span style="font-size: 11px; font-weight: 600; color: #334155;">ប្រព័ន្ធបូកស្រង់ពិន្ទុ...</span>
+                    </div>
+                  </div>
+
+                  <!-- Controls -->
+                  <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 230px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-primary btn-sm" style="font-weight: 600; display: inline-flex; align-items: center; gap: 5px;" onclick="document.getElementById('settingLogoFileInput').click()">
+                        📤 ជ្រើសរើស Icon / Logo ថ្មី (Upload Icon)
+                      </button>
+                      <button type="button" class="btn btn-secondary btn-sm" id="btnResetLogoDefault" title="ប្រើប្រាស់ Logo គ.ជ.ប ដើម">
+                        🔄 ប្រើ Logo / Icon ដើម
+                      </button>
+                    </div>
+                    <input type="file" id="settingLogoFileInput" accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp, image/x-icon" style="display: none;">
+                    <input type="hidden" id="settingLogoUrl" value="">
+                    <small style="color: #64748b; font-size: 11.5px; line-height: 1.5;">
+                      💡 គាំទ្ររូបភាពប្រភេទ PNG, JPG, ICO, ឬ SVG។ នៅពេលលោកអ្នកផ្លាស់ប្តូរ ប្រព័ន្ធនឹងធ្វើការ Update រូប Icon លើ Tab Browser, ក្បាលទំព័រខាងលើ, និងក្បាលសន្លឹករបាយការណ៍ដោយស្វ័យប្រវត្តិតែម្តង។
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Institution Titles -->
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; font-size: 13.5px;">
+                  🏛️ ចំណងជើងស្ថាប័នរៀបចំការបោះឆ្នោត
+                </label>
+                <input type="text" id="settingPecName" class="form-control" placeholder="គណៈកម្មការរៀបចំការបោះឆ្នោត ខេត្តតាកែវ (គ.ខ.ប ២១)">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 22px;">
+                <label class="form-label" style="font-weight: 700; color: #1e293b; font-size: 13.5px;">
+                  🗳️ ចំណងជើងនីតិកាលបោះឆ្នោត
+                </label>
+                <input type="text" id="settingMandate" class="form-control" placeholder="សម្រាប់ការបោះឆ្នោតជ្រើសរើសក្រុមប្រឹក្សាឃុំ សង្កាត់ អាណត្តិទី ៦ ឆ្នាំ២០២៧">
+              </div>
+
+              <!-- Save Action Button -->
+              <div style="margin-top: 20px;">
+                <button type="button" class="btn btn-primary" onclick="handleSaveSettings()" style="font-weight: 700; padding: 9px 22px; display: inline-flex; align-items: center; gap: 6px;">
+                  💾 រក្សាទុកការកំណត់ (Save Settings)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               SUB-TAB 3: ✈️ TELEGRAM NOTIFICATIONS
+               ================================================================= -->
+          <div id="subtabTelegram" class="settings-subtab-content" style="display: none;">
+            <div style="max-width: 750px;">
+              <div class="form-group" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #bbf7d0; padding-bottom: 10px;">
+                  <label class="form-label" style="font-weight: 700; color: #166534; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14.5px;">
+                    ✈️ ការជូនដំណឹងតាម Telegram (Telegram Bot Notifications)
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #15803d; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="settingTelegramEnabled" checked style="width: 17px; height: 17px; cursor: pointer;">
+                    បើកដំណើរការ
+                  </label>
+                </div>
+                <p style="color: #374151; font-size: 12.5px; line-height: 1.55; margin-bottom: 16px;">
+                  🔔 ប្រព័ន្ធនឹងផ្ញើសារជូនដំណឹងតាមរយៈ Telegram Bot ដោយស្វ័យប្រវត្តិនៅពេលគណនីទាំងអស់ធ្វើការ <strong>Login (ចូលប្រព័ន្ធ)</strong> ឬ <strong>Logout (ចាកចេញ)</strong> (លើកលែងតែគណនី SuperAdmin)។
+                </p>
+                
+                <div style="margin-bottom: 14px;">
+                  <label class="form-label" style="font-size: 13px; font-weight: 600; color: #1f2937;">Telegram Bot Token</label>
+                  <input type="text" id="settingTelegramBotToken" class="form-control" placeholder="ឧ. 123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                  <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">
+                    💡 Bot Token ទទួលបានពី Telegram <strong>@BotFather</strong>។
+                  </small>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  <label class="form-label" style="font-size: 13px; font-weight: 600; color: #1f2937;">Telegram Chat ID (User / Group / Channel ID)</label>
+                  <input type="text" id="settingTelegramChatId" class="form-control" placeholder="ឧ. 987654321 ឬ -100123456789">
+                  <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">
+                    💡 Chat ID ផ្ទាល់ខ្លួន ឬ Group / Channel ID (អាចឆែកតាមរយៈ Telegram <strong>@userinfobot</strong> ឬ <strong>@getmyid_bot</strong>)។
+                  </small>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <button type="button" id="btnTestTelegram" class="btn btn-outline" style="border: 1.5px solid #16a34a; color: #166534; background: white; font-weight: 600; font-size: 12px; padding: 7px 16px; border-radius: 6px;">
+                    🔔 សាកល្បងផ្ញើសារ Telegram (Test Notification)
+                  </button>
+                  <span id="telegramTestResult" style="font-size: 12px; font-weight: 600; display: none;"></span>
+                </div>
+              </div>
+
+              <!-- Save Action Button -->
+              <div style="margin-top: 20px;">
+                <button type="button" class="btn btn-primary" onclick="handleSaveSettings()" style="font-weight: 700; padding: 9px 22px; display: inline-flex; align-items: center; gap: 6px;">
+                  💾 រក្សាទុកការកំណត់ (Save Settings)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               SUB-TAB 4: 🛡️ BACKUP & RESTORE
+               ================================================================= -->
+          <div id="subtabBackup" class="settings-subtab-content" style="display: none;">
+            <div style="max-width: 750px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 22px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+              <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                🛡️ ការបម្រុងទុក និងស្ដារទិន្នន័យ (Data Backup & Disaster Recovery)
+              </h4>
+              <p style="color: #64748b; font-size: 13px; line-height: 1.6; margin-bottom: 20px;">
+                ប្រព័ន្ធមានយន្តការសុវត្ថិភាព ៣ ជាន់ដើម្បីការពារទិន្នន័យរបស់អ្នក ៖ ការបម្រុងទុកជា ZIP ការពារដោយ Password, ការស្ដារពី File Backup, និងការសង្គ្រោះបន្ទាន់ពី Browser LocalStorage។
+              </p>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                <!-- 1. Download Backup -->
+                <div style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <h5 style="margin: 0 0 6px 0; color: #1e3a8a; font-size: 13.5px; font-weight: 700;">📥 ទាញយក Backup (ZIP)</h5>
+                    <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #64748b; line-height: 1.45;">
+                      ទាញយកទិន្នន័យទាំងអស់នៃប្រព័ន្ធជាឯកសារ ZIP ដែលការពារដោយលេខសម្ងាត់ SuperAdmin។
+                    </p>
+                  </div>
+                  <a href="/api/backup" class="btn btn-secondary btn-sm" download title="ទាញយកឯកសារ Backup ជា ZIP" style="font-weight: 700; width: 100%; text-align: center; padding: 7px;">
+                    📥 ទាញយក ZIP ឥឡូវនេះ
+                  </a>
+                </div>
+
+                <!-- 2. Restore Backup -->
+                <div style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <h5 style="margin: 0 0 6px 0; color: #b45309; font-size: 13.5px; font-weight: 700;">📤 ស្ដារទិន្នន័យ (Restore)</h5>
+                    <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #64748b; line-height: 1.45;">
+                      បញ្ចូលឯកសារ Backup ZIP ឬ JSON ដែលបានរក្សាទុកពីមុនមកជំនួសទិន្នន័យក្នុងប្រព័ន្ធ។
+                    </p>
+                  </div>
+                  <button type="button" class="btn btn-warning btn-sm" onclick="document.getElementById('backupFileInput').click()" style="background: #f59e0b; color: white; border: none; font-weight: 700; width: 100%; padding: 7px;">
+                    📤 ជ្រើសរើសឯកសារស្ដារ
+                  </button>
+                  <input type="file" id="backupFileInput" accept=".zip,.json" style="display:none;" onchange="handleUploadBackupFile(event)">
+                </div>
+
+                <!-- 3. Local Browser Disaster Recovery -->
+                <div style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <h5 style="margin: 0 0 6px 0; color: #047857; font-size: 13.5px; font-weight: 700;">🔄 សង្គ្រោះពី Browser</h5>
+                    <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #64748b; line-height: 1.45;">
+                      សង្គ្រោះបេក្ខជនទាំងអស់ពី Auto-Backup ក្នុង Browser ក្នុងករណីមានការដាច់ភ្លើង ឬបាត់បង់ទិន្នន័យ។
+                    </p>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="restoreAllCandidatesFromBrowser()" style="border-color: #059669; color: #047857; font-weight: 700; width: 100%; padding: 7px;">
+                    🔄 ស្ដារពី Browser Backup
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               SUB-TAB 5: ⚠️ DANGER ZONE (RESET)
+               ================================================================= -->
+          <div id="subtabDanger" class="settings-subtab-content" style="display: none;">
+            <div style="max-width: 750px; border: 1.5px solid #ef4444; border-radius: 12px; background: white; overflow: hidden; box-shadow: 0 3px 10px rgba(239, 68, 68, 0.08);">
+              <div style="background: #fef2f2; border-bottom: 1.5px solid #fecaca; padding: 14px 20px;">
+                <h4 style="margin: 0; color: #b91c1c; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                  ⚠️ តំបន់គ្រោះថ្នាក់ ៖ Reset សម្អាតទិន្នន័យទាំងអស់ (Reset All Data)
+                </h4>
+              </div>
+              <div style="padding: 20px 22px;">
+                <p style="color: #334155; font-size: 13.5px; margin-bottom: 14px; line-height: 1.6;">
+                  មុខងារនេះនឹងសម្អាតទិន្នន័យ<strong>ការិយាល័យបោះឆ្នោតទាំងអស់ និងពិន្ទុបេក្ខជនទាំងអស់</strong>ឱ្យទៅជាទទេស្អាត (០ ការិយាល័យ, ០ បេក្ខជន) ដោយរក្សាទុកតែគណនីអ្នកប្រើប្រាស់ប៉ុណ្ណោះ។
+                </p>
+                <div style="background: #fff1f2; border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 18px; font-size: 12.5px; color: #991b1b; line-height: 1.5;">
+                  ⚠️ <strong>ការព្រមាន ៖</strong> សកម្មភាពនេះមិនអាចបញ្ច្រាសត្រឡប់ក្រោយបានទេ! សូមទាញយកឯកសារ Backup (ZIP) ក្នុង Sub-tab «Backup & ស្ដារទិន្នន័យ» ជាមុនសិនមុននឹងចុច Reset។
+                </div>
+                <button id="btnResetAllData" class="btn btn-danger" type="button" style="font-weight: 700; padding: 10px 22px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                  🗑️ Reset សម្អាតទិន្នន័យទាំងអស់ឱ្យទទេស្អាត (Reset All Data)
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -1416,6 +1540,6 @@
   <!-- Standalone Offline QR Code Library -->
   <script src="js/qrcode.min.js"></script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_card4_persistence_v69"></script>
+  <script src="js/app.js?v=20261018_settings_subtabs_v70"></script>
 </body>
 </html>

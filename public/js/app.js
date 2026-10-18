@@ -9366,8 +9366,36 @@ async function handleResetLogoDefault() {
   }
 }
 
+function switchSettingsSubTab(subtabId) {
+  const buttons = document.querySelectorAll('.settings-subtab-btn');
+  buttons.forEach(btn => {
+    if (btn.getAttribute('data-subtab') === subtabId) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  const contents = document.querySelectorAll('.settings-subtab-content');
+  contents.forEach(content => {
+    if (content.id === subtabId) {
+      content.style.display = 'block';
+    } else {
+      content.style.display = 'none';
+    }
+  });
+
+  try {
+    localStorage.setItem('pec21_active_settings_subtab', subtabId);
+  } catch(e) {}
+}
+
 async function loadSettingsForm() {
   try {
+    // Restore or initialize active settings subtab
+    const savedSubtab = localStorage.getItem('pec21_active_settings_subtab') || 'subtabStorage';
+    switchSettingsSubTab(savedSubtab);
+
     const isLocal = window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1' || 
                     window.location.port === '3027';
