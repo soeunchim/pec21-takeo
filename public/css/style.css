@@ -198,11 +198,12 @@ textarea,
 
 .brand-title h1,
 #headerSystemTitle {
-  font-family: var(--font-body) !important;
+  font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', serif !important;
   font-size: 15px;
   font-weight: normal !important;
   color: #fff;
   letter-spacing: 0.2px;
+  -webkit-font-smoothing: antialiased;
 }
 
 .brand-title p {
