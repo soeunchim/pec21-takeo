@@ -4674,7 +4674,7 @@ function initReportSelectorBar() {
       const titleEl = document.getElementById('activeReportSheetTitle');
       if (titleEl) {
         const titles = {
-          'sortlist': '📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (សម្រាំងពាក្យបេក្ខ) [📄 ក្រដាសផ្តេក - Landscape]',
+          'sortlist': '📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (សម្រាំងពាក្យបេក្ខជន) [📄 ក្រដាសផ្តេក - Landscape]',
           'notice': '📢 សន្លឹក ២ ៖ សេចក្តីជូនដំណឹងបេក្ខជនសម្ភាសន៍ (Notice)',
           'attendance': '✍️ សន្លឹក ៣ ៖ បញ្ជីវត្តមានសម្ភាសន៍ជ្រើសរើស គ.ក.ប (Attendance)',
           'scoresheet': '📝 សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប (Score Sheet)',
@@ -5688,8 +5688,8 @@ async function renderReportPreview() {
     document.head.appendChild(orientStyle);
   }
   orientStyle.textContent = isLandscape
-    ? '@page { size: landscape !important; margin: 4mm 6mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; } }'
-    : '@page { size: portrait !important; margin: 4mm 6mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; } }';
+    ? '@page { size: landscape !important; margin: 3mm 6mm 2mm 6mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; } }'
+    : '@page { size: portrait !important; margin: 3mm 6mm 2mm 6mm !important; } @media print { .print-paper-sheet { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; } }';
 
   // ----------------------------------------------------------------------------
   // SHEET 1: SortList (តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប - ក្រដាសផ្តេក Landscape)
@@ -7744,10 +7744,10 @@ function setupAutoPrintPagination() {
   let singlePageMaxRows = 24;
 
   if (isLandscape) {
-    page1Cap = 14;
-    midPageCap = 18;
-    lastPageCap = 14;
-    singlePageMaxRows = 12;
+    page1Cap = 11;
+    midPageCap = 24;
+    lastPageCap = 17;
+    singlePageMaxRows = 10;
   } else if (currentReportType === 'final_roster') {
     page1Cap = 34; // Reduced by 2 rows (from 36 to 34) as requested by user
     midPageCap = 42; // 7 stations of 6 candidates
@@ -7772,10 +7772,10 @@ function setupAutoPrintPagination() {
     lastPageCap = 38;
     singlePageMaxRows = 24;
   } else if (currentReportType === 'attendance') {
-    page1Cap = isLandscape ? 14 : 34;
-    midPageCap = isLandscape ? 18 : 42;
-    lastPageCap = isLandscape ? 14 : 38;
-    singlePageMaxRows = isLandscape ? 12 : 24;
+    page1Cap = isLandscape ? 11 : 34;
+    midPageCap = isLandscape ? 24 : 42;
+    lastPageCap = isLandscape ? 17 : 38;
+    singlePageMaxRows = isLandscape ? 10 : 24;
   }
 
   // Dynamically scale page row capacity when row height / vertical padding is customized
@@ -7864,11 +7864,26 @@ function setupAutoPrintPagination() {
   let isFirstPage = true;
 
   for (let i = 0; i < rows.length; i++) {
-    currentChunk.push(rows[i].outerHTML);
+    const rowEl = rows[i];
+    const isBanner = rowEl.classList.contains('category-row') ||
+                     rowEl.classList.contains('station-banner-row') ||
+                     rowEl.classList.contains('commune-banner-row') ||
+                     rowEl.classList.contains('district-banner-row');
     const currentLimit = isFirstPage ? page1Cap : midPageCap;
     const remainingAfterThis = rows.length - (i + 1);
 
-    if (currentChunk.length >= currentLimit && remainingAfterThis > 0) {
+    // If current row is a section/category banner and we are close to the page limit,
+    // break early so the banner and its candidates start cleanly at the top of the next page!
+    if (isBanner && currentChunk.length >= (currentLimit - 2) && remainingAfterThis > 0 && currentChunk.length > 0) {
+      pagesRows.push(currentChunk);
+      currentChunk = [];
+      isFirstPage = false;
+    }
+
+    currentChunk.push(rowEl.outerHTML);
+    const updatedLimit = isFirstPage ? page1Cap : midPageCap;
+
+    if (currentChunk.length >= updatedLimit && remainingAfterThis > 0) {
       pagesRows.push(currentChunk);
       currentChunk = [];
       isFirstPage = false;
