@@ -462,18 +462,34 @@ function syncToGoogleSheet(action = 'sync_all', extra = {}) {
   if (sheetSyncTimer) clearTimeout(sheetSyncTimer);
   return new Promise((resolve) => {
     sheetSyncTimer = setTimeout(async () => {
+      // 1. Sanitize settings: strip/truncate large base64 strings so Google Sheets never fails with 50,000 char per cell limit!
+      const sanitizedSettings = { ...db.settings };
+      if (sanitizedSettings.logoUrl && sanitizedSettings.logoUrl.length > 500) {
+        sanitizedSettings.logoUrl = sanitizedSettings.logoUrl.startsWith('data:') ? '[base64_logo]' : sanitizedSettings.logoUrl;
+      }
+
+      // 2. Prepare payload data
+      const payloadData = {
+        settings: sanitizedSettings,
+        users: db.users,
+        districts: db.districts,
+        communes: db.communes,
+        candidates: db.candidates
+      };
+
+      // Include all polling stations on full sync, or only used stations on candidate updates for high speed
+      if (action === 'manual_sync' || action === 'sync_all_full' || extra.includeStations) {
+        payloadData.pollingStations = db.pollingStations;
+      } else {
+        const usedStationIds = new Set((db.candidates || []).map(c => c.pollingStationId));
+        payloadData.pollingStations = (db.pollingStations || []).filter(ps => usedStationIds.has(ps.id));
+      }
+
       const payloadObj = {
-        action: action,
+        action: action === 'manual_sync' ? 'sync_all' : action,
         timestamp: new Date().toISOString(),
         user: extra.user || 'system',
-        data: {
-          settings: db.settings,
-          users: db.users,
-          districts: db.districts,
-          communes: db.communes,
-          pollingStations: db.pollingStations,
-          candidates: db.candidates
-        }
+        data: payloadData
       };
       const res = await sendGoogleSheetPost(endpoint, JSON.stringify(payloadObj));
       if (res && res.success) {
