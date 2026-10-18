@@ -3000,6 +3000,27 @@ tr.excel-row-active td.excel-calc-rank {
   text-align: center !important;
 }
 
+/* ==========================================================================
+   Storage Modes Grid - 1 Horizontal Row
+   ========================================================================== */
+.storage-options-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 12px !important;
+}
+
+@media (max-width: 992px) {
+  .storage-options-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .storage-options-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 
 
 
