@@ -110,8 +110,7 @@ body {
 }
 
 /* Headings: Khmer OS Muol Light */
-h1, h2, h3, h4, h5, h6,
-.brand-title h1,
+h1:not(#headerSystemTitle), h2, h3, h4, h5, h6,
 .card-title,
 .modal-title,
 .login-header h2,
@@ -197,11 +196,13 @@ textarea,
   fill: #1e3a8a;
 }
 
-.brand-title h1 {
-  font-size: 16px;
-  font-weight: 700;
+.brand-title h1,
+#headerSystemTitle {
+  font-family: var(--font-body) !important;
+  font-size: 15px;
+  font-weight: normal !important;
   color: #fff;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .brand-title p {
