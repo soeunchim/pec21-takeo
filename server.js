@@ -8,6 +8,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const os = require('os');
 
 const PORT = process.env.PORT || 3027;
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
@@ -42,9 +43,35 @@ try {
   console.error('[OfficialStations] Failed to load reference stations:', e.message);
 }
 
-// ==============================================================================
-// Database & Google Sheets Synchronization Engine
-// ==============================================================================
+// Helper: Detect Network Interfaces & Storage Environments (Localhost, Local Wi-Fi, Cloud)
+function getNetworkInfo() {
+  const isCloud = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || (process.env.NODE_ENV === 'production' && !process.env.LOCAL_DEV));
+  const cloudUrl = process.env.RENDER_EXTERNAL_URL || 'https://pec21-takeo.onrender.com';
+  
+  let localIp = '127.0.0.1';
+  const interfaces = os.networkInterfaces();
+  const allIps = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const net of interfaces[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        allIps.push({ name, ip: net.address });
+        if (!localIp || localIp === '127.0.0.1') {
+          localIp = net.address;
+        }
+      }
+    }
+  }
+
+  return {
+    isCloud,
+    cloudUrl,
+    localIp,
+    allIps,
+    port: PORT,
+    localhostUrl: `http://localhost:${PORT}`,
+    wifiUrl: localIp && localIp !== '127.0.0.1' ? `http://${localIp}:${PORT}` : `http://localhost:${PORT}`
+  };
+}
 
 function loadLocalDatabase() {
   try {
@@ -1102,11 +1129,24 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/settings' && req.method === 'GET') {
       const host = (req.headers && req.headers.host) || '';
       const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+      const netInfo = getNetworkInfo();
       return sendJSON(res, 200, {
         success: true,
         settings: db.settings,
         isLocalhost: isLocalhost,
-        environment: isLocalhost ? 'local' : 'online'
+        environment: isLocalhost ? 'local' : (netInfo.isCloud ? 'online' : 'wifi'),
+        networkInfo: netInfo
+      });
+    }
+
+    // 4.6 GET /api/network-info (Publicly accessible for Wi-Fi IP, QR code & storage modes)
+    if (pathname === '/api/network-info' && req.method === 'GET') {
+      const netInfo = getNetworkInfo();
+      return sendJSON(res, 200, {
+        success: true,
+        ...netInfo,
+        storageMode: (db.settings && db.settings.storageMode) || 'auto',
+        googleSheetConfigured: Boolean(db.settings && db.settings.googleSheetUrl)
       });
     }
 
@@ -2453,11 +2493,21 @@ const server = http.createServer(async (req, res) => {
 // Boot Server
 loadLocalDatabase();
 server.listen(PORT, async () => {
+  const netInfo = getNetworkInfo();
   console.log(`================================================================`);
   console.log(`  PEC21 TAKEO - KKB EXAM SCORE SYSTEM 2027`);
   console.log(`  ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧`);
   console.log(`  Server is actively listening on port: ${PORT}`);
-  console.log(`  Local Access: http://localhost:${PORT}`);
+  console.log(`----------------------------------------------------------------`);
+  console.log(`  របៀបដំណើរការទាំង ៤ (Supported Storage Modes):`);
+  console.log(`  [១] Storage: Local Database (ម៉ាស៊ីនផ្ទាល់):`);
+  console.log(`      -> ${netInfo.localhostUrl}`);
+  console.log(`  [២] Storage: Local Database (Online តាម Wi-Fi តែមួយ):`);
+  console.log(`      -> ${netInfo.wifiUrl}`);
+  console.log(`  [៣] Storage: Online Database (Cloud Server):`);
+  console.log(`      -> ${netInfo.cloudUrl}`);
+  console.log(`  [៤] Storage: Google Sheet (Sync ទៅ Google Sheet):`);
+  console.log(`      -> ${db.settings && db.settings.googleSheetUrl ? 'បានភ្ជាប់រួចរាល់' : 'កំណត់ក្នុងផ្ទាំង Settings ក្នុងប្រព័ន្ធ'}`);
   console.log(`================================================================`);
   await initCloudSync();
 

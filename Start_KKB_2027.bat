@@ -8,8 +8,11 @@ echo   PEC21 Takeo - KKB Examination Score System 2027
 echo   ប្រព័ន្ធគ្រប់គ្រង និងបូកស្រង់ពិន្ទុនៃការប្រឡង គ.ក.ប ២០២៧ (PEC21)
 echo ======================================================================
 echo.
-echo   [+] កំពុងចាប់ផ្តើម Server (Starting Server)...
-echo   [+] អាសយដ្ឋានមូលដ្ឋាន (Local URL): http://localhost:3027
+echo   [+] កំពុងចាប់ផ្តើម Server (Starting Server on Port 3027)...
+echo   [+] របៀបទី ១ ៖ Localhost (ម៉ាស៊ីនផ្ទាល់)  -^> http://localhost:3027
+echo   [+] របៀបទី ២ ៖ តាម Wi-Fi តែមួយ         -^> សូមមើល IP ក្នុង log ខាងក្រោម
+echo   [+] របៀបទី ៣ ៖ Online Cloud            -^> https://pec21-takeo.onrender.com
+echo   [+] របៀបទី ៤ ៖ Storage Google Sheet     -^> កំណត់ក្នុងផ្ទាំង Settings
 echo.
 echo ======================================================================
 

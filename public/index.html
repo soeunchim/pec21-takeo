@@ -727,9 +727,129 @@
             </button>
           </div>
 
-          <div style="max-width: 700px;">
-            <div id="storageEnvironmentNotice" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-size: 13px; line-height: 1.6;">
-              🌐 <strong>របៀបដំណើរការ៖ Online Cloud</strong> — កំពុងប្រើប្រាស់ <strong>Storage: Online Database</strong>
+          <div style="max-width: 960px;">
+            <!-- Storage Modes Selection Section -->
+            <div class="storage-modes-panel" style="background: white; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <h4 style="margin: 0; font-size: 15.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    💾 របៀបដំណើរការ & ទីតាំងផ្ទុកទិន្នន័យ (Storage Modes)
+                  </h4>
+                  <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">
+                    ប្រព័ន្ធគាំទ្រដំណើរការបាន ៤ របៀប ៖ ម៉ាស៊ីនផ្ទាល់ (Local), តាម Wi-Fi តែមួយ, Online Cloud, និង Google Sheet
+                  </p>
+                </div>
+                <div id="currentActiveModeBadge" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; background: #dcfce7; color: #166534; border: 1px solid #86efac; cursor: pointer;" onclick="openStorageModesModal()" title="ចុចដើម្បីមើលព័ត៌មានលម្អិត & QR Code">
+                  <span class="pulse-dot" id="currentActivePulse" style="width: 8px; height: 8px; background: #22c55e;"></span>
+                  <span id="currentActiveModeText">កំពុងដំណើរការ៖ Storage: Local Database</span>
+                </div>
+              </div>
+
+              <div class="storage-options-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 8px;">
+                <!-- Mode 1: Local Database Standalone -->
+                <div class="storage-card" id="cardModeLocal" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                      <span style="font-size: 24px;">💻</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">របៀបទី ១</span>
+                    </div>
+                    <h5 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 700; color: #1e293b;">
+                      ១. Storage: Local Database
+                    </h5>
+                    <p style="margin: 0 0 10px 0; font-size: 11.5px; color: #64748b; line-height: 1.5;">
+                      ប្រើប្រាស់លើម៉ាស៊ីនតែមួយ (Offline Standalone)។ មិនបាច់មាន Internet, ល្បឿនលឿន និងទិន្នន័យរក្សាទុកលើកុំព្យូទ័រនេះផ្ទាល់។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; font-size: 11px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                      <code style="color: #0369a1; font-weight: 600;" id="modeLocalUrlText">http://localhost:3027</code>
+                      <a id="btnOpenLocalUrl" href="http://localhost:3027" target="_blank" style="font-size: 11px; font-weight: 700; color: #2563eb; text-decoration: none;">បើក ↗</a>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('local')" id="btnSelectModeLocal" style="width: 100%; font-size: 12px; font-weight: 600; padding: 6px;">
+                      ជ្រើសរើសរបៀបនេះ
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mode 2: Local Database via Same Wi-Fi -->
+                <div class="storage-card" id="cardModeWifi" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                      <span style="font-size: 24px;">📶</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">របៀបទី ២</span>
+                    </div>
+                    <h5 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 700; color: #1e293b;">
+                      ២. Storage: Local Wi-Fi តែមួយ
+                    </h5>
+                    <p style="margin: 0 0 10px 0; font-size: 11.5px; color: #64748b; line-height: 1.5;">
+                      ទិន្នន័យផ្ទុកលើកុំព្យូទ័រមេ ប៉ុន្តែទូរស័ព្ទដៃ ឬកុំព្យូទ័រផ្សេងទៀតដែលភ្ជាប់ Wi-Fi ឬ Hotspot តែមួយ អាចចូលប្រើបាន (មិនបាច់មាន Internet)។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; font-size: 11px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                      <code style="color: #0369a1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeWifiUrlText">http://...:3027</code>
+                      <button type="button" class="btn btn-sm btn-outline" onclick="copyWifiUrl()" style="font-size: 10px; padding: 2px 6px; flex-shrink: 0;">ចម្លង URL</button>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                      <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('local_wifi')" id="btnSelectModeWifi" style="flex: 1; font-size: 12px; font-weight: 600; padding: 6px;">
+                        ជ្រើសរើស
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="openStorageModesModal()" title="បង្ហាញ QR Code សម្រាប់ទូរស័ព្ទដៃ Scan ចូល" style="font-size: 12px; padding: 6px 10px; font-weight: 600;">
+                        📱 QR Code
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mode 3: Online Database (Cloud) -->
+                <div class="storage-card" id="cardModeCloud" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                      <span style="font-size: 24px;">🌐</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">របៀបទី ៣</span>
+                    </div>
+                    <h5 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 700; color: #1e293b;">
+                      ៣. Storage: Online Database
+                    </h5>
+                    <p style="margin: 0 0 10px 0; font-size: 11.5px; color: #64748b; line-height: 1.5;">
+                      ដំណើរការលើ Cloud Server (Render) អាចចូលប្រើពីគ្រប់ទីកន្លែងទូទាំងប្រទេសតាមរយៈ Internet។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; font-size: 11px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                      <code style="color: #0369a1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="modeCloudUrlText">https://pec21-takeo.onrender.com</code>
+                      <a id="btnOpenCloudUrl" href="https://pec21-takeo.onrender.com" target="_blank" style="font-size: 11px; font-weight: 700; color: #2563eb; text-decoration: none; flex-shrink: 0;">បើក ↗</a>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('online_cloud')" id="btnSelectModeCloud" style="width: 100%; font-size: 12px; font-weight: 600; padding: 6px;">
+                      ជ្រើសរើសរបៀបនេះ
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mode 4: Google Sheet -->
+                <div class="storage-card" id="cardModeGoogleSheet" style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                      <span style="font-size: 24px;">📊</span>
+                      <span class="mode-tag" style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">របៀបទី ៤</span>
+                    </div>
+                    <h5 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 700; color: #1e293b;">
+                      ៤. Storage: Google Sheet
+                    </h5>
+                    <p style="margin: 0 0 10px 0; font-size: 11.5px; color: #64748b; line-height: 1.5;">
+                      រក្សាទុក និងធ្វើសមកាលកម្មទិន្នន័យ (Real-time Sync) ទៅកាន់ Google Sheet តាមរយៈ Google Apps Script Web App។
+                    </p>
+                  </div>
+                  <div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; font-size: 11px; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <span id="modeGoogleSheetStatusText" style="color: #64748b; font-size: 11px;">មិនទាន់បានកំណត់ URL នៅឡើយ</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="setStorageMode('google_sheet')" id="btnSelectModeGoogleSheet" style="width: 100%; font-size: 12px; font-weight: 600; padding: 6px;">
+                      កំណត់ Google Sheet
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Logo & Favicon Configuration Section -->
@@ -1197,6 +1317,55 @@
 
 
   <!-- =========================================================================
+       MODAL STORAGE MODES & WI-FI QR CODE
+       ========================================================================= -->
+  <div id="modalStorageModes" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal-content" style="max-width: 580px; width: 92%; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 18px;">
+        <h3 style="margin: 0; font-size: 16.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          💾 ព័ត៌មានរបៀបដំណើរការទាំង ៤ (Storage Modes)
+        </h3>
+        <button type="button" onclick="closeStorageModesModal()" style="background:none; border:none; font-size: 22px; cursor: pointer; color: #64748b; padding: 0 4px; line-height: 1;">✕</button>
+      </div>
+
+      <!-- Wi-Fi QR Scan Card -->
+      <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 18px; margin-bottom: 18px; text-align: center;">
+        <div style="font-weight: 700; font-size: 14.5px; color: #166534; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          📶 របៀបទី ២ ៖ ភ្ជាប់ប្រើតាម Wi-Fi / Hotspot តែមួយ
+        </div>
+        <p style="margin: 0 0 14px 0; font-size: 12px; color: #374151; line-height: 1.5;">
+          បើកកាមេរ៉ាទូរស័ព្ទដៃដែលបានភ្ជាប់ <strong>Wi-Fi តែមួយជាមួយកុំព្យូទ័រនេះ</strong> រួច Scan QR Code ខាងក្រោមដើម្បីចូលប្រើភ្លាមៗ (មិនបាច់មាន Internet) ៖
+        </p>
+
+        <!-- QR Code Container -->
+        <div style="display: inline-block; padding: 12px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 12px;">
+          <div id="modalWifiQrContainer" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; margin: 0 auto;"></div>
+        </div>
+
+        <div style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: 440px; margin: 0 auto;">
+          <code id="modalWifiUrlText" style="font-size: 13px; font-weight: 700; color: #166534; word-break: break-all;">http://...:3027</code>
+          <button type="button" class="btn btn-sm btn-success" onclick="copyWifiUrl()" style="font-size: 11px; padding: 4px 10px; flex-shrink: 0; font-weight: 600;">📋 ចម្លង</button>
+        </div>
+      </div>
+
+      <!-- 4 Modes Summary Table -->
+      <div style="font-size: 12px; line-height: 1.6; color: #334155; margin-bottom: 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+        <div style="font-weight: 700; margin-bottom: 6px; color: #0f172a; font-size: 13px;">📋 សង្ខេបរបៀបដំណើរការទាំង ៤ ៖</div>
+        <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px;">
+          <li><strong>១. Storage: Local Database</strong> ៖ ដំណើរការលើកុំព្យូទ័រផ្ទាល់ (<code>http://localhost:3027</code>) មិនបាច់ភ្ជាប់បណ្តាញអ្វីទាំងអស់។</li>
+          <li><strong>២. Storage: Local Wi-Fi</strong> ៖ ដំណើរការតាម Wi-Fi តែមួយ ឬ Hotspot ទូរស័ព្ទ (<code>http://IP:3027</code>) ទូរស័ព្ទផ្សេងទៀតចូលប្រើបានដោយមិនបាច់មាន Internet។</li>
+          <li><strong>៣. Storage: Online Database</strong> ៖ ដំណើរការលើ Cloud (<a href="https://pec21-takeo.onrender.com" target="_blank" style="color:#2563eb; font-weight:600;">pec21-takeo.onrender.com</a>) ប្រើពីគ្រប់ទីកន្លែងតាម Internet។</li>
+          <li><strong>៤. Storage: Google Sheet</strong> ៖ ធ្វើសមកាលកម្មទិន្នន័យស្វ័យប្រវត្តិទៅ Google Sheet ផ្ទាល់ខ្លួន។</li>
+        </ul>
+      </div>
+
+      <div style="text-align: right;">
+        <button type="button" class="btn btn-secondary" onclick="closeStorageModesModal()" style="font-weight: 600; padding: 7px 20px;">យល់ព្រម / បិទ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        MODERN ELEGANT POPUP DIALOG (Replaces native browser alert & confirm)
        ========================================================================= -->
   <div id="modernPopupOverlay" class="modern-popup-overlay" role="dialog" aria-modal="true">
@@ -1224,7 +1393,9 @@
       document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\\/script>');
     }
   </script>
+  <!-- Standalone Offline QR Code Library -->
+  <script src="js/qrcode.min.js"></script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_backup_zip_pw_v62"></script>
+  <script src="js/app.js?v=20261018_storage_modes_v63"></script>
 </body>
 </html>
