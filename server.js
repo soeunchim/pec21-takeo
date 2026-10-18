@@ -2344,15 +2344,28 @@ const server = http.createServer(async (req, res) => {
           });
 
           const entries = await zipReader.getEntries();
-          const jsonEntry = entries.find(e => e.filename.toLowerCase().endsWith('.json')) || entries[0];
+          const jsonEntry = entries.find(e => e.filename && e.filename.toLowerCase().endsWith('.json'));
           if (!jsonEntry) {
             await zipReader.close();
-            return sendJSON(res, 400, { success: false, message: 'មិនមានឯកសារទិន្នន័យ JSON នៅក្នុង File ZIP នេះឡើយ' });
+            return sendJSON(res, 400, {
+              success: false,
+              message: 'ឯកសារ ZIP នេះមិនមែនជាឯកសារ Backup របស់ប្រព័ន្ធប្រឡង គ.ក.ប ឡើយ (រកមិនឃើញឯកសារទិន្នន័យ pec21_database.json ក្នុង ZIP)'
+            });
           }
 
-          const jsonText = await jsonEntry.getData(new zip.TextWriter());
+          const jsonText = await jsonEntry.getData(new zip.TextWriter(), {
+            password: inputPassword
+          });
           await zipReader.close();
-          data = JSON.parse(jsonText);
+
+          try {
+            data = JSON.parse(jsonText);
+          } catch (pe) {
+            return sendJSON(res, 400, {
+              success: false,
+              message: 'ឯកសារ JSON នៅក្នុង ZIP ខូច ឬមិនត្រឹមត្រូវ ៖ ' + pe.message
+            });
+          }
         } catch (err) {
           console.warn('[Restore ZIP Error]:', err.message);
           const msg = String(err.message || '').toLowerCase();
