@@ -62,14 +62,15 @@ function getNetworkInfo() {
     }
   }
 
+  const localPort = 3027;
   return {
     isCloud,
     cloudUrl,
-    localIp,
-    allIps,
-    port: PORT,
-    localhostUrl: `http://localhost:${PORT}`,
-    wifiUrl: localIp && localIp !== '127.0.0.1' ? `http://${localIp}:${PORT}` : `http://localhost:${PORT}`
+    localIp: isCloud ? '' : localIp,
+    allIps: isCloud ? [] : allIps,
+    port: isCloud ? localPort : PORT,
+    localhostUrl: `http://localhost:${localPort}`,
+    wifiUrl: (!isCloud && localIp && localIp !== '127.0.0.1') ? `http://${localIp}:${PORT}` : ''
   };
 }
 

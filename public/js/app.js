@@ -1725,13 +1725,67 @@ function copyWifiUrl() {
   }
 }
 
+async function launchLocalDatabase(event) {
+  if (event && event.preventDefault) event.preventDefault();
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isLocal) {
+    showToast('info', '💻 លោកអ្នកកំពុងដំណើរការលើ Storage: Local Database រួចជាស្រេចហើយ។');
+    return;
+  }
+
+  showToast('info', '⏳ កំពុងតភ្ជាប់ និងបើកដំណើរការ Local Database...');
+
+  // 1. Check if localhost:3027 is already answering
+  let isRunning = false;
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
+    await fetch('http://localhost:3027/api/settings', { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
+    clearTimeout(timeoutId);
+    isRunning = true;
+  } catch (e) {
+    isRunning = false;
+  }
+
+  if (isRunning) {
+    // Already running, open directly!
+    window.open('http://localhost:3027', '_blank');
+  } else {
+    // Trigger registered Windows protocol kkb://start to launch node server silently in background
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = 'kkb://start';
+      document.body.appendChild(iframe);
+      setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 2500);
+    } catch (e) {}
+
+    showToast('success', '🚀 កំពុងដំណើរការ Server មូលដ្ឋានដោយស្វ័យប្រវត្តិតាម Windows Background...');
+
+    // Poll localhost:3027 and open as soon as ready
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      try {
+        const c2 = new AbortController();
+        const t2 = setTimeout(() => c2.abort(), 800);
+        await fetch('http://localhost:3027/api/settings', { mode: 'no-cors', signal: c2.signal });
+        clearTimeout(t2);
+        clearInterval(interval);
+        window.open('http://localhost:3027', '_blank');
+      } catch (e2) {
+        if (attempts >= 4) {
+          clearInterval(interval);
+          window.open('http://localhost:3027', '_blank');
+        }
+      }
+    }, 700);
+  }
+}
+
 function setStorageMode(mode) {
   if (mode === 'local') {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      showToast('info', '💻 លោកអ្នកកំពុងដំណើរការលើ Storage: Local Database រួចជាស្រេចហើយ។');
-    } else {
-      window.open('http://localhost:3027', '_blank');
-    }
+    launchLocalDatabase();
   } else if (mode === 'local_wifi') {
     openStorageModesModal();
   } else if (mode === 'online_cloud') {
