@@ -3560,51 +3560,51 @@ async function renderScoringTableForActiveStation() {
         const dupSig = isDup && cand.name && cand.dob ? `${normKhmerText(cand.name)}|${normComparableGender(cand.gender)}|${normComparableDob(cand.dob)}` : '';
         tbody.innerHTML += `
           <tr data-cand-id="${cand.id}" data-role="${roleName}" data-order="${order}" class="${isDup ? 'duplicate-highlight-row' : ''}" data-is-duplicate="${isDup ? 'true' : 'false'}" data-dup-confirmed-sig="${dupSig}">
-            <td class="excel-col-order">${toKhmerNum(order)}</td>
+            <td class="excel-col-order" style="width: 36px; text-align: center;">${toKhmerNum(order)}</td>
             <td>
-              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលគោត្តនាម-នាម" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
+              <input type="text" class="excel-cell-input cand-name" value="${cand.name || ''}" placeholder="បញ្ចូលឈ្មោះ" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);" oninput="onCandidateNameInput(this)" onkeydown="onCandidateNameKeyDown(event, this)">
             </td>
-            <td style="text-align: center; width: 65px; min-width: 65px;">
+            <td style="text-align: center; width: 38px; min-width: 38px;">
               <select class="excel-cell-select cand-gender" style="text-align: center; text-align-last: center;" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);">
                 <option value="ប" ${cand.gender === 'ប' ? 'selected' : ''}>ប</option>
                 <option value="ស" ${cand.gender === 'ស' ? 'selected' : ''}>ស</option>
               </select>
             </td>
-            <td>
+            <td style="width: 90px; min-width: 90px; text-align: center;">
               <input type="text" class="excel-cell-input cand-dob" value="${formatKhmerDate(cand.dob || '')}" placeholder="ថ្ងៃ-ខែ-ឆ្នាំ" style="text-align: center;" oninput="onCandidateDobInput(this)" onchange="onCandidateRowChange(this); onCandidateFieldFinished(this);">
             </td>
-            <td>
-              <input type="text" class="excel-cell-input cand-phone" value="${formatKhmerPhoneNumber(cand.phone || '')}" placeholder="០៨៧..." oninput="onCandidatePhoneInput(this)" onchange="onCandidateRowChange(this)">
+            <td style="width: 100px; min-width: 100px; text-align: center;">
+              <input type="text" class="excel-cell-input cand-phone" value="${formatKhmerPhoneNumber(cand.phone || '')}" placeholder="០៨៧..." style="text-align: center;" oninput="onCandidatePhoneInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="វាយបញ្ចូលកម្រិតវប្បធម៌" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-degree" value="${cand.degree || ''}" placeholder="កម្រិតវប្បធម៌" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
             </td>
-            <td style="width: 70px; min-width: 70px; text-align: center;">
-              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-degree" value="${toKhmerNum(degScoreVal)}" style="text-align: center; padding: 4px 2px;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
+            <td style="width: 40px; min-width: 40px; text-align: center;">
+              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-degree" value="${toKhmerNum(degScoreVal)}" style="text-align: center; padding: 2px 1px;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
             </td>
             <td>
-              <input type="text" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="វាយបញ្ចូលបទពិសោធន៍" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
+              <input type="text" class="excel-cell-input cand-exp" value="${cand.experience || ''}" placeholder="បទពិសោធន៍" onchange="onCandidateRowChange(this)" oninput="onCandidateRowChange(this)">
             </td>
-            <td style="width: 70px; min-width: 70px; text-align: center;">
-              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-exp" value="${toKhmerNum(expScoreVal)}" style="text-align: center; padding: 4px 2px;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
+            <td style="width: 40px; min-width: 40px; text-align: center;">
+              <input type="text" inputmode="decimal" class="excel-cell-input cand-score-exp" value="${toKhmerNum(expScoreVal)}" style="text-align: center; padding: 2px 1px;" oninput="onCandidateScoreInput(this)" onchange="onCandidateRowChange(this)">
             </td>
-            <td class="excel-calc-shortlist cand-shortlist-display">
+            <td class="excel-calc-shortlist cand-shortlist-display" style="width: 55px; min-width: 55px; text-align: center;">
               ${toKhmerNum(shortlistVal)}
             </td>
-            <td style="width: 95px; min-width: 95px; text-align: center;">
-              <input type="text" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០ ឬ អវត្តមាន" style="text-align: center; font-weight: 700; padding: 4px 2px;" oninput="onCandidateInterviewInput(this)" onchange="onCandidateInterviewChange(this)">
+            <td style="width: 78px; min-width: 78px; text-align: center;">
+              <input type="text" class="excel-cell-input cand-interview" value="${cand.scoreInterview === 'អវត្តមាន' ? 'អវត្តមាន' : (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' ? toKhmerNum(cand.scoreInterview) : '')}" placeholder="០-២០" style="text-align: center; font-weight: 700; padding: 2px 1px;" oninput="onCandidateInterviewInput(this)" onchange="onCandidateInterviewChange(this)">
             </td>
-            <td class="excel-calc-total cand-total-display" style="width: 65px; min-width: 65px; text-align: center;">
+            <td class="excel-calc-total cand-total-display" style="width: 50px; min-width: 50px; text-align: center;">
               ${totalDisplay}
             </td>
-            <td class="excel-calc-rank cand-rank-display" style="width: 65px; min-width: 65px; text-align: center;">
+            <td class="excel-calc-rank cand-rank-display" style="width: 50px; min-width: 50px; text-align: center;">
               ${toKhmerNum(hasCompletedTotal ? (cand.rank || order) : order)}
             </td>
-            <td class="excel-calc-status cand-status-display" style="text-align: left !important; padding-left: 10px !important; min-width: 110px; white-space: nowrap;">
+            <td class="excel-calc-status cand-status-display" style="text-align: center !important; padding: 0 2px !important; width: 85px; min-width: 85px; white-space: nowrap;">
               ${badgeHtml}
             </td>
-            <td style="text-align: center;">
-              <button class="btn btn-danger btn-sm cand-btn-delete" style="padding: 2px 7px; font-size: 11px;" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក" ${hasData ? '' : 'disabled'}>❌</button>
+            <td style="text-align: center; width: 35px;">
+              <button class="btn btn-danger btn-sm cand-btn-delete" style="padding: 1px 4px; font-size: 11px;" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក" ${hasData ? '' : 'disabled'}>❌</button>
             </td>
           </tr>
         `;

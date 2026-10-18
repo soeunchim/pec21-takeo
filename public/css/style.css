@@ -1102,8 +1102,8 @@ textarea,
   border: 2px solid #64748b !important;
   background: #ffffff;
   font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-  font-size: 11pt !important;
-  margin-top: 10px;
+  font-size: 10pt !important;
+  margin-top: 6px;
 }
 
 .excel-scoring-table th,
@@ -1111,9 +1111,9 @@ textarea,
   border: 1px solid #94a3b8 !important;
   padding: 0 !important;
   vertical-align: middle;
-  height: 38px;
+  height: 32px;
   font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-  font-size: 11pt !important;
+  font-size: 10pt !important;
 }
 
 /* Two-tier Excel Header - Font Khmer OS Muol Light (Single-line fit) */
@@ -1130,9 +1130,9 @@ textarea,
 .excel-header-group th {
   background: #1e293b;
   color: #f8fafc;
-  font-size: 9pt !important;
+  font-size: 8.5pt !important;
   text-align: center;
-  padding: 6px 6px !important;
+  padding: 4px 4px !important;
   border-bottom: 1px solid #475569 !important;
 }
 
@@ -1154,23 +1154,23 @@ textarea,
 .excel-header-sub th {
   background: #f1f5f9;
   color: #334155;
-  font-size: 8.5pt !important; /* Reduced size so every column stays on 1 line */
-  padding: 5px 3px !important;
+  font-size: 8pt !important; /* Compact size so every column stays on 1 line */
+  padding: 4px 2px !important;
   text-align: center;
   border-bottom: 2px solid #64748b !important;
   white-space: nowrap !important;
 }
 
-/* Excel Flat Cell Inputs - Font Khmer OS Siemreap Size 11 */
+/* Excel Flat Cell Inputs - Font Khmer OS Siemreap Size 10pt */
 .excel-cell-input {
   width: 100%;
-  height: 38px;
+  height: 32px;
   border: none !important;
   border-radius: 0 !important;
   background: transparent;
-  padding: 4px 8px;
+  padding: 2px 5px;
   font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-  font-size: 11pt !important;
+  font-size: 10pt !important;
   color: #0f172a;
   box-shadow: none !important;
   outline: none !important;
@@ -1237,13 +1237,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .excel-cell-select {
   width: 100%;
-  height: 38px;
+  height: 32px;
   border: none !important;
   border-radius: 0 !important;
   background: transparent;
-  padding: 4px 4px;
+  padding: 2px 2px;
   font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-  font-size: 11pt !important;
+  font-size: 10pt !important;
   color: #0f172a;
   outline: none !important;
   box-sizing: border-box;
@@ -1256,6 +1256,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   outline-offset: -2px;
   z-index: 5;
   position: relative;
+}
+
+.excel-scoring-table .badge {
+  padding: 2px 5px !important;
+  font-size: 10px !important;
+  border-radius: 8px !important;
 }
 
 /* Position Section Banner (Header row for each of the 6 roles) - Font Khmer OS Muol Light */
