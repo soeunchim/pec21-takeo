@@ -275,6 +275,27 @@ function initModernPopupEvents() {
 // ==============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // 1. Immediately apply saved logo from localStorage (prevents flashing default logo on refresh)
+  try {
+    const savedLogo = localStorage.getItem('pec21_custom_logo');
+    if (savedLogo) {
+      updateAppLogos(savedLogo, false);
+    }
+  } catch (e) {}
+
+  // 2. Fetch public branding settings right away (even before login)
+  fetch('/api/settings')
+    .then(r => r.json())
+    .then(d => {
+      if (d.success && d.settings) {
+        appSettings = d.settings;
+        if (d.settings.logoUrl) {
+          updateAppLogos(d.settings.logoUrl, true);
+        }
+      }
+    })
+    .catch(() => {});
+
   setReportTableRowPadding(getReportTableRowPadding());
   initModernPopupEvents();
   setupEventListeners();
@@ -8509,7 +8530,7 @@ window.resetUserPassword = async function(id, username) {
 // TAB 6: SETTINGS & GOOGLE SHEETS & LOGO MANAGEMENT
 // ==============================================================================
 
-function updateAppLogos(url) {
+function updateAppLogos(url, saveStorage = true) {
   const logoSrc = url || 'img/nec_logo.jpg';
   const headerImg = document.getElementById('headerLogoImg');
   const loginImg = document.getElementById('loginLogoImg');
@@ -8522,7 +8543,7 @@ function updateAppLogos(url) {
   if (previewImg) previewImg.src = logoSrc;
   if (tabSimImg) tabSimImg.src = logoSrc;
   if (reportLogoImg) reportLogoImg.src = logoSrc;
-  if (logoHidden) logoHidden.value = url || '';
+  if (logoHidden) logoHidden.value = (url && url !== 'img/nec_logo.jpg') ? url : '';
 
   // Update browser tab icon (Favicon)
   try {
@@ -8540,12 +8561,23 @@ function updateAppLogos(url) {
   } catch (e) {
     console.warn('Favicon update error:', e);
   }
+
+  // Persist to localStorage so refreshing the page never loses the custom logo/favicon
+  if (saveStorage) {
+    try {
+      if (url && url !== 'img/nec_logo.jpg') {
+        localStorage.setItem('pec21_custom_logo', url);
+      } else {
+        localStorage.removeItem('pec21_custom_logo');
+      }
+    } catch (e) {}
+  }
 }
 
 async function handleLogoUpload(file) {
   if (!file) return;
   if (!file.type.startsWith('image/')) {
-    alert('សូមជ្រើសរើសឯកសាររូបភាព (PNG, JPG, SVG)!');
+    alert('សូមជ្រើសរើសឯកសាររូបភាព (PNG, JPG, SVG, ICO)!');
     return;
   }
   const reader = new FileReader();
@@ -8564,7 +8596,7 @@ async function handleLogoUpload(file) {
         }
       } else {
         if (h > maxDim) {
-          w = Math.round((w * maxDim) / h);
+          h = Math.round((h * maxDim) / h);
           h = maxDim;
         }
       }
@@ -8574,18 +8606,26 @@ async function handleLogoUpload(file) {
       ctx.drawImage(img, 0, 0, w, h);
       const optimizedDataUrl = canvas.toDataURL('image/png', 0.9);
 
-      updateAppLogos(optimizedDataUrl);
+      // 1. Immediately update all logos and persist into localStorage
+      updateAppLogos(optimizedDataUrl, true);
       appSettings.logoUrl = optimizedDataUrl;
 
+      // 2. Persist to server database
       try {
-        await fetch('/api/settings', {
+        const res = await fetch('/api/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...appSettings, logoUrl: optimizedDataUrl })
         });
-        alert('✅ បានផ្លាស់ប្តូររូបសញ្ញា Logo ជោគជ័យ!');
+        const data = await res.json();
+        if (data && data.success) {
+          alert('✅ បានផ្លាស់ប្តូររូបសញ្ញា Logo & Favicon ជោគជ័យ! (រក្សាទុកជាប់ជានិច្ច ទោះបី Refresh ក៏មិនបាត់ដែរ)');
+        } else {
+          alert('✅ បានផ្លាស់ប្តូរ Logo ជោគជ័យ!');
+        }
       } catch (err) {
-        console.error('Failed to auto-save logo:', err);
+        console.error('Failed to auto-save logo to server:', err);
+        alert('✅ បានផ្លាស់ប្តូរ Logo ជោគជ័យ!');
       }
     };
     img.src = rawDataUrl;
@@ -8601,7 +8641,7 @@ async function handleResetLogoDefault() {
     icon: '🔄'
   });
   if (ok) {
-    updateAppLogos('img/nec_logo.jpg');
+    updateAppLogos('img/nec_logo.jpg', true);
     appSettings.logoUrl = '';
     try {
       await fetch('/api/settings', {
@@ -8649,7 +8689,9 @@ async function loadSettingsForm() {
       if (teleTokenInput) teleTokenInput.value = s.telegramBotToken || '';
       const teleChatIdInput = document.getElementById('settingTelegramChatId');
       if (teleChatIdInput) teleChatIdInput.value = s.telegramChatId || '';
-      updateAppLogos(s.logoUrl);
+      
+      const effectiveLogo = s.logoUrl || localStorage.getItem('pec21_custom_logo') || '';
+      updateAppLogos(effectiveLogo, Boolean(s.logoUrl));
     }
   } catch (e) {
     console.error(e);
@@ -8665,11 +8707,16 @@ async function handleSaveSettings() {
     if (urlInput) urlInput.value = rawUrl;
   }
 
+  const currentLogo = document.getElementById('settingLogoUrl')?.value || 
+                      appSettings.logoUrl || 
+                      localStorage.getItem('pec21_custom_logo') || 
+                      '';
+
   const payload = {
     googleSheetUrl: rawUrl,
     pecName: document.getElementById('settingPecName').value.trim(),
     mandateTitle: document.getElementById('settingMandate').value.trim(),
-    logoUrl: document.getElementById('settingLogoUrl')?.value || '',
+    logoUrl: currentLogo,
     telegramNotifyEnabled: document.getElementById('settingTelegramEnabled')?.checked !== false,
     telegramBotToken: document.getElementById('settingTelegramBotToken')?.value.trim() || '',
     telegramChatId: document.getElementById('settingTelegramChatId')?.value.trim() || ''
@@ -8684,6 +8731,9 @@ async function handleSaveSettings() {
     const data = await res.json();
     if (data.success) {
       alert('✅ បានរក្សាទុកការកំណត់ជោគជ័យ!');
+      if (currentLogo) {
+        localStorage.setItem('pec21_custom_logo', currentLogo);
+      }
       await checkCloudStatus();
     } else {
       alert('កំហុស៖ ' + data.message);

@@ -1089,6 +1089,18 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { success: true, message: 'ផ្លាស់ប្តូរលេខសម្ងាត់ជោគជ័យ!', user });
     }
 
+    // 4.5 GET /api/settings (Publicly accessible for branding, custom logo, favicon & page title)
+    if (pathname === '/api/settings' && req.method === 'GET') {
+      const host = (req.headers && req.headers.host) || '';
+      const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+      return sendJSON(res, 200, {
+        success: true,
+        settings: db.settings,
+        isLocalhost: isLocalhost,
+        environment: isLocalhost ? 'local' : 'online'
+      });
+    }
+
     // --------------------------------------------------------------------------
     // PROTECTED APIS (Require Authentication)
     // --------------------------------------------------------------------------
@@ -2211,25 +2223,14 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // 19. GET & POST /api/settings
-    if (pathname === '/api/settings' && req.method === 'GET') {
-      const host = (req.headers && req.headers.host) || '';
-      const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-      return sendJSON(res, 200, {
-        success: true,
-        settings: db.settings,
-        isLocalhost: isLocalhost,
-        environment: isLocalhost ? 'local' : 'online'
-      });
-    }
-
+    // 19. POST /api/settings (SuperAdmin only)
     if (pathname === '/api/settings' && req.method === 'POST') {
       if (currentUser.role !== 'SuperAdmin') {
         return sendJSON(res, 403, { success: false, message: 'មានតែ SuperAdmin ទើបអាចកែប្រែ Settings បាន' });
       }
       const data = await parseBody(req);
       db.settings = { ...db.settings, ...data };
-      saveLocalDatabase();
+      saveLocalDatabase(true);
       syncToGoogleSheet('sync_all', { user: currentUser.username });
       return sendJSON(res, 200, { success: true, message: 'បានរក្សាទុក Settings រួចរាល់!', settings: db.settings });
     }
