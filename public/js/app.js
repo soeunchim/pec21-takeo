@@ -275,12 +275,24 @@ function initModernPopupEvents() {
 // ==============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Immediately apply saved logo from localStorage (prevents flashing default logo on refresh)
+  // 1. Immediately apply saved logo, Google Sheet URL and storage mode from localStorage (prevents flashing default state on refresh)
   try {
     const savedLogo = localStorage.getItem('pec21_custom_logo');
     if (savedLogo) {
       updateAppLogos(savedLogo, false);
     }
+    let cachedGsUrl = localStorage.getItem('pec21_google_sheet_url') || '';
+    if (!cachedGsUrl) {
+      try {
+        const cs = JSON.parse(localStorage.getItem('pec21_app_settings') || '{}');
+        cachedGsUrl = cs.googleSheetUrl || '';
+      } catch(e) {}
+    }
+    const cachedMode = localStorage.getItem('pec21_storage_mode');
+    if (!appSettings) appSettings = {};
+    if (cachedGsUrl) appSettings.googleSheetUrl = cachedGsUrl;
+    if (cachedMode) appSettings.storageMode = cachedMode;
+    updateStorageHeaderBadge(appSettings);
   } catch (e) {}
 
   // 2. Fetch public branding settings right away (even before login)
@@ -288,10 +300,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     .then(r => r.json())
     .then(d => {
       if (d.success && d.settings) {
-        appSettings = d.settings;
+        if (!d.settings.googleSheetUrl && appSettings && appSettings.googleSheetUrl) {
+          d.settings.googleSheetUrl = appSettings.googleSheetUrl;
+        }
+        appSettings = { ...appSettings, ...d.settings };
         if (d.settings.logoUrl) {
           updateAppLogos(d.settings.logoUrl, true);
         }
+        updateStorageHeaderBadge(appSettings);
+        if (d.networkInfo) {
+          window.currentNetworkInfo = d.networkInfo;
+        }
+        renderStorageModesUI(d.networkInfo || window.currentNetworkInfo || {}, appSettings);
       }
     })
     .catch(() => {});
@@ -1483,11 +1503,57 @@ async function checkCloudStatus() {
   const isLanWifi = (port === '3027' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) && !isLocalhost;
   const isCloud = !isLocalhost && !isLanWifi;
 
+  // Read client-side cached settings immediately so UI is responsive without any lag or flicker
+  let cachedGsUrl = localStorage.getItem('pec21_google_sheet_url') || '';
+  let cachedSettings = {};
+  try {
+    const cs = localStorage.getItem('pec21_app_settings');
+    if (cs) {
+      cachedSettings = JSON.parse(cs) || {};
+      if (!cachedGsUrl && cachedSettings.googleSheetUrl) {
+        cachedGsUrl = cachedSettings.googleSheetUrl;
+      }
+    }
+  } catch (e) {}
+
+  if (!appSettings) appSettings = {};
+  if (cachedGsUrl && !appSettings.googleSheetUrl) {
+    appSettings.googleSheetUrl = cachedGsUrl;
+  }
+  const cachedMode = localStorage.getItem('pec21_storage_mode');
+  if (cachedMode && !appSettings.storageMode) {
+    appSettings.storageMode = cachedMode;
+  }
+
+  // Pre-render immediately with cached values
+  updateStorageHeaderBadge(appSettings);
+  renderStorageModesUI(window.currentNetworkInfo || {}, appSettings);
+
   try {
     const res = await fetch('/api/settings');
     const data = await res.json();
     if (data.success && data.settings) {
-      appSettings = data.settings;
+      const serverSettings = data.settings;
+
+      // Preserve Google Sheet URL if server returned empty but client has it
+      if (serverSettings.googleSheetUrl) {
+        localStorage.setItem('pec21_google_sheet_url', serverSettings.googleSheetUrl);
+      } else if (cachedGsUrl) {
+        serverSettings.googleSheetUrl = cachedGsUrl;
+        // Auto-persist to server so next time server already has it
+        fetch('/api/storage-mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ googleSheetUrl: cachedGsUrl })
+        }).catch(() => {});
+      }
+
+      if (cachedMode && !serverSettings.storageMode) {
+        serverSettings.storageMode = cachedMode;
+      }
+
+      appSettings = { ...appSettings, ...serverSettings };
+
       if (data.networkInfo) {
         window.currentNetworkInfo = data.networkInfo;
         window.currentWifiUrl = data.networkInfo.wifiUrl;
@@ -1579,16 +1645,16 @@ function renderStorageModesUI(netInfo, settings) {
 
   if (isDual) {
     activeMode = 34;
-  } else if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
+  } else if (explicitMode === 'google_sheet') {
     activeMode = 4;
   } else if (explicitMode === 'online_cloud') {
     activeMode = 3;
   } else if (explicitMode === 'local') {
     activeMode = 1;
+  } else if (explicitMode === 'local_wifi') {
+    activeMode = 2;
   } else {
-    if (settings && settings.googleSheetUrl && settings.storageMode === 'google_sheet') {
-      activeMode = 4;
-    } else if (isLanWifi) {
+    if (isLanWifi) {
       activeMode = 2;
     } else if (isCloud) {
       activeMode = 3;
@@ -1657,20 +1723,20 @@ function renderStorageModesUI(netInfo, settings) {
       el.style.borderColor = '#16a34a';
       el.style.backgroundColor = '#f0fdf4';
       el.style.boxShadow = '0 4px 14px rgba(22,163,74,0.12)';
-      btn.className = 'btn btn-sm btn-success';
+      btn.className = 'btn btn-sm btn-outline-success fw-bold';
       btn.style.pointerEvents = 'auto';
       btn.style.opacity = '1';
       if (c.mode === 3) {
-        btn.textContent = '✅ កំពុងប្រើប្រាស់ (Online DB)';
+        btn.textContent = 'ជ្រើសរើស Online DB តែមួយ';
       } else {
-        btn.textContent = '✅ កំពុង Sync ព្រមគ្នា (Google Sheet)';
+        btn.textContent = 'ជ្រើសរើស Google Sheet តែមួយ';
       }
     } else if (c.mode === activeMode) {
       el.style.borderColor = '#16a34a';
       el.style.backgroundColor = '#f0fdf4';
       el.style.boxShadow = '0 4px 14px rgba(22,163,74,0.15)';
       btn.textContent = '✅ កំពុងប្រើប្រាស់';
-      btn.className = 'btn btn-sm btn-success';
+      btn.className = 'btn btn-sm btn-success fw-bold';
       btn.style.pointerEvents = 'none';
       btn.style.opacity = '1';
     } else {
@@ -1680,11 +1746,7 @@ function renderStorageModesUI(netInfo, settings) {
       btn.className = 'btn btn-sm btn-outline-primary';
       btn.style.pointerEvents = 'auto';
       btn.style.opacity = '1';
-      if (c.mode === 4) {
-        btn.textContent = (settings && settings.googleSheetUrl) ? 'ជ្រើសរើសរបៀបនេះ' : 'កំណត់ Google Sheet';
-      } else {
-        btn.textContent = 'ជ្រើសរើសរបៀបនេះ';
-      }
+      btn.textContent = 'ជ្រើសរើសរបៀបនេះ';
     }
   });
 }
@@ -1908,7 +1970,7 @@ function updateStorageHeaderBadge(settings) {
       pulse.style.backgroundColor = '#10b981';
       pulse.style.boxShadow = '0 0 8px #10b981';
     }
-  } else if (explicitMode === 'google_sheet' && settings && settings.googleSheetUrl) {
+  } else if (explicitMode === 'google_sheet') {
     badge.textContent = 'Storage: Google Sheet';
     if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
     if (pulse) {
@@ -1924,13 +1986,21 @@ function updateStorageHeaderBadge(settings) {
       pulse.style.backgroundColor = '#10b981';
       pulse.style.boxShadow = '0 0 8px #10b981';
     }
-  } else if (settings && settings.googleSheetUrl && settings.storageMode === 'google_sheet') {
-    badge.textContent = 'Storage: Google Sheet';
-    if (badgeContainer) badgeContainer.title = 'ទិន្នន័យបានភ្ជាប់ជាមួយ Google Sheets Cloud (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
+  } else if (explicitMode === 'local') {
+    badge.textContent = 'Storage: Local Database';
+    if (badgeContainer) badgeContainer.title = 'ប្រព័ន្ធកំពុងដំណើរការលើម៉ាស៊ីនផ្ទាល់ Localhost:3027 (ចុចដើម្បីមើលព័ត៌មាន & QR Code)';
     if (pulse) {
       pulse.className = 'pulse-dot';
-      pulse.style.backgroundColor = '#06b6d4';
-      pulse.style.boxShadow = '0 0 8px #06b6d4';
+      pulse.style.backgroundColor = '#22c55e';
+      pulse.style.boxShadow = '0 0 8px #22c55e';
+    }
+  } else if (explicitMode === 'local_wifi') {
+    badge.textContent = 'Storage: Local Wi-Fi';
+    if (badgeContainer) badgeContainer.title = `ប្រព័ន្ធកំពុងដំណើរការលើ Wi-Fi (${window.location.host}) (ចុចដើម្បីមើលព័ត៌មាន & QR Code)`;
+    if (pulse) {
+      pulse.className = 'pulse-dot';
+      pulse.style.backgroundColor = '#f59e0b';
+      pulse.style.boxShadow = '0 0 8px #f59e0b';
     }
   } else if (isLanWifi) {
     badge.textContent = 'Storage: Local Wi-Fi';
@@ -1970,12 +2040,19 @@ async function setStorageMode(mode) {
 
   const isCloud = window.location.origin.includes('onrender.com') || (window.currentNetworkInfo && window.currentNetworkInfo.isCloud);
 
+  let cachedGsUrl = localStorage.getItem('pec21_google_sheet_url') || '';
+  if (!cachedGsUrl) {
+    try {
+      const c = JSON.parse(localStorage.getItem('pec21_app_settings') || '{}');
+      cachedGsUrl = c.googleSheetUrl || '';
+    } catch(e) {}
+  }
+  const gsInput = document.getElementById('settingGoogleSheetUrl');
+  const enteredUrl = gsInput ? gsInput.value.trim() : '';
+  const activeUrl = (appSettings && appSettings.googleSheetUrl) || enteredUrl || cachedGsUrl || '';
+
   if (mode === 'dual') {
     // Mode 3 + Mode 4: Online Database + Google Sheet simultaneous real-time sync!
-    const gsInput = document.getElementById('settingGoogleSheetUrl');
-    const enteredUrl = gsInput ? gsInput.value.trim() : '';
-    const activeUrl = (appSettings && appSettings.googleSheetUrl) ? appSettings.googleSheetUrl.trim() : enteredUrl;
-
     if (!activeUrl) {
       if (gsInput) {
         gsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1983,7 +2060,7 @@ async function setStorageMode(mode) {
       }
       showModernPopup({
         title: '⚠️ មិនទាន់មាន Google Apps Script URL',
-        message: 'ដើម្បីដំណើរការទាំងពីរព្រមគ្នាបាន សូមបញ្ចូល <strong>Google Apps Script Web App URL</strong> នៅខាងក្រោម រួចចុច <strong>រក្សាទុកការកំណត់</strong> ជាមុនសិន។',
+        message: 'ដើម្បីដំណើរការទាំងពីរព្រមគ្នាបាន សូមបញ្ចូល <strong>Google Apps Script Web App URL</strong> ក្នុងផ្ទាំង Settings ជាមុនសិន។',
         icon: '⚠️',
         type: 'warning',
         confirmText: 'យល់ព្រម'
@@ -1995,13 +2072,21 @@ async function setStorageMode(mode) {
     if (!appSettings) appSettings = {};
     appSettings.storageMode = 'dual';
     appSettings.autoSyncGoogleSheet = true;
+    appSettings.googleSheetUrl = activeUrl;
+    localStorage.setItem('pec21_google_sheet_url', activeUrl);
 
     try {
-      await fetch('/api/settings', {
+      fetch('/api/storage-mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storageMode: 'dual', autoSyncGoogleSheet: true })
-      });
+        body: JSON.stringify({ storageMode: 'dual', autoSyncGoogleSheet: true, googleSheetUrl: activeUrl })
+      }).catch(() => {});
+
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storageMode: 'dual', autoSyncGoogleSheet: true, googleSheetUrl: activeUrl })
+      }).catch(() => {});
     } catch (e) {}
 
     renderStorageModesUI(window.currentNetworkInfo, appSettings);
@@ -2022,11 +2107,17 @@ async function setStorageMode(mode) {
     appSettings.autoSyncGoogleSheet = false;
 
     try {
-      await fetch('/api/settings', {
+      fetch('/api/storage-mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storageMode: 'online_cloud', autoSyncGoogleSheet: false })
-      });
+      }).catch(() => {});
+
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storageMode: 'online_cloud', autoSyncGoogleSheet: false })
+      }).catch(() => {});
     } catch (e) {}
 
     renderStorageModesUI(window.currentNetworkInfo, appSettings);
@@ -2043,9 +2134,31 @@ async function setStorageMode(mode) {
 
   if (mode === 'google_sheet') {
     // Mode 4: Google Sheet
-    const gsInput = document.getElementById('settingGoogleSheetUrl');
-    const enteredUrl = gsInput ? gsInput.value.trim() : '';
-    const activeUrl = (appSettings && appSettings.googleSheetUrl) ? appSettings.googleSheetUrl.trim() : enteredUrl;
+    localStorage.setItem('pec21_storage_mode', 'google_sheet');
+    if (!appSettings) appSettings = {};
+    appSettings.storageMode = 'google_sheet';
+    appSettings.autoSyncGoogleSheet = true;
+    if (activeUrl) {
+      appSettings.googleSheetUrl = activeUrl;
+      localStorage.setItem('pec21_google_sheet_url', activeUrl);
+    }
+
+    try {
+      fetch('/api/storage-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storageMode: 'google_sheet', autoSyncGoogleSheet: true, googleSheetUrl: activeUrl })
+      }).catch(() => {});
+
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storageMode: 'google_sheet', autoSyncGoogleSheet: true, googleSheetUrl: activeUrl })
+      }).catch(() => {});
+    } catch (e) {}
+
+    renderStorageModesUI(window.currentNetworkInfo, appSettings);
+    updateStorageHeaderBadge(appSettings);
 
     if (!activeUrl) {
       if (gsInput) {
@@ -2053,30 +2166,15 @@ async function setStorageMode(mode) {
         gsInput.focus();
       }
       showModernPopup({
-        title: '⚠️ មិនទាន់មាន Google Apps Script URL',
-        message: 'សូមបញ្ចូល Google Apps Script Web App URL នៅខាងក្រោម រួចចុច <strong>រក្សាទុកការកំណត់</strong> ជាមុនសិន ទើបអាចបើកដំណើរការរបៀបទី ៤ បាន។',
-        icon: '⚠️',
-        type: 'warning',
+        title: '⚠️ សូមកំណត់ Google Apps Script URL',
+        message: 'លោកអ្នកបានជ្រើសរើស <strong>របៀបទី ៤ ៖ Storage: Google Sheet</strong> រួចរាល់ហើយ។ សូមបញ្ចូល Google Apps Script Web App URL ក្នុងផ្ទាំង Settings ដើម្បីឲ្យប្រព័ន្ធអាច Sync ទិន្នន័យបាន។',
+        icon: '📊',
+        type: 'info',
         confirmText: 'យល់ព្រម'
       });
       return;
     }
 
-    localStorage.setItem('pec21_storage_mode', 'google_sheet');
-    if (!appSettings) appSettings = {};
-    appSettings.storageMode = 'google_sheet';
-    appSettings.autoSyncGoogleSheet = true;
-
-    try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storageMode: 'google_sheet', autoSyncGoogleSheet: true })
-      });
-    } catch (e) {}
-
-    renderStorageModesUI(window.currentNetworkInfo, appSettings);
-    updateStorageHeaderBadge(appSettings);
     showToast('success', '📊 បានប្តូរមកប្រើប្រាស់ របៀបទី ៤ ៖ Storage: Google Sheet រួចរាល់!');
 
     // Trigger sync
@@ -9360,9 +9458,14 @@ async function loadSettingsForm() {
         localStorage.setItem('pec21_app_settings', JSON.stringify(merged));
       } catch (e) {}
 
-      // If server was missing telegram tokens but browser cache has them, auto sync to server
+      if (gUrl) {
+        localStorage.setItem('pec21_google_sheet_url', gUrl);
+        appSettings.googleSheetUrl = gUrl;
+      }
+
+      // If server was missing telegram tokens or googleSheetUrl but browser cache has them, auto sync to server
       if (currentUser && currentUser.role === 'SuperAdmin') {
-        const needsSync = (!s.telegramBotToken && teleToken) || (!s.telegramChatId && teleChatId) || (!s.logoUrl && sLogo);
+        const needsSync = (!s.telegramBotToken && teleToken) || (!s.telegramChatId && teleChatId) || (!s.logoUrl && sLogo) || (!s.googleSheetUrl && gUrl);
         if (needsSync) {
           fetch('/api/settings', {
             method: 'POST',
@@ -9404,13 +9507,24 @@ async function handleSaveSettings() {
   // 1. Immediately persist to localStorage so Refresh never loses the settings
   try {
     localStorage.setItem('pec21_app_settings', JSON.stringify(payload));
+    if (rawUrl) {
+      localStorage.setItem('pec21_google_sheet_url', rawUrl);
+      if (!appSettings) appSettings = {};
+      appSettings.googleSheetUrl = rawUrl;
+    }
     if (currentLogo) {
       localStorage.setItem('pec21_custom_logo', currentLogo);
     }
   } catch (e) {}
 
-  // 2. Persist to server backend
+  // 2. Persist to server backend (both endpoints)
   try {
+    fetch('/api/storage-mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ googleSheetUrl: rawUrl })
+    }).catch(() => {});
+
     const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

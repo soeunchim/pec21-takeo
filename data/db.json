@@ -15,7 +15,8 @@
     "lastSyncTime": "2026-10-18T02:15:23.383Z",
     "telegramBotToken": "8910246424:AAGH1Vy8oXeiWr6jf8oZ-MysghkXk7b832U",
     "telegramChatId": "5470613778",
-    "telegramNotifyEnabled": true
+    "telegramNotifyEnabled": true,
+    "storageMode": "google_sheet"
   },
   "districts": [
     {

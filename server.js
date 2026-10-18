@@ -1155,6 +1155,27 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    // 4.7 POST /api/storage-mode (Publicly accessible for toggling active storage mode & persisting Google Sheet URL)
+    if (pathname === '/api/storage-mode' && req.method === 'POST') {
+      const data = await parseBody(req);
+      if (!db.settings) db.settings = {};
+      if (data.storageMode) {
+        db.settings.storageMode = data.storageMode;
+      }
+      if (data.autoSyncGoogleSheet !== undefined) {
+        db.settings.autoSyncGoogleSheet = Boolean(data.autoSyncGoogleSheet);
+      }
+      if (data.googleSheetUrl && typeof data.googleSheetUrl === 'string' && data.googleSheetUrl.trim()) {
+        db.settings.googleSheetUrl = data.googleSheetUrl.trim();
+      }
+      saveLocalDatabase(true);
+      return sendJSON(res, 200, {
+        success: true,
+        message: 'Storage mode updated',
+        settings: db.settings
+      });
+    }
+
     // --------------------------------------------------------------------------
     // PROTECTED APIS (Require Authentication)
     // --------------------------------------------------------------------------
