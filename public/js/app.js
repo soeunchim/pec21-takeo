@@ -8514,13 +8514,32 @@ function updateAppLogos(url) {
   const headerImg = document.getElementById('headerLogoImg');
   const loginImg = document.getElementById('loginLogoImg');
   const previewImg = document.getElementById('settingLogoPreview');
+  const tabSimImg = document.getElementById('tabSimLogoPreview');
   const logoHidden = document.getElementById('settingLogoUrl');
   const reportLogoImg = document.getElementById('reportLogoImg');
   if (headerImg) headerImg.src = logoSrc;
   if (loginImg) loginImg.src = logoSrc;
   if (previewImg) previewImg.src = logoSrc;
+  if (tabSimImg) tabSimImg.src = logoSrc;
   if (reportLogoImg) reportLogoImg.src = logoSrc;
   if (logoHidden) logoHidden.value = url || '';
+
+  // Update browser tab icon (Favicon)
+  try {
+    const faviconLinks = document.querySelectorAll("link[rel*='icon']");
+    if (faviconLinks && faviconLinks.length) {
+      faviconLinks.forEach(link => {
+        link.href = logoSrc;
+      });
+    } else {
+      const newLink = document.createElement('link');
+      newLink.rel = 'icon';
+      newLink.href = logoSrc;
+      document.head.appendChild(newLink);
+    }
+  } catch (e) {
+    console.warn('Favicon update error:', e);
+  }
 }
 
 async function handleLogoUpload(file) {

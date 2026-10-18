@@ -721,28 +721,40 @@
               🌐 <strong>របៀបដំណើរការ៖ Online Cloud</strong> — កំពុងប្រើប្រាស់ <strong>Storage: Online Database</strong>
             </div>
 
-            <!-- Logo Configuration Section -->
-            <div class="form-group" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;">
-              <label class="form-label" style="font-weight: 700; color: #1e3a8a; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                🖼️ រូបសញ្ញាស្ថាប័ន (Institution Logo)
+            <!-- Logo & Favicon Configuration Section -->
+            <div class="form-group" style="background: #f8fafc; border: 1.5px dashed #3b82f6; border-radius: 10px; padding: 16px 18px; margin-bottom: 22px;">
+              <label class="form-label" style="font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                🖼️ រូបសញ្ញាស្ថាប័ន & Icon លើ Browser Tab (Institution Logo & Favicon)
               </label>
               <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
-                <div style="width: 68px; height: 68px; border-radius: 50%; border: 2px solid #3b82f6; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); flex-shrink: 0;">
+                <!-- Main Preview Circle -->
+                <div style="width: 70px; height: 70px; border-radius: 50%; border: 2.5px solid #3b82f6; overflow: hidden; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.12); flex-shrink: 0;" title="ទម្រង់រូបសញ្ញាដើម">
                   <img id="settingLogoPreview" src="img/nec_logo.jpg" alt="Logo Preview" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 220px;">
+
+                <!-- Browser Tab Simulation Preview -->
+                <div style="background: #e2e8f0; border-radius: 8px 8px 0 0; padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; border-bottom: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" title="ការបង្ហាញលើ Browser Tab">
+                  <span style="font-size: 11px; color: #64748b; font-weight: 600;">ទម្រង់លើ Tab ៖</span>
+                  <div style="background: white; border-radius: 6px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; border: 1px solid #cbd5e1;">
+                    <img id="tabSimLogoPreview" src="img/nec_logo.jpg" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">
+                    <span style="font-size: 11px; font-weight: 600; color: #334155;">ប្រព័ន្ធបូកស្រង់ពិន្ទុ...</span>
+                  </div>
+                </div>
+
+                <!-- Controls -->
+                <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 230px;">
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-outline" style="border: 1px solid #2563eb; color: #2563eb; background: white; font-weight: 600;" onclick="document.getElementById('settingLogoFileInput').click()">
-                      📤 ជ្រើសរើស Logo ថ្មី (Upload Logo)
+                    <button type="button" class="btn btn-primary btn-sm" style="font-weight: 600; display: inline-flex; align-items: center; gap: 5px;" onclick="document.getElementById('settingLogoFileInput').click()">
+                      📤 ជ្រើសរើស Icon / Logo ថ្មី (Upload Icon)
                     </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btnResetLogoDefault" title="ប្រើប្រាស់ Logo គ.ជ.ប ដើម">
-                      🔄 ប្រើ Logo គ.ជ.ប ដើម
+                      🔄 ប្រើ Logo / Icon ដើម
                     </button>
                   </div>
-                  <input type="file" id="settingLogoFileInput" accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp" style="display: none;">
+                  <input type="file" id="settingLogoFileInput" accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp, image/x-icon" style="display: none;">
                   <input type="hidden" id="settingLogoUrl" value="">
-                  <small style="color: var(--text-muted);">
-                    💡 គាំទ្ររូបភាពប្រភេទ PNG, JPG, ឬ SVG (ទំហំរង្វង់មូល ឬការ៉េ)។
+                  <small style="color: #64748b; font-size: 11.5px; line-height: 1.5;">
+                    💡 គាំទ្ររូបភាពប្រភេទ PNG, JPG, ICO, ឬ SVG។ នៅពេលលោកអ្នកផ្លាស់ប្តូរ ប្រព័ន្ធនឹងធ្វើការ Update រូប Icon លើ Tab Browser, ក្បាលទំព័រខាងលើ, និងក្បាលសន្លឹករបាយការណ៍ដោយស្វ័យប្រវត្តិតែម្តង។
                   </small>
                 </div>
               </div>
@@ -1163,6 +1175,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_data_sync_v49"></script>
+  <script src="js/app.js?v=20261018_favicon_v50"></script>
 </body>
 </html>
