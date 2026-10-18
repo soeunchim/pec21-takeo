@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=20261018_tab1_name_v51">
+  <link rel="stylesheet" href="css/style.css?v=20261018_toolbar_relocate_v52">
   <link rel="icon" type="image/x-icon" href="favicon.ico?v=20261018">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=20261018">
   <link rel="icon" type="image/jpeg" href="img/nec_logo.jpg?v=20261018">
@@ -493,35 +493,12 @@
             </button>
           </div>
 
-          <!-- Sheet Header & Actions Toolbar -->
-          <div class="card-header" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 6px; padding-bottom: 6px; margin-bottom: 2px;">
+          <!-- Sheet Header Title -->
+          <div class="card-header" style="display: flex; align-items: center; justify-content: flex-start; border-top: 1px solid #e2e8f0; padding: 6px 10px; margin-bottom: 2px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span id="activeReportSheetTitle" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', 'Moul', serif; font-weight: normal; font-size: 13px; color: #1e3a8a; letter-spacing: 0.2px;">
                 📋 សន្លឹក ១ ៖ តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ (សម្រាំងពាក្យបេក្ខ) [📄 ក្រដាសផ្តេក - Landscape]
               </span>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button id="btnToggleEmptyRows" class="btn btn-outline btn-sm" type="button" style="padding: 2px 7px; font-size: 11px;" title="លាក់ ឬបង្ហាញជួរដេកទទេដូចក្នុង Excel">
-                👁️ <span id="toggleEmptyRowsText">លាក់ជួរដេកទទេ</span>
-              </button>
-              <button id="btnExportCurrentReportExcel" class="btn btn-excel btn-sm" type="button" style="padding: 2px 8px; font-size: 11px;" title="ទាញយកសន្លឹករបាយការណ៍នេះជាឯកសារ Excel">
-                📥 ទាញយកជា Excel (.xlsx)
-              </button>
-              <!-- Row Height Controller (Expand & Shrink all rows across all reports - supports decimals like 1.5) -->
-              <div class="report-row-height-controller no-print" style="display: flex; align-items: center; gap: 4px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 6px; padding: 1px 6px;" title="ពង្រីក ឬបង្រួមកម្ពស់ជួរដេកនៃតារាង (Row Height)">
-                <span style="font-size: 11px; font-weight: 700; color: #1e40af; white-space: nowrap;">↕️ កម្ពស់ជួរដេក ៖</span>
-                <button type="button" id="btnShrinkReportRows" class="btn btn-outline btn-xs" style="padding: 1px 5px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="បង្រួមកម្ពស់ជួរដេក (Shrink -0.5px)">➖ បង្រួម</button>
-                <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1.5px solid #93c5fd; border-radius: 4px; padding: 0 3px; height: 22px;" title="វាយបញ្ចូលកម្ពស់ជួរដេកដោយផ្ទាល់ អាចវាយចំនួនទសភាគបាន (ឧ. 1.5, 2, 2.5...)">
-                  <input type="number" id="reportRowHeightInput" min="0" max="25" step="0.1" value="2" style="width: 38px; height: 18px; text-align: center; font-size: 12px; font-weight: 700; color: #1d4ed8; border: none; outline: none; background: transparent; padding: 0; -moz-appearance: textfield;" title="ចុចដើម្បីវាយលេខកម្ពស់ដោយផ្ទាល់ (អាចវាយទសភាគ ឧ. 1.5)">
-                  <span id="reportRowHeightLabel" style="font-size: 10.5px; font-weight: 700; color: #2563eb;">px</span>
-                </div>
-                <button type="button" id="btnExpandReportRows" class="btn btn-outline btn-xs" style="padding: 1px 5px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="ពង្រីកកម្ពស់ជួរដេក (Expand +0.5px)">➕ ពង្រីក</button>
-                <input type="range" id="reportRowHeightSlider" min="0" max="20" step="0.5" value="2" style="width: 60px; height: 12px; cursor: pointer; accent-color: #2563eb;" title="អូស Mouse ដើម្បីពង្រីក/បង្រួមកម្ពស់ជួរដេក">
-                <button type="button" id="btnResetReportRows" class="btn btn-secondary btn-xs" style="padding: 0 4px; font-size: 10px; border-radius: 3px;" title="កំណត់កម្ពស់ដើមវិញ (Reset 2px)">↺</button>
-              </div>
-              <button id="btnDirectPrint" class="btn btn-primary btn-sm" type="button" style="padding: 2px 10px; font-size: 11.5px;">
-                🖨️ បោះពុម្ពឥឡូវនេះ (Print / PDF)
-              </button>
             </div>
           </div>
 
@@ -636,6 +613,31 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- Report Action Buttons Toolbar (Moved below Date Picker) -->
+        <div class="card no-print" id="reportActionToolbarCard" style="margin-top: 2px; margin-bottom: 6px; padding: 5px 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end;">
+          <button id="btnToggleEmptyRows" class="btn btn-outline btn-sm" type="button" style="padding: 3px 8px; font-size: 11.5px;" title="លាក់ ឬបង្ហាញជួរដេកទទេដូចក្នុង Excel">
+            👁️ <span id="toggleEmptyRowsText">លាក់ជួរដេកទទេ</span>
+          </button>
+          <button id="btnExportCurrentReportExcel" class="btn btn-excel btn-sm" type="button" style="padding: 3px 10px; font-size: 11.5px;" title="ទាញយកសន្លឹករបាយការណ៍នេះជាឯកសារ Excel">
+            📥 ទាញយកជា Excel (.xlsx)
+          </button>
+          <!-- Row Height Controller (Expand & Shrink all rows across all reports - supports decimals like 1.5) -->
+          <div class="report-row-height-controller no-print" style="display: flex; align-items: center; gap: 4px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 6px; padding: 2px 7px;" title="ពង្រីក ឬបង្រួមកម្ពស់ជួរដេកនៃតារាង (Row Height)">
+            <span style="font-size: 11.5px; font-weight: 700; color: #1e40af; white-space: nowrap;">↕️ កម្ពស់ជួរដេក ៖</span>
+            <button type="button" id="btnShrinkReportRows" class="btn btn-outline btn-xs" style="padding: 1px 6px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="បង្រួមកម្ពស់ជួរដេក (Shrink -0.5px)">➖ បង្រួម</button>
+            <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1.5px solid #93c5fd; border-radius: 4px; padding: 0 3px; height: 22px;" title="វាយបញ្ចូលកម្ពស់ជួរដេកដោយផ្ទាល់ អាចវាយចំនួនទសភាគបាន (ឧ. 1.5, 2, 2.5...)">
+              <input type="number" id="reportRowHeightInput" min="0" max="25" step="0.1" value="2" style="width: 38px; height: 18px; text-align: center; font-size: 12px; font-weight: 700; color: #1d4ed8; border: none; outline: none; background: transparent; padding: 0; -moz-appearance: textfield;" title="ចុចដើម្បីវាយលេខកម្ពស់ដោយផ្ទាល់ (អាចវាយទសភាគ ឧ. 1.5)">
+              <span id="reportRowHeightLabel" style="font-size: 10.5px; font-weight: 700; color: #2563eb;">px</span>
+            </div>
+            <button type="button" id="btnExpandReportRows" class="btn btn-outline btn-xs" style="padding: 1px 6px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="ពង្រីកកម្ពស់ជួរដេក (Expand +0.5px)">➕ ពង្រីក</button>
+            <input type="range" id="reportRowHeightSlider" min="0" max="20" step="0.5" value="2" style="width: 65px; height: 12px; cursor: pointer; accent-color: #2563eb;" title="អូស Mouse ដើម្បីពង្រីក/បង្រួមកម្ពស់ជួរដេក">
+            <button type="button" id="btnResetReportRows" class="btn btn-secondary btn-xs" style="padding: 0 5px; font-size: 10px; border-radius: 3px;" title="កំណត់កម្ពស់ដើមវិញ (Reset 2px)">↺</button>
+          </div>
+          <button id="btnDirectPrint" class="btn btn-primary btn-sm" type="button" style="padding: 4px 14px; font-size: 12px; font-weight: 700;">
+            🖨️ បោះពុម្ពឥឡូវនេះ (Print / PDF)
+          </button>
         </div>
 
         <!-- Printable Document Container Preview -->
@@ -1175,6 +1177,6 @@
     }
   </script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261018_tab1_name_v51"></script>
+  <script src="js/app.js?v=20261018_toolbar_relocate_v52"></script>
 </body>
 </html>
