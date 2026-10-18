@@ -384,6 +384,37 @@ function showAppShell() {
     if (btnBatchCommune) btnBatchCommune.style.display = 'inline-flex';
   }
   updateDuplicateBadgeCount();
+  const savedTab = localStorage.getItem('pec21_active_tab');
+  if (savedTab && savedTab !== 'tabDashboard') {
+    switchMainTab(savedTab);
+  }
+}
+
+function switchMainTab(targetId) {
+  const btn = document.querySelector(`.tab-btn[data-tab="${targetId}"]`);
+  const section = document.getElementById(targetId);
+  if (!btn || !section) return;
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  section.classList.add('active');
+
+  try {
+    localStorage.setItem('pec21_active_tab', targetId);
+  } catch (e) {}
+
+  if (targetId === 'tabDashboard') loadDashboardStats();
+  if (targetId === 'tabPollingStations') renderPollingStationsTable();
+  if (targetId === 'tabScoring') renderScoringTableForActiveStation();
+  if (targetId === 'tabDuplicates') loadDuplicateCandidatesList();
+  if (targetId === 'tabStatistics') loadStatisticsPage();
+  if (targetId === 'tabReports') {
+    syncScoringStationToReports();
+    renderReportPreview();
+  }
+  if (targetId === 'tabUsers') loadUsersList();
+  if (targetId === 'tabSettings') loadSettingsForm();
 }
 
 window.handleLoginSubmit = async function(e) {
@@ -495,26 +526,11 @@ function setupEventListeners() {
     });
   }
 
-  // Tab Navigation
+  // Tab Navigation with Persistence
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-      btn.classList.add('active');
       const targetId = btn.getAttribute('data-tab');
-      document.getElementById(targetId).classList.add('active');
-
-      if (targetId === 'tabDashboard') loadDashboardStats();
-      if (targetId === 'tabPollingStations') renderPollingStationsTable();
-      if (targetId === 'tabScoring') renderScoringTableForActiveStation();
-      if (targetId === 'tabDuplicates') loadDuplicateCandidatesList();
-      if (targetId === 'tabStatistics') loadStatisticsPage();
-      if (targetId === 'tabReports') {
-        syncScoringStationToReports();
-        renderReportPreview();
-      }
-      if (targetId === 'tabUsers') loadUsersList();
-      if (targetId === 'tabSettings') loadSettingsForm();
+      switchMainTab(targetId);
     });
   });
 
@@ -5467,7 +5483,7 @@ function buildReportLetterheadHtml(ps, reportType = '') {
               <!-- Logo Container (Drag with Mouse handle or Alt-drag, Click image to change) -->
               <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 2px;">
                 <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចរូបភាពដើម្បីប្តូរ Logo ឬអូស Mouse ដើម្បីរំកិលទីតាំង">
-                  <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="width: ${logoCfg.size}px; height: ${logoCfg.size}px; object-fit: contain; border-radius: 50%; display: block;">
+                  <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="max-width: ${logoCfg.size}px; max-height: ${logoCfg.size}px; width: auto; height: auto; object-fit: contain; display: block;">
                   <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
                 </div>
               </div>
@@ -5534,8 +5550,11 @@ function setupReportLogoInteractions() {
   const cfg = getReportLogoConfig();
 
   const applyConfig = () => {
-    logoImg.style.width = `${cfg.size}px`;
-    logoImg.style.height = `${cfg.size}px`;
+    logoImg.style.maxWidth = `${cfg.size}px`;
+    logoImg.style.maxHeight = `${cfg.size}px`;
+    logoImg.style.width = 'auto';
+    logoImg.style.height = 'auto';
+    logoImg.style.objectFit = 'contain';
     logoContainer.style.transform = `translate(${cfg.x}px, ${cfg.y}px)`;
     if (sizeSlider) sizeSlider.value = cfg.size;
     if (xSlider) xSlider.value = cfg.x;
@@ -8586,7 +8605,7 @@ async function handleLogoUpload(file) {
     const img = new Image();
     img.onload = async () => {
       const canvas = document.createElement('canvas');
-      const maxDim = 256;
+      const maxDim = 512;
       let w = img.width;
       let h = img.height;
       if (w > h) {
@@ -8596,7 +8615,7 @@ async function handleLogoUpload(file) {
         }
       } else {
         if (h > maxDim) {
-          h = Math.round((h * maxDim) / h);
+          w = Math.round((w * maxDim) / h);
           h = maxDim;
         }
       }
@@ -8604,7 +8623,7 @@ async function handleLogoUpload(file) {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
-      const optimizedDataUrl = canvas.toDataURL('image/png', 0.9);
+      const optimizedDataUrl = canvas.toDataURL('image/png', 0.95);
 
       // 1. Immediately update all logos and persist into localStorage
       updateAppLogos(optimizedDataUrl, true);
@@ -8676,25 +8695,87 @@ async function loadSettingsForm() {
       }
     }
 
+    // 1. Immediately populate from local cache if present (Instant load, no flicker on refresh)
+    let cachedSettings = {};
+    try {
+      const cachedStr = localStorage.getItem('pec21_app_settings');
+      if (cachedStr) {
+        cachedSettings = JSON.parse(cachedStr);
+        if (cachedSettings.googleSheetUrl !== undefined) document.getElementById('settingGoogleSheetUrl').value = cachedSettings.googleSheetUrl;
+        if (cachedSettings.pecName !== undefined) document.getElementById('settingPecName').value = cachedSettings.pecName;
+        if (cachedSettings.mandateTitle !== undefined) document.getElementById('settingMandate').value = cachedSettings.mandateTitle;
+        if (cachedSettings.telegramNotifyEnabled !== undefined) {
+          const teleCheck = document.getElementById('settingTelegramEnabled');
+          if (teleCheck) teleCheck.checked = Boolean(cachedSettings.telegramNotifyEnabled);
+        }
+        if (cachedSettings.telegramBotToken !== undefined) {
+          const tInput = document.getElementById('settingTelegramBotToken');
+          if (tInput) tInput.value = cachedSettings.telegramBotToken;
+        }
+        if (cachedSettings.telegramChatId !== undefined) {
+          const cInput = document.getElementById('settingTelegramChatId');
+          if (cInput) cInput.value = cachedSettings.telegramChatId;
+        }
+        const effectiveLogo = cachedSettings.logoUrl || localStorage.getItem('pec21_custom_logo') || '';
+        if (effectiveLogo) updateAppLogos(effectiveLogo, false);
+      }
+    } catch (e) {}
+
+    // 2. Fetch server settings
     const res = await fetch('/api/settings');
     const data = await res.json();
     if (data.success && data.settings) {
       const s = data.settings;
-      document.getElementById('settingGoogleSheetUrl').value = s.googleSheetUrl || '';
-      document.getElementById('settingPecName').value = s.pecName || '';
-      document.getElementById('settingMandate').value = s.mandateTitle || '';
+      appSettings = { ...s };
+
+      // Fill in fields: use server value if available, else keep cached value
+      const gUrl = s.googleSheetUrl || cachedSettings.googleSheetUrl || '';
+      const pName = s.pecName || cachedSettings.pecName || '';
+      const mTitle = s.mandateTitle || cachedSettings.mandateTitle || '';
+      const teleEnabled = (s.telegramNotifyEnabled !== undefined) ? s.telegramNotifyEnabled : (cachedSettings.telegramNotifyEnabled !== undefined ? cachedSettings.telegramNotifyEnabled : true);
+      const teleToken = s.telegramBotToken || cachedSettings.telegramBotToken || '';
+      const teleChatId = s.telegramChatId || cachedSettings.telegramChatId || '';
+      const sLogo = s.logoUrl || cachedSettings.logoUrl || localStorage.getItem('pec21_custom_logo') || '';
+
+      document.getElementById('settingGoogleSheetUrl').value = gUrl;
+      document.getElementById('settingPecName').value = pName;
+      document.getElementById('settingMandate').value = mTitle;
       const teleCheck = document.getElementById('settingTelegramEnabled');
-      if (teleCheck) teleCheck.checked = (s.telegramNotifyEnabled !== false);
+      if (teleCheck) teleCheck.checked = Boolean(teleEnabled);
       const teleTokenInput = document.getElementById('settingTelegramBotToken');
-      if (teleTokenInput) teleTokenInput.value = s.telegramBotToken || '';
+      if (teleTokenInput) teleTokenInput.value = teleToken;
       const teleChatIdInput = document.getElementById('settingTelegramChatId');
-      if (teleChatIdInput) teleChatIdInput.value = s.telegramChatId || '';
-      
-      const effectiveLogo = s.logoUrl || localStorage.getItem('pec21_custom_logo') || '';
-      updateAppLogos(effectiveLogo, Boolean(s.logoUrl));
+      if (teleChatIdInput) teleChatIdInput.value = teleChatId;
+      if (sLogo) updateAppLogos(sLogo, Boolean(sLogo));
+
+      // Cache merged settings
+      const merged = {
+        googleSheetUrl: gUrl,
+        pecName: pName,
+        mandateTitle: mTitle,
+        logoUrl: sLogo,
+        telegramNotifyEnabled: teleEnabled,
+        telegramBotToken: teleToken,
+        telegramChatId: teleChatId
+      };
+      try {
+        localStorage.setItem('pec21_app_settings', JSON.stringify(merged));
+      } catch (e) {}
+
+      // If server was missing telegram tokens but browser cache has them, auto sync to server
+      if (currentUser && currentUser.role === 'SuperAdmin') {
+        const needsSync = (!s.telegramBotToken && teleToken) || (!s.telegramChatId && teleChatId) || (!s.logoUrl && sLogo);
+        if (needsSync) {
+          fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(merged)
+          }).catch(() => {});
+        }
+      }
     }
   } catch (e) {
-    console.error(e);
+    console.error('loadSettingsForm error:', e);
   }
 }
 
@@ -8722,6 +8803,15 @@ async function handleSaveSettings() {
     telegramChatId: document.getElementById('settingTelegramChatId')?.value.trim() || ''
   };
 
+  // 1. Immediately persist to localStorage so Refresh never loses the settings
+  try {
+    localStorage.setItem('pec21_app_settings', JSON.stringify(payload));
+    if (currentLogo) {
+      localStorage.setItem('pec21_custom_logo', currentLogo);
+    }
+  } catch (e) {}
+
+  // 2. Persist to server backend
   try {
     const res = await fetch('/api/settings', {
       method: 'POST',
@@ -8730,10 +8820,7 @@ async function handleSaveSettings() {
     });
     const data = await res.json();
     if (data.success) {
-      alert('✅ បានរក្សាទុកការកំណត់ជោគជ័យ!');
-      if (currentLogo) {
-        localStorage.setItem('pec21_custom_logo', currentLogo);
-      }
+      alert('✅ បានរក្សាទុកការកំណត់ជោគជ័យ! (រក្សាទុកជាប់ជានិច្ច ទោះបី Refresh ក៏មិនបាត់ដែរ)');
       await checkCloudStatus();
     } else {
       alert('កំហុស៖ ' + data.message);
