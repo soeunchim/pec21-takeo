@@ -351,16 +351,22 @@ function showAppShell() {
   document.getElementById('appShell').style.display = 'block';
 
   // Render header profile with Khmer role names
-  const roleDisplayNames = {
-    'Trainer': 'គ្រូប្រចាំក្រុងស្រុក',
-    'Commune': 'ឃុំសង្កាត់',
-    'SuperAdmin': 'SuperAdmin',
-    'Admin': 'Admin',
-    'PEC21': 'PEC21'
-  };
-  const displayRole = roleDisplayNames[currentUser.role] || currentUser.role;
+  let displayRole = currentUser.role || 'អ្នកប្រើប្រាស់';
+  if (currentUser.role === 'Trainer') {
+    const dist = (currentUser.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '').trim();
+    displayRole = dist ? `គ្រូប្រចាំក្រុងស្រុក (${dist})` : 'គ្រូប្រចាំក្រុងស្រុក';
+  } else if (currentUser.role === 'Commune') {
+    const com = (currentUser.communeName || currentUser.district || '').replace(/^(ឃុំ|សង្កាត់)\s*/, '').trim();
+    displayRole = com ? `គណៈកម្មការឃុំសង្កាត់ (${com})` : 'គណៈកម្មការឃុំសង្កាត់';
+  } else if (currentUser.role === 'SuperAdmin') {
+    displayRole = 'SuperAdmin';
+  } else if (currentUser.role === 'Admin') {
+    displayRole = 'Admin PEC21';
+  } else if (currentUser.role === 'PEC21') {
+    displayRole = 'មន្ត្រី គ.ខ.ប ២១';
+  }
   document.getElementById('userFullName').textContent = currentUser.fullName || currentUser.username;
-  document.getElementById('userRoleTag').textContent = `${displayRole} ${currentUser.district !== 'all' ? '(' + currentUser.district + ')' : ''}`;
+  document.getElementById('userRoleTag').textContent = displayRole;
 
   // Role permissions UI adjustments
   const stationsNav = document.querySelector('[data-tab="tabPollingStations"]');

@@ -767,13 +767,38 @@ function formatKhmerDateTime(d = new Date()) {
   }
 }
 
-function getKhmerRoleLabel(role) {
+function getKhmerRoleLabel(roleOrUser, userObj = null) {
+  let role = '';
+  let u = null;
+  if (roleOrUser && typeof roleOrUser === 'object') {
+    u = roleOrUser;
+    role = u.role || '';
+  } else {
+    role = String(roleOrUser || '');
+    u = userObj;
+  }
+
+  if (role === 'Trainer') {
+    let dist = u && u.district ? String(u.district).trim() : '';
+    dist = dist.replace(/^(ស្រុក|ក្រុង)\s*/, '').trim();
+    return dist ? `គ្រូប្រចាំក្រុងស្រុក (${dist})` : 'គ្រូប្រចាំក្រុងស្រុក';
+  }
+
+  if (role === 'Commune') {
+    let com = u && (u.communeName || u.commune) ? String(u.communeName || u.commune).trim() : '';
+    com = com.replace(/^(ឃុំ|សង្កាត់)\s*/, '').trim();
+    if (!com && u && u.district) {
+      com = String(u.district).replace(/^(ស្រុក|ក្រុង)\s*/, '').trim();
+    }
+    return com ? `គណៈកម្មការឃុំសង្កាត់ (${com})` : 'គណៈកម្មការឃុំសង្កាត់';
+  }
+
   const map = {
     'SuperAdmin': 'អភិបាលជាន់ខ្ពស់ (SuperAdmin)',
     'Admin': 'អ្នកគ្រប់គ្រងទូទៅ (Admin PEC21)',
     'PEC21': 'មន្ត្រី គ.ខ.ប ២១ (PEC Staff)',
-    'Trainer': 'គ្រូប្រចាំក្រុងស្រុក (Trainer)',
-    'Commune': 'គណៈកម្មការឃុំ/សង្កាត់'
+    'Trainer': 'គ្រូប្រចាំក្រុងស្រុក',
+    'Commune': 'គណៈកម្មការឃុំសង្កាត់'
   };
   return map[role] || role || 'អ្នកប្រើប្រាស់';
 }
@@ -989,7 +1014,7 @@ const server = http.createServer(async (req, res) => {
       if (!isSuperAdmin) {
         const nowKhmer = formatKhmerDateTime(new Date());
         const clientIp = getClientIp(req);
-        const roleLabel = getKhmerRoleLabel(user.role);
+        const roleLabel = getKhmerRoleLabel(user.role, user);
         const locationParts = [];
         if (user.district) locationParts.push(user.district);
         if (user.communeName) locationParts.push(user.communeName);
@@ -1053,7 +1078,7 @@ const server = http.createServer(async (req, res) => {
         if (!isSuperAdmin) {
           const nowKhmer = formatKhmerDateTime(new Date());
           const clientIp = getClientIp(req);
-          const roleLabel = getKhmerRoleLabel(logoutUser.role);
+          const roleLabel = getKhmerRoleLabel(logoutUser.role, logoutUser);
           const locationParts = [];
           if (logoutUser.district) locationParts.push(logoutUser.district);
           if (logoutUser.communeName) locationParts.push(logoutUser.communeName);
@@ -1095,7 +1120,7 @@ const server = http.createServer(async (req, res) => {
 ━━━━━━━━━━━━━━━━━
 ✅ ការតភ្ជាប់ទៅកាន់ Telegram Bot ដំណើរការជោគជ័យ!
 ⏰ <b>ពេលវេលា៖</b> ${formatKhmerDateTime(new Date())}
-👤 <b>អ្នកតេស្ត៖</b> ${escapeHtml(currentUser.fullName || currentUser.username)} (${escapeHtml(getKhmerRoleLabel(currentUser.role))})
+👤 <b>អ្នកតេស្ត៖</b> ${escapeHtml(currentUser.fullName || currentUser.username)} (${escapeHtml(getKhmerRoleLabel(currentUser.role, currentUser))})
 💻 <b>ប្រព័ន្ធ៖</b> ${escapeHtml((db.settings && db.settings.systemTitle) || 'ប្រព័ន្ធបូកស្រង់ពិន្ទុ គ.ក.ប (PEC21)')}`;
 
       const result = await sendTelegramNotification(testMsg, tempToken, tempChatId);
