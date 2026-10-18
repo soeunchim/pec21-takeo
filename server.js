@@ -103,6 +103,25 @@ function loadLocalDatabase() {
     if (!db.pollingStations) {
       db.pollingStations = [];
     }
+    // Auto-ensure all 1,603 official stations exist so they remain permanent forever
+    if (officialPollingStations && officialPollingStations.length > 0) {
+      const currentMap = new Map();
+      (db.pollingStations || []).forEach(s => {
+        if (s && s.id) currentMap.set(s.id, s);
+      });
+      let added = 0;
+      officialPollingStations.forEach(os => {
+        if (os && os.id && !currentMap.has(os.id)) {
+          db.pollingStations.push(os);
+          currentMap.set(os.id, os);
+          added++;
+        }
+      });
+      if (added > 0) {
+        console.log(`[Stations] Auto-populated ${added} missing official stations. Total: ${db.pollingStations.length}`);
+        saveLocalDatabase(true);
+      }
+    }
     if (!db.candidates) {
       db.candidates = [];
     }
@@ -547,8 +566,17 @@ async function initCloudSync() {
         syncToGoogleSheet('sync_all');
       }
 
-      if (cloudData.pollingStations && cloudData.pollingStations.length > 0) {
-        db.pollingStations = cloudData.pollingStations;
+      if (cloudData.pollingStations && Array.isArray(cloudData.pollingStations) && cloudData.pollingStations.length > 0) {
+        const stMap = new Map();
+        (db.pollingStations || []).forEach(s => {
+          if (s && s.id) stMap.set(s.id, s);
+        });
+        cloudData.pollingStations.forEach(cs => {
+          if (cs && cs.id && !stMap.has(cs.id)) {
+            stMap.set(cs.id, cs);
+          }
+        });
+        db.pollingStations = Array.from(stMap.values());
       }
       if (cloudData.users && cloudData.users.length > 0) {
         // Merge credentials/active status into canonical db.users while preserving official Khmer names

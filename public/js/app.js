@@ -2808,6 +2808,25 @@ function renderPollingStationsTable() {
     );
   }
 
+  // Dynamic Enable/Disable of btnBatchCreateAllStations
+  const btnBatchAll = document.getElementById('btnBatchCreateAllStations');
+  if (btnBatchAll) {
+    const isAllComplete = (allPollingStations && allPollingStations.length >= 1603);
+    if (isAllComplete) {
+      btnBatchAll.disabled = true;
+      btnBatchAll.style.opacity = '0.55';
+      btnBatchAll.style.cursor = 'not-allowed';
+      btnBatchAll.title = `បានបង្កើតគ្រប់ការិយាល័យទាំង ១,៦០៣ រួចរាល់ហើយ (${toKhmerNum(allPollingStations.length)}/១,៦០៣)`;
+      btnBatchAll.innerHTML = `✅ បានបង្កើតគ្រប់ការិយាល័យ (${toKhmerNum(allPollingStations.length)})`;
+    } else {
+      btnBatchAll.disabled = false;
+      btnBatchAll.style.opacity = '1';
+      btnBatchAll.style.cursor = 'pointer';
+      btnBatchAll.title = `ចុចដើម្បីបង្កើត/ស្តារការិយាល័យបោះឆ្នោតទាំងអស់ទាំង ១,៦០៣ (បច្ចុប្បន្នមាន ${toKhmerNum(allPollingStations.length)}/១,៦០៣)`;
+      btnBatchAll.innerHTML = `🌐 បង្កើតគ្រប់ការិយាល័យ (១,៦០៣)`;
+    }
+  }
+
   // Dynamic Enable/Disable of btnBatchCreateCommuneStations
   const btnBatchCommune = document.getElementById('btnBatchCreateCommuneStations');
   if (btnBatchCommune) {
@@ -2821,12 +2840,23 @@ function renderPollingStationsTable() {
       curStCount = allPollingStations.filter(p => String(p.communeCode).padStart(3, '0') === paddedCom).length;
       offStCount = comObj?.officialStationCount || 0;
       isComplete = (offStCount > 0 && curStCount >= offStCount);
+    } else if (filterDist) {
+      const cleanDist = String(filterDist).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+      curStCount = allPollingStations.filter(p => String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanDist).length;
+      const distComs = allCommunes.filter(c => String(c.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanDist);
+      offStCount = distComs.reduce((sum, c) => sum + (c.officialStationCount || 0), 0);
+      isComplete = (offStCount > 0 && curStCount >= offStCount);
     } else if (currentUser && currentUser.role === 'Trainer') {
       const uDistClean = String(currentUser.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
       curStCount = allPollingStations.filter(p => String(p.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean).length;
       const distComs = allCommunes.filter(c => String(c.district).trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === uDistClean);
       offStCount = distComs.reduce((sum, c) => sum + (c.officialStationCount || 0), 0);
       isComplete = (offStCount > 0 && curStCount >= offStCount);
+    } else if (allPollingStations && allPollingStations.length >= 1603) {
+      // Province-wide stations already complete
+      isComplete = true;
+      curStCount = allPollingStations.length;
+      offStCount = 1603;
     }
 
     if (isComplete) {
@@ -9936,6 +9966,16 @@ async function loadStatisticsPage() {
   }
 
   try {
+    if (!allDistricts || !allDistricts.length) {
+      const distRes = await (await fetch('/api/districts')).json();
+      allDistricts = distRes.districts || [];
+    }
+
+    if (!allCommunes || !allCommunes.length) {
+      const comRes = await (await fetch('/api/communes')).json();
+      allCommunes = comRes.communes || [];
+    }
+
     if (!allPollingStations || !allPollingStations.length) {
       const psRes = await (await fetch('/api/polling-stations')).json();
       allPollingStations = psRes.pollingStations || [];
@@ -9947,10 +9987,12 @@ async function loadStatisticsPage() {
     const distSelect = document.getElementById('statDistrictFilter');
     if (distSelect) {
       const currentVal = distSelect.value;
-      const dists = [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
-      dists.sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b));
+      const allDistNames = (allDistricts && allDistricts.length)
+        ? allDistricts.map(d => d.name)
+        : [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
+      allDistNames.sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b));
       let distOptions = '<option value="all">--គ្រប់ក្រុងស្រុក--</option>';
-      dists.forEach(d => {
+      allDistNames.forEach(d => {
         distOptions += `<option value="${d}">${getDistrictPrefix(d)}</option>`;
       });
       distSelect.innerHTML = distOptions;
@@ -10004,6 +10046,19 @@ function onStatDistrictFilterChange() {
   });
 
   const comMap = new Map();
+  // 1. Populate all registered communes in Takeo for this district
+  (allCommunes || []).filter(c => {
+    return String(c.district || '').trim().replace(/^(ស្រុក|ក្រុង)\s*/, '') === cleanD;
+  }).forEach(c => {
+    const code = String(c.code || '').padStart(3, '0');
+    comMap.set(code, {
+      code: code,
+      name: c.name || '',
+      district: c.district || selDist
+    });
+  });
+
+  // 2. Add any additional communes that exist on station records
   districtStations.forEach(s => {
     const code = String(s.communeCode || '').padStart(3, '0');
     if (!comMap.has(code)) {
@@ -10018,7 +10073,7 @@ function onStatDistrictFilterChange() {
   const currentVal = comSelect.value;
   let comOptions = '<option value="all">--គ្រប់ឃុំសង្កាត់--</option>';
   Array.from(comMap.values()).sort((a, b) => a.code.localeCompare(b.code)).forEach(c => {
-    comOptions += `<option value="${c.code}">${getCommunePrefix(c.name, c.district)}</option>`;
+    comOptions += `<option value="${c.code}">${getCommunePrefix(c.name, c.district)} (${toKhmerNum(c.code)})</option>`;
   });
   comSelect.innerHTML = comOptions;
 
@@ -10182,16 +10237,25 @@ function renderStatisticsPage() {
   // LEVEL 1: PROVINCE (Group by District)
   if (level === 'province') {
     const distGroups = new Map();
+    // 1. Pre-seed all 10 districts so all of Takeo is always listed even without stations
+    const allDistNames = (allDistricts && allDistricts.length)
+      ? allDistricts.map(d => d.name)
+      : [...new Set(allPollingStations.map(p => p.district))].filter(Boolean);
+    allDistNames.sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b)).forEach(d => {
+      distGroups.set(d, []);
+    });
+
     targetStations.forEach(st => {
-      const d = st.district || 'មិនស្គាល់';
-      if (!distGroups.has(d)) distGroups.set(d, []);
-      distGroups.get(d).push(st);
+      const dClean = String(st.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '').trim();
+      const matchKey = Array.from(distGroups.keys()).find(k => k.replace(/^(ស្រុក|ក្រុង)\s*/, '').trim() === dClean) || st.district || 'មិនស្គាល់';
+      if (!distGroups.has(matchKey)) distGroups.set(matchKey, []);
+      distGroups.get(matchKey).push(st);
     });
 
     let rowIdx = 0;
     Array.from(distGroups.keys()).sort((a, b) => getTakeoDistrictOrder(a) - getTakeoDistrictOrder(b)).forEach(d => {
       rowIdx++;
-      const stList = distGroups.get(d);
+      const stList = distGroups.get(d) || [];
       const stCount = stList.length;
       grandTotalStations += stCount;
 
@@ -10244,6 +10308,21 @@ function renderStatisticsPage() {
   // LEVEL 2: COMMUNE (Group by Commune)
   else if (level === 'commune') {
     const comGroups = new Map();
+    const cleanD = selDist.trim().replace(/^(ស្រុក|ក្រុង)\s*/, '');
+
+    // 1. Pre-seed all communes registered in Takeo for this district
+    (allCommunes || []).filter(c => (c.district || '').replace(/^(ស្រុក|ក្រុង)\s*/, '').trim() === cleanD).forEach(c => {
+      const code = String(c.code || '').padStart(3, '0');
+      const key = `${c.district || selDist}_${code}`;
+      comGroups.set(key, {
+        district: c.district || selDist,
+        communeCode: code,
+        communeName: c.name || '',
+        stations: []
+      });
+    });
+
+    // 2. Add stations
     targetStations.forEach(st => {
       const code = String(st.communeCode || '').padStart(3, '0');
       const key = `${st.district}_${code}`;
