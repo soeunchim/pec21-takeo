@@ -5935,18 +5935,6 @@ function initReportSelectorBar() {
     };
   });
 
-  // Setup toggle hide empty rows
-  const btnToggleEmpty = document.getElementById('btnToggleEmptyRows');
-  if (btnToggleEmpty) {
-    btnToggleEmpty.onclick = () => {
-      const container = document.getElementById('printContainer');
-      const isHidden = container.classList.toggle('hide-empty-rows');
-      const label = document.getElementById('toggleEmptyRowsText');
-      if (label) {
-        label.textContent = isHidden ? 'បង្ហាញគ្រប់ជួរដេក' : 'លាក់ជួរដេកទទេ';
-      }
-    };
-  }
 
   // Setup Export Excel for Current Report
   const btnExportReportExcel = document.getElementById('btnExportCurrentReportExcel');
@@ -6894,9 +6882,14 @@ async function renderReportPreview() {
   } else {
     targetStations = [ps];
     try {
-      const res = await fetch(`/api/candidates?pollingStationId=${ps.id}`);
-      const data = await res.json();
-      allTargetCandidates = data.candidates || [];
+      const scoringStationId = document.getElementById('scoringStationSelect')?.value;
+      if (scoringStationId && scoringStationId === ps.id && currentCandidates && currentCandidates.length) {
+        allTargetCandidates = currentCandidates;
+      } else {
+        const res = await fetch(`/api/candidates?pollingStationId=${ps.id}`);
+        const data = await res.json();
+        allTargetCandidates = data.candidates || [];
+      }
     } catch (err) {
       console.error('Error fetching candidates for single station report:', err);
     }
@@ -7045,8 +7038,11 @@ async function renderReportPreview() {
             </tr>
           `;
           const items = stRoleGroups[role] || [];
-          for (let i = 1; i <= 3; i++) {
-            const c = items.find(x => x.orderInRole === i);
+          items.sort((a, b) => (parseInt(a.orderInRole) || 0) - (parseInt(b.orderInRole) || 0));
+          const displayList = items.length > 0 ? items : [{ orderInRole: 1 }];
+
+          displayList.forEach((c, idx) => {
+            const i = idx + 1;
             const isEmpty = !c || !c.name;
             const khmerIdx = toKhmerNum(i);
             const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
@@ -7073,7 +7069,7 @@ async function renderReportPreview() {
                 <td style="width: 60px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cNotes}</td>
               </tr>
             `;
-          }
+          });
         });
       });
 
@@ -7115,8 +7111,11 @@ async function renderReportPreview() {
           </tr>
         `;
         const items = roleGroups[role] || [];
-        for (let i = 1; i <= 3; i++) {
-          const c = items.find(x => x.orderInRole === i);
+        items.sort((a, b) => (parseInt(a.orderInRole) || 0) - (parseInt(b.orderInRole) || 0));
+        const displayList = items.length > 0 ? items : [{ orderInRole: 1 }];
+
+        displayList.forEach((c, idx) => {
+          const i = idx + 1;
           const isEmpty = !c || !c.name;
           const khmerIdx = toKhmerNum(i);
           const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
@@ -7143,7 +7142,7 @@ async function renderReportPreview() {
               <td style="width: 60px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cNotes}</td>
             </tr>
           `;
-        }
+        });
 
         rowsAllHtml += roleHtml;
         if (rIdx < 3) {
@@ -7288,8 +7287,11 @@ async function renderReportPreview() {
           </tr>
         `;
         const items = stRoleGroups[role] || [];
-        for (let i = 1; i <= 3; i++) {
-          const c = items.find(x => x.orderInRole === i);
+        items.sort((a, b) => (parseInt(a.orderInRole) || 0) - (parseInt(b.orderInRole) || 0));
+        const displayList = items.length > 0 ? items : [{ orderInRole: 1 }];
+
+        displayList.forEach((c, idx) => {
+          const i = idx + 1;
           const isEmpty = !c || !c.name;
           const khmerIdx = toKhmerNum(i);
           const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
@@ -7304,7 +7306,7 @@ async function renderReportPreview() {
               <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
-        }
+        });
       });
     });
 
@@ -7400,8 +7402,11 @@ async function renderReportPreview() {
           </tr>
         `;
         const items = stRoleGroups[role] || [];
-        for (let i = 1; i <= 3; i++) {
-          const c = items.find(x => x.orderInRole === i);
+        items.sort((a, b) => (parseInt(a.orderInRole) || 0) - (parseInt(b.orderInRole) || 0));
+        const displayList = items.length > 0 ? items : [{ orderInRole: 1 }];
+
+        displayList.forEach((c, idx) => {
+          const i = idx + 1;
           const isEmpty = !c || !c.name;
           const khmerIdx = toKhmerNum(i);
           const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
@@ -7417,7 +7422,7 @@ async function renderReportPreview() {
               <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
-        }
+        });
       });
     });
 
@@ -7513,8 +7518,11 @@ async function renderReportPreview() {
           </tr>
         `;
         const items = stRoleGroups[role] || [];
-        for (let i = 1; i <= 3; i++) {
-          const c = items.find(x => x.orderInRole === i);
+        items.sort((a, b) => (parseInt(a.orderInRole) || 0) - (parseInt(b.orderInRole) || 0));
+        const displayList = items.length > 0 ? items : [{ orderInRole: 1 }];
+
+        displayList.forEach((c, idx) => {
+          const i = idx + 1;
           const isEmpty = !c || !c.name;
           const khmerIdx = toKhmerNum(i);
           const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
@@ -7555,7 +7563,7 @@ async function renderReportPreview() {
               <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
-        }
+        });
       });
     });
 
@@ -7657,6 +7665,7 @@ async function renderReportPreview() {
           const items = stRoleGroups[role] || [];
           const present = items.filter(c => c && c.name && c.scoreTotal !== 'អវត្តមាន' && c.scoreInterview !== 'អវត្តមាន');
           const absent = items.filter(c => c && c.name && (c.scoreTotal === 'អវត្តមាន' || c.scoreInterview === 'អវត្តមាន'));
+          const pending = items.filter(c => !present.includes(c) && !absent.includes(c));
 
           present.sort((a, b) => {
             if (a.rank && b.rank) return a.rank - b.rank;
@@ -7665,10 +7674,11 @@ async function renderReportPreview() {
             return bt - at;
           });
 
-          const sortedCandidates = [...present, ...absent];
+          const sortedCandidates = [...present, ...pending, ...absent];
+          const displayList = sortedCandidates.length > 0 ? sortedCandidates : [{ orderInRole: 1 }];
 
-          for (let i = 1; i <= 3; i++) {
-            const c = sortedCandidates[i - 1];
+          displayList.forEach((c, idx) => {
+            const i = idx + 1;
             const isEmpty = !c || !c.name;
             const khmerIdx = toKhmerNum(i);
             const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
@@ -7710,7 +7720,7 @@ async function renderReportPreview() {
                 <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
               </tr>
             `;
-          }
+          });
         });
       });
 
@@ -7760,6 +7770,7 @@ async function renderReportPreview() {
         // Strictly sort by rank / score, absent candidates placed last
         const present = items.filter(c => c && c.name && c.scoreTotal !== 'អវត្តមាន' && c.scoreInterview !== 'អវត្តមាន');
         const absent = items.filter(c => c && c.name && (c.scoreTotal === 'អវត្តមាន' || c.scoreInterview === 'អវត្តមាន'));
+        const pending = items.filter(c => !present.includes(c) && !absent.includes(c));
 
         present.sort((a, b) => {
           if (a.rank && b.rank) return a.rank - b.rank;
@@ -7768,10 +7779,11 @@ async function renderReportPreview() {
           return bt - at;
         });
 
-        const sortedCandidates = [...present, ...absent];
+        const sortedCandidates = [...present, ...pending, ...absent];
+        const displayList = sortedCandidates.length > 0 ? sortedCandidates : [{ orderInRole: 1 }];
 
-        for (let i = 1; i <= 3; i++) {
-          const c = sortedCandidates[i - 1];
+        displayList.forEach((c, idx) => {
+          const i = idx + 1;
           const isEmpty = !c || !c.name;
           const khmerIdx = toKhmerNum(i);
           const dobKhmer = c && c.dob ? toKhmerNum(c.dob) : '';
@@ -7813,7 +7825,7 @@ async function renderReportPreview() {
               <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
-        }
+        });
       });
 
       reportContentHtml = `
