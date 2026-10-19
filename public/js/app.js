@@ -1618,7 +1618,17 @@ function renderStorageModesUI(netInfo, settings) {
   const isLanWifi = (window.location.port === '3027' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) && !isLocalhost;
   const isCloud = !isLocalhost && !isLanWifi;
 
-  window.currentWifiUrl = netInfo.wifiUrl || `http://${netInfo.localIp || '127.0.0.1'}:3027`;
+  let validWifi = netInfo.wifiUrl;
+  if (!validWifi || validWifi.includes('127.0.0.1')) {
+    if (netInfo.localIp && netInfo.localIp !== '127.0.0.1') {
+      validWifi = `http://${netInfo.localIp}:3027`;
+    } else if (isLanWifi) {
+      validWifi = `http://${hostname}:3027`;
+    } else {
+      validWifi = isCloud ? '' : 'http://192.168.1.5:3027';
+    }
+  }
+  window.currentWifiUrl = validWifi;
 
   // Update text & links
   const modeLocalText = document.getElementById('modeLocalUrlText');
@@ -1628,10 +1638,17 @@ function renderStorageModesUI(netInfo, settings) {
   if (btnOpenLocalUrl) btnOpenLocalUrl.href = netInfo.localhostUrl || 'http://localhost:3027';
 
   const modeWifiText = document.getElementById('modeWifiUrlText');
-  if (modeWifiText) modeWifiText.textContent = window.currentWifiUrl;
+  if (modeWifiText) {
+    if (isCloud && !validWifi) {
+      modeWifiText.textContent = 'http://[IP-ម៉ាស៊ីនមេ]:3027';
+      modeWifiText.title = 'ដំណើរការលើ Server ក្នុងម៉ាស៊ីនផ្ទាល់ (Local Machine)';
+    } else {
+      modeWifiText.textContent = validWifi || 'http://192.168.1.5:3027';
+    }
+  }
 
   const modalWifiText = document.getElementById('modalWifiUrlText');
-  if (modalWifiText) modalWifiText.textContent = window.currentWifiUrl;
+  if (modalWifiText) modalWifiText.textContent = validWifi || 'http://192.168.1.5:3027';
 
   const currentCloud = window.location.origin.includes('onrender.com') ? window.location.origin : 'https://pollingstationpec21.onrender.com';
   const resolvedCloudUrl = (netInfo && netInfo.cloudUrl && !netInfo.cloudUrl.includes('pec21-takeo')) ? netInfo.cloudUrl : currentCloud;
@@ -1771,21 +1788,83 @@ function renderStorageModesUI(netInfo, settings) {
   });
 }
 
-function openStorageModesModal() {
+function switchStorageModalTab(tab) {
+  const btnWifi = document.getElementById('tabBtnStorageWifi');
+  const btnCloud = document.getElementById('tabBtnStorageCloud');
+  const contentWifi = document.getElementById('tabContentStorageWifi');
+  const contentCloud = document.getElementById('tabContentStorageCloud');
+  if (!btnWifi || !btnCloud || !contentWifi || !contentCloud) return;
+
+  if (tab === 'cloud') {
+    btnCloud.style.background = 'white';
+    btnCloud.style.color = '#1e40af';
+    btnCloud.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+    btnWifi.style.background = 'transparent';
+    btnWifi.style.color = '#475569';
+    btnWifi.style.boxShadow = 'none';
+    contentCloud.style.display = 'block';
+    contentWifi.style.display = 'none';
+  } else {
+    btnWifi.style.background = 'white';
+    btnWifi.style.color = '#166534';
+    btnWifi.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+    btnCloud.style.background = 'transparent';
+    btnCloud.style.color = '#475569';
+    btnCloud.style.boxShadow = 'none';
+    contentWifi.style.display = 'block';
+    contentCloud.style.display = 'none';
+  }
+}
+window.switchStorageModalTab = switchStorageModalTab;
+
+async function openStorageModesModal(preferredTab = 'auto') {
   const modal = document.getElementById('modalStorageModes');
   if (!modal) return;
   modal.style.display = 'flex';
 
-  const wifiUrl = window.currentWifiUrl || (window.currentNetworkInfo ? window.currentNetworkInfo.wifiUrl : `http://${window.location.hostname}:3027`);
+  let netInfo = window.currentNetworkInfo;
+  if (!netInfo || !netInfo.wifiUrl) {
+    try {
+      const res = await fetch('/api/network-info');
+      const data = await res.json();
+      if (data && data.success) {
+        netInfo = data;
+        window.currentNetworkInfo = data;
+        if (data.wifiUrl) window.currentWifiUrl = data.wifiUrl;
+      }
+    } catch (e) {}
+  }
+
+  const isCloudHost = window.location.origin.includes('onrender.com') || (netInfo && netInfo.isCloud);
+  const cloudUrl = (netInfo && netInfo.cloudUrl && !netInfo.cloudUrl.includes('pec21-takeo')) ? netInfo.cloudUrl : (window.location.origin.includes('onrender.com') ? window.location.origin : 'https://pollingstationpec21.onrender.com');
+
+  // Real Wi-Fi URL (strictly never 127.0.0.1)
+  let wifiUrl = (netInfo && netInfo.wifiUrl) || window.currentWifiUrl || '';
+  if (!wifiUrl || wifiUrl.includes('127.0.0.1') || wifiUrl.includes('localhost')) {
+    if (netInfo && netInfo.localIp && netInfo.localIp !== '127.0.0.1') {
+      wifiUrl = `http://${netInfo.localIp}:3027`;
+    } else {
+      wifiUrl = 'http://192.168.1.5:3027';
+    }
+  }
+  window.currentWifiUrl = wifiUrl;
+
   const modalWifiText = document.getElementById('modalWifiUrlText');
   if (modalWifiText) modalWifiText.textContent = wifiUrl;
 
-  const container = document.getElementById('modalWifiQrContainer');
-  if (container) {
-    container.innerHTML = '';
+  const modalCloudText = document.getElementById('modalCloudUrlText');
+  if (modalCloudText) modalCloudText.textContent = cloudUrl;
+
+  const modalCloudOpenBtn = document.getElementById('modalCloudOpenBtn');
+  if (modalCloudOpenBtn) modalCloudOpenBtn.href = cloudUrl;
+
+  // Render Wi-Fi QR Code
+  const wifiContainer = document.getElementById('modalWifiQrContainer');
+  if (wifiContainer) {
+    wifiContainer.innerHTML = '';
     try {
       if (typeof QRCode !== 'undefined') {
-        new QRCode(container, {
+        new QRCode(wifiContainer, {
           text: wifiUrl,
           width: 170,
           height: 170,
@@ -1799,13 +1878,48 @@ function openStorageModesModal() {
         img.style.width = '170px';
         img.style.height = '170px';
         img.alt = 'Wi-Fi QR Code';
-        container.appendChild(img);
+        wifiContainer.appendChild(img);
       }
     } catch (e) {
       console.warn('QR Code generation notice:', e.message);
     }
   }
+
+  // Render Cloud QR Code
+  const cloudContainer = document.getElementById('modalCloudQrContainer');
+  if (cloudContainer) {
+    cloudContainer.innerHTML = '';
+    try {
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(cloudContainer, {
+          text: cloudUrl,
+          width: 170,
+          height: 170,
+          colorDark: '#1e40af',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        const img = document.createElement('img');
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(cloudUrl)}`;
+        img.style.width = '170px';
+        img.style.height = '170px';
+        img.alt = 'Cloud QR Code';
+        cloudContainer.appendChild(img);
+      }
+    } catch (e) {
+      console.warn('Cloud QR Code generation notice:', e.message);
+    }
+  }
+
+  // Tab switching: if on Cloud, show Cloud tab by default; if on local, show Wi-Fi tab!
+  if (preferredTab === 'cloud' || (preferredTab === 'auto' && isCloudHost)) {
+    switchStorageModalTab('cloud');
+  } else {
+    switchStorageModalTab('wifi');
+  }
 }
+window.openStorageModesModal = openStorageModesModal;
 
 function closeStorageModesModal() {
   const modal = document.getElementById('modalStorageModes');
@@ -1831,8 +1945,38 @@ function fallbackCopyText(text) {
   }
 }
 
+async function copyCloudUrl() {
+  const netInfo = window.currentNetworkInfo;
+  const cloudUrl = (netInfo && netInfo.cloudUrl && !netInfo.cloudUrl.includes('pec21-takeo')) ? netInfo.cloudUrl : (window.location.origin.includes('onrender.com') ? window.location.origin : 'https://pollingstationpec21.onrender.com');
+  
+  let copied = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(cloudUrl);
+      copied = true;
+    } else {
+      copied = fallbackCopyText(cloudUrl);
+    }
+  } catch (e) {
+    copied = fallbackCopyText(cloudUrl);
+  }
+  showToast('success', '✅ បានចម្លងអាសយដ្ឋាន Cloud (' + cloudUrl + ') រួចរាល់!');
+}
+window.copyCloudUrl = copyCloudUrl;
+
 async function copyWifiUrl() {
-  const wifiUrl = window.currentWifiUrl || (window.currentNetworkInfo ? window.currentNetworkInfo.wifiUrl : `http://${window.location.hostname}:3027`);
+  let wifiUrl = window.currentWifiUrl;
+  if (!wifiUrl || wifiUrl.includes('127.0.0.1') || wifiUrl.includes('localhost')) {
+    const netInfo = window.currentNetworkInfo;
+    if (netInfo && netInfo.wifiUrl && !netInfo.wifiUrl.includes('127.0.0.1')) {
+      wifiUrl = netInfo.wifiUrl;
+    } else if (netInfo && netInfo.localIp && netInfo.localIp !== '127.0.0.1') {
+      wifiUrl = `http://${netInfo.localIp}:3027`;
+    } else {
+      wifiUrl = 'http://192.168.1.5:3027';
+    }
+    window.currentWifiUrl = wifiUrl;
+  }
 
   let copied = false;
   try {
@@ -1850,6 +1994,9 @@ async function copyWifiUrl() {
 }
 
 function showWifiUrlPopup(wifiUrl, initiallyCopied = false) {
+  if (!wifiUrl || wifiUrl.includes('127.0.0.1') || wifiUrl.includes('localhost')) {
+    wifiUrl = window.currentWifiUrl || 'http://192.168.1.5:3027';
+  }
   const cleanUrl = String(wifiUrl || '').replace(/"/g, '&quot;');
   const msgHtml = `
     <div style="text-align: left; margin-top: 2px;">
@@ -1867,19 +2014,19 @@ function showWifiUrlPopup(wifiUrl, initiallyCopied = false) {
         </button>
       </div>
 
-      <div id="copySuccessFeedback" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: ${initiallyCopied ? '#16a34a' : '#64748b'}; font-weight: 600; margin-bottom: 14px; min-height: 20px;">
+      <div id="copySuccessFeedback" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: ${initiallyCopied ? '#16a34a' : '#64748b'}; font-weight: 600; margin-bottom: 12px; min-height: 20px;">
         ${initiallyCopied ? '✅ បានចម្លងអាសយដ្ឋានចូល Clipboard រួចរាល់!' : '💡 ចុចប៊ូតុង «ចម្លង» ឬចុចលើប្រអប់ដើម្បីចម្លង'}
       </div>
 
-      <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 14px;">
+      <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
         <button type="button" id="btnModernOpenQr" 
           style="background: #f0fdf4; color: #166534; border: 1.5px solid #86efac; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
           📱 បង្ហាញ QR Code សម្រាប់ទូរស័ព្ទ Scan
         </button>
       </div>
 
-      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 8px 12px; font-size: 11.5px; color: #64748b; line-height: 1.55; text-align: center;">
-        ទូរស័ព្ទដៃដែលភ្ជាប់ Wi-Fi តែមួយ អាចចូលប្រើបានភ្លាមៗដោយ<strong>មិនបាច់មាន Internet</strong> ឡើយ។
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #991b1b; line-height: 1.5; text-align: left;">
+        ⚠️ <strong>ចំណាំសំខាន់ ៖</strong> នៅលើទូរស័ព្ទ ឬកុំព្យូទ័រផ្សេង <strong>ដាច់ខាតមិនត្រូវវាយ 127.0.0.1 ឬ localhost ឡើយ</strong> ព្រោះ 127.0.0.1 ដំណើរការតែលើកុំព្យូទ័រមេនេះផ្ទាល់ប៉ុណ្ណោះ!
       </div>
     </div>
   `.trim();
@@ -1908,7 +2055,7 @@ function showWifiUrlPopup(wifiUrl, initiallyCopied = false) {
       qrBtn.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         closeModernPopup(true);
-        setTimeout(openStorageModesModal, 150);
+        setTimeout(() => openStorageModesModal('wifi'), 150);
       };
     }
     if (btn) {
@@ -1942,7 +2089,7 @@ function showWifiUrlPopup(wifiUrl, initiallyCopied = false) {
         }
       };
     }
-  }, 50);
+  }, 100);
 }
 
 function openLocalUrl() {

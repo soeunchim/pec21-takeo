@@ -48,21 +48,34 @@ function getNetworkInfo() {
   const isCloud = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || (process.env.NODE_ENV === 'production' && !process.env.LOCAL_DEV));
   const cloudUrl = process.env.RENDER_EXTERNAL_URL || 'https://pollingstationpec21.onrender.com';
   
-  let localIp = '127.0.0.1';
+  let localIp = '';
   const interfaces = os.networkInterfaces();
   const allIps = [];
+  
+  let wifiIp = '';
+  let ethIp = '';
+  let otherIp = '';
+
   for (const name of Object.keys(interfaces)) {
     for (const net of interfaces[name]) {
-      if (net.family === 'IPv4' && !net.internal) {
+      if (net.family === 'IPv4' && !net.internal && net.address !== '127.0.0.1' && !net.address.startsWith('169.254.')) {
         allIps.push({ name, ip: net.address });
-        if (!localIp || localIp === '127.0.0.1') {
-          localIp = net.address;
+        const lowerName = name.toLowerCase();
+        if (lowerName.includes('wi-fi') || lowerName.includes('wifi') || lowerName.includes('wlan') || lowerName.includes('wireless')) {
+          if (!wifiIp) wifiIp = net.address;
+        } else if (lowerName.includes('ethernet') || lowerName.includes('eth') || lowerName.includes('lan')) {
+          if (!ethIp) ethIp = net.address;
+        } else {
+          if (!otherIp) otherIp = net.address;
         }
       }
     }
   }
 
+  localIp = wifiIp || ethIp || otherIp || '127.0.0.1';
+
   const localPort = 3027;
+  const wifiPort = PORT || localPort;
   return {
     isCloud,
     cloudUrl,
@@ -70,7 +83,7 @@ function getNetworkInfo() {
     allIps: isCloud ? [] : allIps,
     port: isCloud ? localPort : PORT,
     localhostUrl: `http://localhost:${localPort}`,
-    wifiUrl: (!isCloud && localIp && localIp !== '127.0.0.1') ? `http://${localIp}:${PORT}` : ''
+    wifiUrl: (!isCloud && localIp && localIp !== '127.0.0.1') ? `http://${localIp}:${wifiPort}` : ''
   };
 }
 
@@ -2589,7 +2602,7 @@ const server = http.createServer(async (req, res) => {
 
 // Boot Server
 loadLocalDatabase();
-server.listen(PORT, async () => {
+server.listen(PORT, '0.0.0.0', async () => {
   const netInfo = getNetworkInfo();
   console.log(`================================================================`);
   console.log(`  PEC21 TAKEO - KKB EXAM SCORE SYSTEM 2027`);
