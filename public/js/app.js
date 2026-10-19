@@ -3567,7 +3567,7 @@ function handleScoringTablePaste(e) {
     const countBadge = document.getElementById('stationCandidateCountBadge');
     if (countBadge) {
       const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
-      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} / ១៨ នាក់`;
+      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} នាក់`;
     }
 
     const stationId = document.getElementById('scoringStationSelect').value;
@@ -3960,7 +3960,7 @@ async function checkCandidateDuplicateRow(tr) {
         const countBadge = document.getElementById('stationCandidateCountBadge');
         if (countBadge) {
           const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
-          countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} / ១៨ នាក់`;
+          countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} នាក់`;
         }
 
         // Immediately auto-save this candidate into database so it persists across station switching
@@ -4329,8 +4329,10 @@ function updateRowDeleteButtonState(tr) {
   if (!tr) return;
   const btn = tr.querySelector('.cand-btn-delete');
   if (btn) {
+    const roleName = tr.getAttribute('data-role');
+    const roleRows = roleName ? document.querySelectorAll(`tr[data-role="${roleName}"]`).length : 1;
     const hasData = hasCandidateRowData(tr);
-    btn.disabled = !hasData;
+    btn.disabled = !(hasData || roleRows > 1);
   }
 }
 
@@ -4515,7 +4517,7 @@ function startScoringAutoSync() {
   }, 8000); // Poll every 8 seconds
 }
 
-async function renderScoringTableForActiveStation() {
+async function renderScoringTableForActiveStation(forceRefresh = false, preserveLocalState = false) {
   const stationId = document.getElementById('scoringStationSelect').value;
   const tbody = document.getElementById('scoringTableBody');
   const infoSpan = document.getElementById('activeStationInfo');
@@ -4537,58 +4539,78 @@ async function renderScoringTableForActiveStation() {
   }
 
   try {
-    const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
-    const data = await res.json();
-    currentCandidates = data.candidates || [];
-    backupStationCandidatesToLocalStorage(stationId, currentCandidates);
+    if (!preserveLocalState) {
+      const res = await fetch(`/api/candidates?pollingStationId=${stationId}`);
+      const data = await res.json();
+      currentCandidates = data.candidates || [];
+      backupStationCandidatesToLocalStorage(stationId, currentCandidates);
+    }
 
     if (countBadge) {
       const filledCount = currentCandidates.filter(c => c.name && c.name.trim()).length;
-      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} / ១៨ នាក់`;
+      countBadge.textContent = `👥 បេក្ខជនក្នុងប្រព័ន្ធ ៖ ${toKhmerNum(filledCount)} នាក់`;
     }
 
     tbody.innerHTML = '';
 
-    // Render grouped by the 6 roles matching Excel structure
+    // Render grouped by the 6 roles matching Excel structure (1 row per position by default, with add button)
     ROLES_ORDER.forEach(roleName => {
       const roleCode = ROLE_CODES[roleName];
+
+      // Find all candidates for this role
+      let roleCandidates = currentCandidates.filter(c => c.role === roleName);
+      roleCandidates.sort((a, b) => (parseInt(a.orderInRole) || 0) - (parseInt(b.orderInRole) || 0));
+
+      // Each position should have 1 row by default if empty, or all its existing candidates
+      if (!roleCandidates.length) {
+        const slotCode = `${roleCode}1`;
+        const cand = {
+          id: `temp_${stationId}_${slotCode}`,
+          pollingStationId: stationId,
+          role: roleName,
+          roleCode: roleCode,
+          orderInRole: 1,
+          name: '',
+          gender: 'ប',
+          dob: '',
+          phone: '',
+          degree: '',
+          scoreDegree: 0,
+          experience: '',
+          scoreExp: 0,
+          scoreShortlist: 0,
+          scoreInterview: '',
+          scoreTotal: '',
+          rank: 1,
+          status: ''
+        };
+        currentCandidates.push(cand);
+        roleCandidates = [cand];
+      }
+
       tbody.innerHTML += `
-        <tr class="excel-position-banner">
-          <td colspan="15">
-            📋 មុខតំណែង ៖ ${roleName}
+        <tr class="excel-position-banner" data-role-banner="${roleName}">
+          <td colspan="15" style="padding: 4px 10px; background: #e0e7ff; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #94a3b8;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span style="font-weight: 700; font-size: 13px; color: #1e3a8a;">
+                📋 មុខតំណែង ៖ ${roleName}
+              </span>
+              <button type="button" 
+                      class="btn btn-sm btn-primary" 
+                      onclick="addCandidateRowForRole('${roleName}')" 
+                      style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); background: #2563eb; color: #ffffff; border: 1px solid #1d4ed8;" 
+                      title="បន្ថែមជួរដេកបេក្ខជនក្នុងមុខតំណែង ${roleName}">
+                <span>➕ បន្ថែមជួរដេក</span>
+              </button>
+            </div>
           </td>
         </tr>
       `;
 
-      // 3 candidates per position slot (1 to 3)
-      for (let order = 1; order <= 3; order++) {
-        const slotCode = `${roleCode}${order}`;
-        let cand = currentCandidates.find(c => c.role === roleName && c.orderInRole === order);
-
-        if (!cand) {
-          // Placeholder slot matching official 18 slots
-          cand = {
-            id: `temp_${stationId}_${slotCode}`,
-            pollingStationId: stationId,
-            role: roleName,
-            roleCode: roleCode,
-            orderInRole: order,
-            name: '',
-            gender: 'ប',
-            dob: '',
-            phone: '',
-            degree: '',
-            scoreDegree: 0,
-            experience: '',
-            scoreExp: 0,
-            scoreShortlist: 0,
-            scoreInterview: '',
-            scoreTotal: '',
-            rank: order,
-            status: ''
-          };
-          currentCandidates.push(cand);
-        }
+      roleCandidates.forEach((cand, idx) => {
+        const order = idx + 1;
+        cand.orderInRole = order;
+        cand.roleCode = roleCode;
 
         const isAbsent = cand.scoreInterview === 'អវត្តមាន' || cand.status === 'អវត្តមាន';
         const hasCompletedTotal = isAbsent || (cand.scoreInterview !== undefined && cand.scoreInterview !== null && cand.scoreInterview !== '' && cand.scoreTotal !== undefined && cand.scoreTotal !== null && cand.scoreTotal !== '' && cand.scoreTotal !== '---');
@@ -4671,11 +4693,26 @@ async function renderScoringTableForActiveStation() {
               ${badgeHtml}
             </td>
             <td style="text-align: center; width: 35px;">
-              <button class="btn btn-danger btn-sm cand-btn-delete" style="padding: 1px 4px; font-size: 11px;" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក" ${hasData ? '' : 'disabled'}>❌</button>
+              <button class="btn btn-danger btn-sm cand-btn-delete" style="padding: 1px 4px; font-size: 11px;" onclick="clearCandidateRow(this)" title="លុបទិន្នន័យជួរដេក" ${hasData || roleCandidates.length > 1 ? '' : 'disabled'}>❌</button>
             </td>
           </tr>
         `;
-      }
+      });
+
+      // Bottom "continue adding" row for this position
+      tbody.innerHTML += `
+        <tr class="add-row-action-tr" data-role-action="${roleName}">
+          <td colspan="15" style="background: #f8fafc; padding: 3px 10px; text-align: left; border-bottom: 2px solid #cbd5e1;">
+            <button type="button" 
+                    class="btn btn-sm" 
+                    onclick="addCandidateRowForRole('${roleName}')" 
+                    style="font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; background: #eff6ff; border: 1px dashed #2563eb; color: #1e40af;"
+                    title="ចុចដើម្បីបន្ថែមជួរដេកបន្តក្នុងមុខតំណែង ${roleName}">
+              <span>➕ បន្តបន្ថែមជួរដេក (${roleName})</span>
+            </button>
+          </td>
+        </tr>
+      `;
     });
 
     initScoringTableExcelEngine();
@@ -4683,6 +4720,104 @@ async function renderScoringTableForActiveStation() {
     console.error('Error rendering scoring table:', err);
   }
 }
+
+function syncDOMInputsToCandidates() {
+  const rows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
+  rows.forEach(tr => {
+    const candId = tr.getAttribute('data-cand-id');
+    const roleName = tr.getAttribute('data-role');
+    const order = parseInt(tr.getAttribute('data-order')) || 1;
+    let cand = currentCandidates.find(c => c.id === candId);
+    if (!cand) {
+      cand = { id: candId, role: roleName, orderInRole: order };
+      currentCandidates.push(cand);
+    }
+    const nameInput = tr.querySelector('.cand-name');
+    if (nameInput) cand.name = nameInput.value.trim();
+    const genderSelect = tr.querySelector('.cand-gender');
+    if (genderSelect) cand.gender = genderSelect.value;
+    const dobInput = tr.querySelector('.cand-dob');
+    if (dobInput) cand.dob = dobInput.value.trim();
+    const phoneInput = tr.querySelector('.cand-phone');
+    if (phoneInput) cand.phone = phoneInput.value.trim();
+    const degInput = tr.querySelector('.cand-degree');
+    if (degInput) cand.degree = degInput.value.trim();
+    const degScoreInput = tr.querySelector('.cand-score-degree');
+    if (degScoreInput) cand.scoreDegree = parseFloat(fromKhmerNum(degScoreInput.value)) || 0;
+    const expInput = tr.querySelector('.cand-exp');
+    if (expInput) cand.experience = expInput.value.trim();
+    const expScoreInput = tr.querySelector('.cand-score-exp');
+    if (expScoreInput) cand.scoreExp = parseFloat(fromKhmerNum(expScoreInput.value)) || 0;
+    cand.scoreShortlist = (cand.scoreDegree || 0) + (cand.scoreExp || 0);
+
+    const intInput = tr.querySelector('.cand-interview');
+    if (intInput) {
+      const rawInt = intInput.value.trim();
+      if (rawInt.includes('អវត្តមាន') || rawInt.startsWith('អ')) {
+        cand.scoreInterview = 'អវត្តមាន';
+      } else if (rawInt !== '') {
+        cand.scoreInterview = fromKhmerNum(rawInt);
+      } else {
+        cand.scoreInterview = '';
+      }
+    }
+    cand.orderInRole = order;
+    cand.role = roleName;
+  });
+}
+
+window.addCandidateRowForRole = function(roleName) {
+  const stationId = document.getElementById('scoringStationSelect')?.value;
+  if (!stationId) {
+    alert('សូមជ្រើសរើស ឬវាយលេខកូដការិយាល័យជាមុនសិន!');
+    return;
+  }
+
+  // 1. Preserve any uncommitted inputs currently in the DOM
+  syncDOMInputsToCandidates();
+
+  const roleCode = ROLE_CODES[roleName] || 'R';
+  const roleCandidates = currentCandidates.filter(c => c.role === roleName);
+  const nextOrder = roleCandidates.length + 1;
+
+  const newCand = {
+    id: `temp_${stationId}_${roleCode}${Date.now()}_${nextOrder}`,
+    pollingStationId: stationId,
+    role: roleName,
+    roleCode: roleCode,
+    orderInRole: nextOrder,
+    name: '',
+    gender: 'ប',
+    dob: '',
+    phone: '',
+    degree: '',
+    scoreDegree: 0,
+    experience: '',
+    scoreExp: 0,
+    scoreShortlist: 0,
+    scoreInterview: '',
+    scoreTotal: '',
+    rank: nextOrder,
+    status: ''
+  };
+
+  currentCandidates.push(newCand);
+
+  // 2. Re-render scoring table preserving in-memory state
+  renderScoringTableForActiveStation(false, true);
+
+  // 3. Focus on newly added row's name input
+  setTimeout(() => {
+    const tr = document.querySelector(`tr[data-cand-id="${newCand.id}"]`);
+    if (tr) {
+      const nameInput = tr.querySelector('.cand-name');
+      if (nameInput) {
+        nameInput.focus();
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, 60);
+};
 
 window.onCandidateRowChange = function(inputElem) {
   const tr = inputElem.closest('tr');
@@ -4823,28 +4958,73 @@ function recalculateUIRanksForRole(roleName) {
 
 window.clearCandidateRow = async function(btn) {
   const tr = btn.closest('tr');
-  const ok = await showModernConfirm('តើលោកអ្នកពិតជាចង់លុបទិន្នន័យបេក្ខជនក្នុងជួរនេះមែនទេ?', {
-    title: 'លុបទិន្នន័យបេក្ខជន',
-    confirmText: 'លុបទិន្នន័យ',
+  if (!tr) return;
+  const roleName = tr.getAttribute('data-role');
+  const candId = tr.getAttribute('data-cand-id');
+  const roleRows = roleName ? document.querySelectorAll(`tr[data-role="${roleName}"]`) : [];
+  const isMultiple = roleRows.length > 1;
+
+  const confirmMsg = isMultiple
+    ? 'តើលោកអ្នកពិតជាចង់លុបជួរដេកបេក្ខជននេះចេញពីតារាងមែនទេ?'
+    : 'តើលោកអ្នកពិតជាចង់លុបទិន្នន័យបេក្ខជនក្នុងជួរនេះមែនទេ?';
+
+  const ok = await showModernConfirm(confirmMsg, {
+    title: isMultiple ? 'លុបជួរដេកបេក្ខជន' : 'លុបទិន្នន័យបេក្ខជន',
+    confirmText: isMultiple ? 'លុបជួរដេក' : 'លុបទិន្នន័យ',
     type: 'danger',
     isDanger: true
   });
-  if (ok) {
-    const order = parseInt(tr.getAttribute('data-order')) || 1;
+  if (!ok) return;
+
+  // 1. Delete candidate directly on server if already stored
+  if (candId && !candId.startsWith('temp_')) {
+    try {
+      await fetch('/api/candidates/' + candId, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Error deleting candidate from server in clearCandidateRow:', err);
+    }
+  }
+
+  // 2. Sync DOM inputs so other unsaved edits are preserved
+  syncDOMInputsToCandidates();
+
+  if (isMultiple) {
+    // Remove this candidate from currentCandidates
+    currentCandidates = currentCandidates.filter(c => c.id !== candId);
+    // Re-index orderInRole for remaining candidates of this role
+    const remainingRoleCandidates = currentCandidates.filter(c => c.role === roleName);
+    remainingRoleCandidates.sort((a, b) => (parseInt(a.orderInRole) || 0) - (parseInt(b.orderInRole) || 0));
+    remainingRoleCandidates.forEach((c, idx) => {
+      c.orderInRole = idx + 1;
+    });
+
+    // Re-render table preserving local state
+    await renderScoringTableForActiveStation(false, true);
+    if (roleName) recalculateUIRanksForRole(roleName);
+    updateDuplicateBadgeCount();
+  } else {
+    // Only 1 row for this position: keep the row, just clear all input fields
+    const order = 1;
     tr.classList.remove('duplicate-highlight-row');
     delete tr.dataset.dupConfirmedSig;
     delete tr.dataset.isDuplicate;
-    const candId = tr.getAttribute('data-cand-id');
-    let cand = currentCandidates.find(c => c.id === candId);
-    if (cand) cand.isDuplicate = false;
 
-    // Delete candidate directly on server if already stored
-    if (candId && !candId.startsWith('temp_')) {
-      try {
-        await fetch('/api/candidates/' + candId, { method: 'DELETE' });
-      } catch (err) {
-        console.error('Error deleting candidate from server in clearCandidateRow:', err);
-      }
+    let cand = currentCandidates.find(c => c.id === candId);
+    if (cand) {
+      cand.name = '';
+      cand.gender = 'ប';
+      cand.dob = '';
+      cand.phone = '';
+      cand.degree = '';
+      cand.scoreDegree = 0;
+      cand.experience = '';
+      cand.scoreExp = 0;
+      cand.scoreShortlist = 0;
+      cand.scoreInterview = '';
+      cand.scoreTotal = '';
+      cand.rank = 1;
+      cand.status = '';
+      cand.isDuplicate = false;
     }
 
     tr.querySelector('.cand-name').value = '';
@@ -4864,40 +5044,40 @@ window.clearCandidateRow = async function(btn) {
     onCandidateRowChange(tr.querySelector('.cand-name'));
     updateRowDeleteButtonState(tr);
     updateDuplicateBadgeCount();
-
-    // Check if other rows in the active table also lost their duplicate status
-    const allRows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
-    allRows.forEach(async otherTr => {
-      if (otherTr.classList.contains('duplicate-highlight-row')) {
-        const oName = otherTr.querySelector('.cand-name')?.value?.trim();
-        const oGender = otherTr.querySelector('.cand-gender')?.value;
-        const oDob = otherTr.querySelector('.cand-dob')?.value?.trim();
-        if (oName && oDob) {
-          try {
-            const checkRes = await fetch('/api/candidates/check-duplicate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: oName,
-                gender: oGender,
-                dob: oDob,
-                excludeId: otherTr.getAttribute('data-cand-id')
-              })
-            });
-            const checkData = await checkRes.json();
-            if (checkData && !checkData.isDuplicate) {
-              otherTr.classList.remove('duplicate-highlight-row');
-              delete otherTr.dataset.isDuplicate;
-              delete otherTr.dataset.dupConfirmedSig;
-              const oId = otherTr.getAttribute('data-cand-id');
-              let oCand = currentCandidates.find(c => c.id === oId);
-              if (oCand) oCand.isDuplicate = false;
-            }
-          } catch(e) {}
-        }
-      }
-    });
   }
+
+  // Check if other rows in the active table also lost their duplicate status
+  const allRows = document.querySelectorAll('#scoringTableBody tr[data-cand-id]');
+  allRows.forEach(async otherTr => {
+    if (otherTr.classList.contains('duplicate-highlight-row')) {
+      const oName = otherTr.querySelector('.cand-name')?.value?.trim();
+      const oGender = otherTr.querySelector('.cand-gender')?.value;
+      const oDob = otherTr.querySelector('.cand-dob')?.value?.trim();
+      if (oName && oDob) {
+        try {
+          const checkRes = await fetch('/api/candidates/check-duplicate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: oName,
+              gender: oGender,
+              dob: oDob,
+              excludeId: otherTr.getAttribute('data-cand-id')
+            })
+          });
+          const checkData = await checkRes.json();
+          if (checkData && !checkData.isDuplicate) {
+            otherTr.classList.remove('duplicate-highlight-row');
+            delete otherTr.dataset.isDuplicate;
+            delete otherTr.dataset.dupConfirmedSig;
+            const oId = otherTr.getAttribute('data-cand-id');
+            let oCand = currentCandidates.find(c => c.id === oId);
+            if (oCand) oCand.isDuplicate = false;
+          }
+        } catch(e) {}
+      }
+    }
+  });
 };
 
 async function saveBatchScores() {
