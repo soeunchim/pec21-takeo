@@ -6946,7 +6946,7 @@ async function renderReportPreview() {
         <col style="width: 255px;">
         <col style="width: 35px;">
         <col style="width: 78px;">
-        <col style="width: 60px;">
+        <col class="col-notes" style="width: 60px;">
       </colgroup>
     `;
 
@@ -6959,7 +6959,7 @@ async function renderReportPreview() {
               <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">កម្រិតសញ្ញាបត្រ</th>
               <th colspan="2" style="text-align: center; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">បទពិសោធន៍</th>
               <th rowspan="2" class="th-total-score" style="width: 78px; min-width: 78px; white-space: nowrap !important; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
-              <th rowspan="2" style="width: 60px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+              <th rowspan="2" class="col-notes" style="width: 60px; vertical-align: middle; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
             <tr>
               <th class="th-criteria text-left" style="font-size: 7.2pt; font-weight: normal; text-align: left !important; padding: 2px 3px; line-height: 1.25; width: 200px;">
@@ -7066,7 +7066,7 @@ async function renderReportPreview() {
                 <td style="width: 255px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cExp}</td>
                 <td class="center" style="width: 35px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${scoreExp}</td>
                 <td class="center" style="font-weight: normal; width: 78px; min-width: 78px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${scoreTot}</td>
-                <td style="width: 60px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cNotes}</td>
+                <td class="col-notes" style="width: 60px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cNotes}</td>
               </tr>
             `;
           });
@@ -7139,7 +7139,7 @@ async function renderReportPreview() {
               <td style="width: 255px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cExp}</td>
               <td class="center" style="width: 35px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${scoreExp}</td>
               <td class="center" style="font-weight: normal; width: 78px; min-width: 78px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${scoreTot}</td>
-              <td style="width: 60px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cNotes}</td>
+              <td class="col-notes" style="width: 60px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 10.5pt !important;">${cNotes}</td>
             </tr>
           `;
         });
@@ -7303,7 +7303,7 @@ async function renderReportPreview() {
               <td class="center" style="width: 50px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.gender || '') : ''}</td>
               <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
               <td class="center" style="width: 170px; min-width: 170px; font-weight: normal; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? formatKhmerPhoneNumber(c.phone || '') : ''}</td>
-              <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
+              <td class="col-notes" style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
         });
@@ -7331,7 +7331,7 @@ async function renderReportPreview() {
               <th style="width: 50px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ភេទ</th>
               <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 170px; min-width: 170px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">លេខទូរសព្ទ</th>
-              <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+              <th class="col-notes" style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
           </thead>
           <tbody>
@@ -7419,7 +7419,7 @@ async function renderReportPreview() {
               <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
               <td style="width: 130px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>
               <td style="width: 130px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;"></td>
-              <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
+              <td class="col-notes" style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
         });
@@ -7447,7 +7447,7 @@ async function renderReportPreview() {
               <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
               <th style="width: 130px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ហត្ថលេខាចូល</th>
               <th style="width: 130px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ហត្ថលេខាចេញ</th>
-              <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+              <th class="col-notes" style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
           </thead>
           <tbody>
@@ -7560,7 +7560,7 @@ async function renderReportPreview() {
               ${scoreShortlistHtml}
               ${scoreInterviewHtml}
               ${scoreTotalHtml}
-              <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
+              <td class="col-notes" style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
         });
@@ -7589,7 +7589,7 @@ async function renderReportPreview() {
               <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុសម្រាំង</th>
               <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ពិន្ទុសម្ភាសន៍</th>
               <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
-              <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+              <th class="col-notes" style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
             </tr>
           </thead>
           <tbody>
@@ -7717,7 +7717,7 @@ async function renderReportPreview() {
                 <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
                 ${scoreTotalHtml}
                 ${statusHtml}
-                <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
+                <td class="col-notes" style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
               </tr>
             `;
           });
@@ -7745,7 +7745,7 @@ async function renderReportPreview() {
                 <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
                 <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
                 <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">និទ្ទេស</th>
-                <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+                <th class="col-notes" style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
               </tr>
             </thead>
             <tbody>
@@ -7822,7 +7822,7 @@ async function renderReportPreview() {
               <td class="center" style="width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${dobKhmer}</td>
               ${scoreTotalHtml}
               ${statusHtml}
-              <td style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
+              <td class="col-notes" style="width: 90px; font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important;">${c ? (c.notes || '') : ''}</td>
             </tr>
           `;
         });
@@ -7841,7 +7841,7 @@ async function renderReportPreview() {
                 <th class="th-dob" style="width: 125px; min-width: 125px; white-space: nowrap !important; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ថ្ងៃ ខែ ឆ្នាំកំណើត</th>
                 <th style="width: 95px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">សរុបពិន្ទុ</th>
                 <th style="width: 110px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">និទ្ទេស</th>
-                <th style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
+                <th class="col-notes" style="width: 90px; font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important;">ផ្សេងៗ</th>
               </tr>
             </thead>
             <tbody>
@@ -8040,6 +8040,9 @@ async function renderReportPreview() {
   setupReportSignatureInteractions();
   setupReportTableRowHeightControls();
   setupAutoPrintPagination();
+  setupDraggableReportBoxes();
+  applyColumnNotesVisibility();
+  applyReportCustomizationModes();
 }
 
 function sanitizeCandidateText(text) {
@@ -9281,9 +9284,8 @@ function exportCurrentReportToExcel() {
   const sheetName = sheetNamesMap[reportType] || 'Report';
 
   // If there are multiple tables (e.g. 2-page SortList), merge their tbody rows for Excel export
-  let exportTable = tables[0];
+  let exportTable = tables[0].cloneNode(true);
   if (tables.length > 1) {
-    exportTable = tables[0].cloneNode(true);
     const mainTbody = exportTable.querySelector('tbody');
     for (let i = 1; i < tables.length; i++) {
       const otherTbody = tables[i].querySelector('tbody');
@@ -9293,6 +9295,19 @@ function exportCurrentReportToExcel() {
         });
       }
     }
+  }
+
+  // If notes column is hidden, remove all .col-notes elements from exportTable
+  if (localStorage.getItem('report_hide_column_notes') === 'true') {
+    exportTable.querySelectorAll('.col-notes').forEach(el => el.remove());
+    exportTable.querySelectorAll('tr.category-row td[colspan]').forEach(td => {
+      const c = parseInt(td.getAttribute('colspan'), 10);
+      if (!isNaN(c) && c > 1) td.setAttribute('colspan', String(c - 1));
+    });
+    exportTable.querySelectorAll('tr.district-banner-row td[colspan], tr.commune-banner-row td[colspan]').forEach(td => {
+      const c = parseInt(td.getAttribute('colspan'), 10);
+      if (!isNaN(c) && c > 1) td.setAttribute('colspan', String(c - 1));
+    });
   }
 
   const distSelect = document.getElementById('reportDistrictFilter');
@@ -11223,3 +11238,160 @@ function printStatisticsTable() {
   printWindow.document.close();
 }
 
+
+
+
+// ==============================================================================
+// REPORT CUSTOMIZATION & CONTROLS (កែប្រែអក្សរ, ផ្លាស់ទីប្លុក, លាក់/បង្ហាញ ផ្សេងៗ)
+// ==============================================================================
+window.openReportCustomizeModal = function() {
+  updateCustomizationModalUI();
+  if (typeof openModal === 'function') {
+    openModal('modalReportCustomization');
+  }
+};
+
+window.updateCustomizationModalUI = function() {
+  const isFullEdit = localStorage.getItem('report_full_edit_mode') === 'true';
+  const isDragHandles = localStorage.getItem('report_drag_handles_visible') === 'true';
+  const isHideNotes = localStorage.getItem('report_hide_column_notes') === 'true';
+
+  const chkFullEdit = document.getElementById('toggleReportFullEditModeCheck');
+  if (chkFullEdit) chkFullEdit.checked = isFullEdit;
+
+  const chkDrag = document.getElementById('toggleReportDragHandlesCheck');
+  if (chkDrag) chkDrag.checked = isDragHandles;
+
+  const chkNotes = document.getElementById('toggleReportColNotesCheck');
+  if (chkNotes) chkNotes.checked = !isHideNotes;
+};
+
+window.toggleReportFullEditMode = function(enable) {
+  localStorage.setItem('report_full_edit_mode', enable ? 'true' : 'false');
+  applyReportCustomizationModes();
+  if (typeof showSaveSuccessToast === 'function') {
+    showSaveSuccessToast(enable ? 'បានបើករបៀបកែប្រែអក្សរផ្ទាល់' : 'បានបិទរបៀបកែប្រែអក្សរ');
+  }
+};
+
+window.toggleReportDragMode = function(enable) {
+  localStorage.setItem('report_drag_handles_visible', enable ? 'true' : 'false');
+  applyReportCustomizationModes();
+  if (typeof showSaveSuccessToast === 'function') {
+    showSaveSuccessToast(enable ? 'បានបង្ហាញចំណុចទាញប្លុកគ្រប់ទីតាំង' : 'បានបិទការបង្ហាញចំណុចទាញប្លុក');
+  }
+};
+
+window.toggleReportColumnNotes = function(show) {
+  localStorage.setItem('report_hide_column_notes', show ? 'false' : 'true');
+  applyColumnNotesVisibility();
+  if (typeof showSaveSuccessToast === 'function') {
+    showSaveSuccessToast(show ? 'បានបង្ហាញជួរឈរ (ផ្សេងៗ)' : 'បានលាក់ជួរឈរ (ផ្សេងៗ)');
+  }
+};
+
+window.quickToggleColumnNotes = function() {
+  const isCurrentlyHidden = localStorage.getItem('report_hide_column_notes') === 'true';
+  window.toggleReportColumnNotes(isCurrentlyHidden);
+};
+
+window.resetAllDraggableBoxes = function() {
+  const boxIds = ['logo', 'inst_header', 'kingdom_header', 'title_box', 'signature_box'];
+  const allKeys = Object.keys(localStorage);
+  boxIds.forEach(id => {
+    allKeys.forEach(k => {
+      if (k.startsWith(`report_box_pos_${id}_`)) {
+        localStorage.removeItem(k);
+      }
+    });
+  });
+
+  const container = document.getElementById('printContainer');
+  if (container) {
+    container.querySelectorAll('.report-draggable-box').forEach(el => {
+      el.style.transform = 'translate(0px, 0px)';
+    });
+  }
+  if (typeof showSaveSuccessToast === 'function') {
+    showSaveSuccessToast('បានកំណត់ទីតាំងដើមទាំងអស់ឡើងវិញ');
+  }
+};
+
+window.applyReportCustomizationModes = function() {
+  const container = document.getElementById('printContainer');
+  if (!container) return;
+
+  const isFullEdit = localStorage.getItem('report_full_edit_mode') === 'true';
+  const isDragHandles = localStorage.getItem('report_drag_handles_visible') === 'true';
+
+  if (isDragHandles) {
+    container.classList.add('show-all-drag-handles');
+  } else {
+    container.classList.remove('show-all-drag-handles');
+  }
+
+  if (isFullEdit) {
+    container.classList.add('report-full-edit-mode');
+    container.querySelectorAll('th, td, .report-inst-header-box, .report-kingdom-header-box, .report-title-box, .signature-box, .final-roster-bottom-breakdown').forEach(el => {
+      if (!el.classList.contains('report-box-drag-handle') && !el.closest('.report-box-drag-handle')) {
+        el.setAttribute('contenteditable', 'true');
+        el.setAttribute('spellcheck', 'false');
+      }
+    });
+  } else {
+    container.classList.remove('report-full-edit-mode');
+    container.querySelectorAll('th, td, .final-roster-bottom-breakdown').forEach(el => {
+      el.removeAttribute('contenteditable');
+    });
+  }
+};
+
+window.applyColumnNotesVisibility = function() {
+  const isHidden = localStorage.getItem('report_hide_column_notes') === 'true';
+  const container = document.getElementById('printContainer');
+  if (container) {
+    if (isHidden) {
+      container.classList.add('hide-col-notes');
+    } else {
+      container.classList.remove('hide-col-notes');
+    }
+  }
+
+  // Adjust category rows' colspans
+  document.querySelectorAll('#printContainer tr.category-row td[colspan]').forEach(td => {
+    const origColspan = td.getAttribute('data-orig-colspan') || td.getAttribute('colspan');
+    if (!td.hasAttribute('data-orig-colspan')) {
+      td.setAttribute('data-orig-colspan', origColspan);
+    }
+    const baseCol = parseInt(origColspan, 10);
+    if (!isNaN(baseCol)) {
+      td.setAttribute('colspan', isHidden ? String(baseCol - 1) : String(baseCol));
+    }
+  });
+
+  // Adjust district banner rows if any
+  document.querySelectorAll('#printContainer tr.district-banner-row td[colspan], #printContainer tr.commune-banner-row td[colspan]').forEach(td => {
+    const origColspan = td.getAttribute('data-orig-colspan') || td.getAttribute('colspan');
+    if (!td.hasAttribute('data-orig-colspan')) {
+      td.setAttribute('data-orig-colspan', origColspan);
+    }
+    const baseCol = parseInt(origColspan, 10);
+    if (!isNaN(baseCol)) {
+      td.setAttribute('colspan', isHidden ? String(baseCol - 1) : String(baseCol));
+    }
+  });
+
+  // Update quick toggle button text and classes
+  const quickBtn = document.getElementById('btnQuickToggleColumnNotes');
+  if (quickBtn) {
+    quickBtn.innerHTML = isHidden 
+      ? '👁️ ជួរឈរ (ផ្សេងៗ) ៖ <span style="color:#ef4444; font-weight:bold;">លាក់</span>'
+      : '👁️ ជួរឈរ (ផ្សេងៗ) ៖ <span style="color:#16a34a; font-weight:bold;">បង្ហាញ</span>';
+    quickBtn.className = isHidden ? 'btn btn-outline-danger btn-sm' : 'btn btn-outline-success btn-sm';
+  }
+
+  const modalToggle = document.getElementById('toggleReportColNotesCheck');
+  if (modalToggle) {
+    modalToggle.checked = !isHidden;
+  }
+};

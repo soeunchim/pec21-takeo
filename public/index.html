@@ -630,6 +630,14 @@
             📥 ទាញយកជា Excel (.xlsx)
           </button>
           <!-- Row Height Controller (Expand & Shrink all rows across all reports - supports decimals like 1.5) -->
+          <!-- Quick Column Notes Toggle Button -->
+          <button type="button" id="btnQuickToggleColumnNotes" class="btn btn-outline-success btn-sm" style="padding: 3px 10px; font-size: 11.5px;" title="ចុចដើម្បីលាក់ ឬបង្ហាញជួរឈរ (ផ្សេងៗ) យ៉ាងរហ័ស" onclick="quickToggleColumnNotes()">
+            👁️ ជួរឈរ (ផ្សេងៗ) ៖ <span style="font-weight: bold;">បង្ហាញ</span>
+          </button>
+          <!-- Report Customization Button (Text Edit, Drag Boxes, Columns) -->
+          <button type="button" id="btnOpenReportCustomizeModal" class="btn btn-outline-primary btn-sm" style="padding: 3px 11px; font-size: 11.5px; font-weight: 600;" title="កំណត់ការកែប្រែអក្សរ ផ្លាស់ទីប្លុក និងជួរឈរ" onclick="openReportCustomizeModal()">
+            ⚙️ កំណត់ការកែប្រែ & ជួរឈរ
+          </button>
           <div class="report-row-height-controller no-print" style="display: flex; align-items: center; gap: 4px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 6px; padding: 2px 7px;" title="ពង្រីក ឬបង្រួមកម្ពស់ជួរដេកនៃតារាង (Row Height)">
             <span style="font-size: 11.5px; font-weight: 700; color: #1e40af; white-space: nowrap;">↕️ កម្ពស់ជួរដេក ៖</span>
             <button type="button" id="btnShrinkReportRows" class="btn btn-outline btn-xs" style="padding: 1px 6px; font-size: 11px; font-weight: bold; border-color: #93c5fd; background: #ffffff; color: #1e40af;" title="បង្រួមកម្ពស់ជួរដេក (Shrink -0.5px)">➖ បង្រួម</button>
@@ -1551,6 +1559,80 @@
   <!-- =========================================================================
        MODERN ELEGANT POPUP DIALOG (Replaces native browser alert & confirm)
        ========================================================================= -->
+  
+  <!-- =========================================================================
+       REPORT CUSTOMIZATION & COLUMN CONTROLS MODAL
+       ========================================================================= -->
+  <div id="modalReportCustomization" class="modal-overlay">
+    <div class="modal-content" style="max-width: 540px; width: 95%; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25); background: #ffffff;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px;">
+          ⚙️ កំណត់ការកែប្រែ & ជួរឈររបាយការណ៍
+        </h3>
+        <button type="button" class="close-btn" onclick="closeModal('modalReportCustomization')" style="background: transparent; border: none; font-size: 24px; color: white; cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 18px 20px; max-height: 75vh; overflow-y: auto; background: #f8fafc;">
+        <!-- Option 1: Direct Text Edit -->
+        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <label style="display: flex; align-items: flex-start; justify-content: space-between; cursor: pointer; user-select: none;">
+            <div style="padding-right: 12px;">
+              <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>✏️</span> កែប្រែអក្សរទាំងអស់លើរបាយការណ៍ (Full Text Edit)
+              </div>
+              <div style="font-size: 11.5px; color: #64748b; line-height: 1.5; margin-top: 4px;">
+                អនុញ្ញាតឱ្យចុច Mouse លើក្រឡាតារាងទាំងអស់ ចំណងជើង ក្បាលសំបុត្រ និងឈ្មោះបេក្ខជន ដើម្បីវាយកែប្រែអក្សរដោយសេរីមុនពេលបោះពុម្ព។
+              </div>
+            </div>
+            <input type="checkbox" id="toggleReportFullEditModeCheck" style="width: 22px; height: 22px; cursor: pointer; accent-color: #2563eb; margin-top: 2px;" onchange="toggleReportFullEditMode(this.checked)">
+          </label>
+        </div>
+
+        <!-- Option 2: Drag & Move Sections -->
+        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <label style="display: flex; align-items: flex-start; justify-content: space-between; cursor: pointer; user-select: none;">
+            <div style="padding-right: 12px;">
+              <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>🖐️</span> បង្ហាញចំណុចទាញផ្លាស់ទីប្លុក (Drag Handles)
+              </div>
+              <div style="font-size: 11.5px; color: #64748b; line-height: 1.5; margin-top: 4px;">
+                បង្ហាញចំណុចទាញពណ៌ខៀវជាប់រហូតលើ Logo, ស្ថាប័ន, ជាតិ, ចំណងជើង និងហត្ថលេខា ដើម្បីងាយស្រួលចុចអូស Mouse (Drag) ផ្លាស់ប្តូរទីតាំង។
+              </div>
+            </div>
+            <input type="checkbox" id="toggleReportDragHandlesCheck" style="width: 22px; height: 22px; cursor: pointer; accent-color: #2563eb; margin-top: 2px;" onchange="toggleReportDragMode(this.checked)">
+          </label>
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="resetAllDraggableBoxes()" style="font-size: 11px; padding: 4px 10px; color: #b91c1c; border-color: #fca5a5; background: #fff5f5; font-weight: 600;" title="កំណត់ទីតាំងដើមឡើងវិញសម្រាប់ប្លុកទាំងអស់">
+              ↺ កំណត់ទីតាំងដើមទាំងអស់ឡើងវិញ (Reset All)
+            </button>
+          </div>
+        </div>
+
+        <!-- Option 3: Column "ផ្សេងៗ" Visibility -->
+        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <label style="display: flex; align-items: flex-start; justify-content: space-between; cursor: pointer; user-select: none;">
+            <div style="padding-right: 12px;">
+              <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>👁️</span> បង្ហាញជួរឈរ "ផ្សេងៗ" ក្នុងតារាង
+              </div>
+              <div style="font-size: 11.5px; color: #64748b; line-height: 1.5; margin-top: 4px;">
+                ដោះធីក (Uncheck) ដើម្បីលាក់ជួរឈរ "ផ្សេងៗ" ចេញពីតារាងរបាយការណ៍ទាំង ៦ និងពីឯកសារ Excel ពេលទាញយក។
+              </div>
+            </div>
+            <input type="checkbox" id="toggleReportColNotesCheck" style="width: 22px; height: 22px; cursor: pointer; accent-color: #16a34a; margin-top: 2px;" onchange="toggleReportColumnNotes(this.checked)">
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 10px 18px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11.5px; color: #64748b;">✨ ការកំណត់រក្សាទុកស្វ័យប្រវត្តិតាមឧបករណ៍</span>
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeModal('modalReportCustomization')" style="padding: 6px 18px; font-weight: 700;">
+          យល់ព្រម / រក្សាទុក
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="modernPopupOverlay" class="modern-popup-overlay" role="dialog" aria-modal="true">
     <div class="modern-popup-card">
       <div class="modern-popup-icon-wrapper" id="modernPopupIcon">
@@ -1579,6 +1661,6 @@
   <!-- Standalone Offline QR Code Library -->
   <script src="js/qrcode.min.js"></script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261019_report_exact_rows_v74"></script>
+  <script src="js/app.js?v=20261020_report_custom_v75"></script>
 </body>
 </html>

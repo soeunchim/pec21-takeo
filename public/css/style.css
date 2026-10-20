@@ -3091,3 +3091,50 @@ tr.excel-row-active td.excel-calc-rank {
 
 
 
+
+
+/* ==============================================================================
+   Report Customization & Editing Engine (កែប្រែអក្សរ, ផ្លាស់ទីប្លុក, លាក់/បង្ហាញ ផ្សេងៗ)
+   ============================================================================== */
+.hide-col-notes .col-notes {
+  display: none !important;
+}
+
+.show-all-drag-handles .report-box-drag-handle {
+  display: inline-flex !important;
+}
+
+.show-all-drag-handles .report-draggable-box {
+  outline: 1.5px dashed #3b82f6 !important;
+  outline-offset: 3px !important;
+}
+
+/* Full Text Edit Mode Styles */
+.report-full-edit-mode [contenteditable="true"] {
+  outline: 1.5px dashed #3b82f6 !important;
+  outline-offset: 1px !important;
+  cursor: text !important;
+  transition: background-color 0.15s ease, outline-color 0.15s ease !important;
+}
+
+.report-full-edit-mode [contenteditable="true"]:hover {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  outline-color: #1d4ed8 !important;
+}
+
+.report-full-edit-mode [contenteditable="true"]:focus {
+  outline: 2px solid #2563eb !important;
+  background-color: #fef08a !important;
+}
+
+@media print {
+  .report-full-edit-mode [contenteditable="true"] {
+    outline: none !important;
+    background-color: transparent !important;
+  }
+  .report-box-drag-handle,
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
