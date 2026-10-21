@@ -6615,10 +6615,31 @@ function buildReportLetterheadHtml(ps, reportType = '') {
           <!-- Column 1 (35%): Logo on Top, Box 1 (Left Institution Header) Situated Underneath Logo, Left-Aligned -->
           <td style="width: 35%; border: none !important; vertical-align: top; padding: 0; text-align: left;">
             <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%;">
-              <!-- Logo Container (Drag with Mouse handle or Alt-drag, Click image to change) -->
-              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 2px;">
-                <div id="reportLogoContainer" style="display: inline-block; transform: translate(${logoCfg.x}px, ${logoCfg.y}px); cursor: grab;" title="ចុចរូបភាពដើម្បីប្តូរ Logo ឬអូស Mouse ដើម្បីរំកិលទីតាំង">
-                  <img id="reportLogoImg" src="${currentLogoUrl}" alt="NEC Logo" style="max-width: ${logoCfg.size}px; max-height: ${logoCfg.size}px; width: auto; height: auto; object-fit: contain; display: block;">
+              <!-- Logo Container (Interactive Resize handles, Wheel zoom, Toolbar, and Drag) -->
+              <div class="report-logo-wrapper" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 2px; position: relative;">
+                <div id="reportLogoContainer" class="report-logo-interactive-container" style="display: inline-block; position: relative; transform: translate(${logoCfg.x}px, ${logoCfg.y}px);" title="រំកិលកង់ Mouse ឬចុចប៊ូតុង ➕ ➖ ឬអូសជ្រុង ដើម្បីបង្រីកពង្រួម Logo">
+                  <!-- Floating Quick Toolbar directly on Logo -->
+                  <div class="logo-floating-toolbar no-print" contenteditable="false">
+                    <button type="button" class="logo-tool-btn logo-btn-shrink" title="បង្រួមទំហំ Logo (-4px)">➖</button>
+                    <span class="logo-size-badge" title="ទំហំ Logo បច្ចុប្បន្ន">${logoCfg.size}px</span>
+                    <button type="button" class="logo-tool-btn logo-btn-grow" title="ពង្រីកទំហំ Logo (+4px)">➕</button>
+                    <button type="button" class="logo-tool-btn logo-btn-reset" title="កំណត់ទំហំដើម 72px">↺</button>
+                    <button type="button" class="logo-tool-btn logo-btn-upload" title="ផ្លាស់ប្តូររូបភាព Logo (Upload ថ្មី)">📷</button>
+                  </div>
+
+                  <img id="reportLogoImg" class="report-logo-img" src="${currentLogoUrl}" alt="NEC Logo" style="max-width: ${logoCfg.size}px; max-height: ${logoCfg.size}px; width: auto; height: auto; object-fit: contain; display: block; user-select: none;">
+
+                  <!-- Interactive Corner & Edge Resize Handles (Direct Drag-to-Resize on Logo) -->
+                  <div class="logo-resize-handle logo-handle-br no-print" data-dir="br" title="ចុចហើយអូស Mouse ដើម្បីបង្រីក/ពង្រួម Logo"></div>
+                  <div class="logo-resize-handle logo-handle-bl no-print" data-dir="bl" title="ចុចហើយអូស Mouse ដើម្បីបង្រីក/ពង្រួម Logo"></div>
+                  <div class="logo-resize-handle logo-handle-tr no-print" data-dir="tr" title="ចុចហើយអូស Mouse ដើម្បីបង្រីក/ពង្រួម Logo"></div>
+                  <div class="logo-resize-handle logo-handle-tl no-print" data-dir="tl" title="ចុចហើយអូស Mouse ដើម្បីបង្រីក/ពង្រួម Logo"></div>
+                  <div class="logo-resize-handle logo-handle-mr no-print" data-dir="mr" title="ចុចហើយអូស Mouse ដើម្បីបង្រីក/ពង្រួម Logo"></div>
+                  <div class="logo-resize-handle logo-handle-mb no-print" data-dir="mb" title="ចុចហើយអូស Mouse ដើម្បីបង្រីក/ពង្រួម Logo"></div>
+
+                  <!-- Live Float Indicator during resize or wheel zoom -->
+                  <div class="logo-resize-indicator no-print"></div>
+
                   <input type="file" id="reportLogoFileInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display: none;">
                 </div>
               </div>
@@ -6674,118 +6695,213 @@ function setupReportLogoInteractions() {
   const logoContainer = document.getElementById('reportLogoContainer');
   const logoImg = document.getElementById('reportLogoImg');
   const fileInput = document.getElementById('reportLogoFileInput');
-  const btnUpload = document.getElementById('btnUploadReportLogo');
-  const sizeSlider = document.getElementById('reportLogoSizeSlider');
-  const xSlider = document.getElementById('reportLogoXSlider');
-  const ySlider = document.getElementById('reportLogoYSlider');
-  const btnReset = document.getElementById('btnResetReportLogo');
 
   if (!logoContainer || !logoImg) return;
 
-  const cfg = getReportLogoConfig();
+  const getRep = () => (typeof window.getActiveReportType === 'function' ? window.getActiveReportType() : '') || 'sortlist';
+  const cfg = (typeof getReportLogoConfig === 'function') ? getReportLogoConfig(getRep()) : { size: 72, x: 0, y: 0 };
+  const currentSize = (typeof window.getReportLogoSize === 'function') ? window.getReportLogoSize(getRep()) : cfg.size;
 
-  const applyConfig = () => {
-    logoImg.style.maxWidth = `${cfg.size}px`;
-    logoImg.style.maxHeight = `${cfg.size}px`;
-    logoImg.style.width = 'auto';
-    logoImg.style.height = 'auto';
-    logoImg.style.objectFit = 'contain';
-    logoContainer.style.transform = `translate(${cfg.x}px, ${cfg.y}px)`;
-    if (sizeSlider) sizeSlider.value = cfg.size;
-    if (xSlider) xSlider.value = cfg.x;
-    if (ySlider) ySlider.value = cfg.y;
-    saveReportLogoConfig(cfg);
+  const indicator = logoContainer.querySelector('.logo-resize-indicator');
+  let indicatorTimer = null;
+  const showIndicator = (size) => {
+    if (!indicator) return;
+    indicator.textContent = 'ទំហំ: ' + size + 'px';
+    indicator.classList.add('visible');
+    clearTimeout(indicatorTimer);
+    indicatorTimer = setTimeout(() => {
+      indicator.classList.remove('visible');
+    }, 900);
   };
+
+  // 1. Mouse Wheel Zoom directly on Logo
+  logoContainer.onwheel = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rep = getRep();
+    const cur = (typeof window.getReportLogoSize === 'function') ? window.getReportLogoSize(rep) : 72;
+    const delta = e.deltaY < 0 ? 3 : -3;
+    const newSize = Math.max(30, Math.min(220, cur + delta));
+    if (typeof window.applyReportLogoSize === 'function') {
+      window.applyReportLogoSize(newSize, rep);
+    }
+    showIndicator(newSize);
+  };
+
+  // 2. Toolbar Buttons directly on Logo
+  const btnShrink = logoContainer.querySelector('.logo-btn-shrink');
+  const btnGrow = logoContainer.querySelector('.logo-btn-grow');
+  const btnReset = logoContainer.querySelector('.logo-btn-reset');
+  const btnUpload = logoContainer.querySelector('.logo-btn-upload');
+
+  if (btnShrink) {
+    btnShrink.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const rep = getRep();
+      if (typeof window.changeReportLogoSize === 'function') {
+        window.changeReportLogoSize(-4, rep);
+      }
+      const cur = (typeof window.getReportLogoSize === 'function') ? window.getReportLogoSize(rep) : 72;
+      showIndicator(cur);
+    };
+  }
+
+  if (btnGrow) {
+    btnGrow.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const rep = getRep();
+      if (typeof window.changeReportLogoSize === 'function') {
+        window.changeReportLogoSize(4, rep);
+      }
+      const cur = (typeof window.getReportLogoSize === 'function') ? window.getReportLogoSize(rep) : 72;
+      showIndicator(cur);
+    };
+  }
+
+  if (btnReset) {
+    btnReset.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const rep = getRep();
+      if (typeof window.resetReportLogoSize === 'function') {
+        window.resetReportLogoSize(rep);
+      }
+      showIndicator(72);
+    };
+  }
 
   if (btnUpload && fileInput) {
     btnUpload.onclick = (e) => {
       e.stopPropagation();
+      e.preventDefault();
       fileInput.click();
     };
   }
 
-  logoImg.onclick = () => {
-    if (!logoContainer.dataset.wasDragged && fileInput) {
-      fileInput.click();
-    }
-    delete logoContainer.dataset.wasDragged;
-  };
-
+  // 3. File input change
   if (fileInput) {
     fileInput.onchange = (e) => {
       const file = e.target.files && e.target.files[0];
-      if (file) {
+      if (file && typeof handleLogoUpload === 'function') {
         handleLogoUpload(file);
       }
     };
   }
 
-  if (sizeSlider) {
-    sizeSlider.oninput = (e) => {
-      cfg.size = parseInt(e.target.value, 10) || 72;
-      applyConfig();
-    };
-  }
-
-  if (xSlider) {
-    xSlider.oninput = (e) => {
-      cfg.x = parseInt(e.target.value, 10) || 0;
-      applyConfig();
-    };
-  }
-
-  if (ySlider) {
-    ySlider.oninput = (e) => {
-      cfg.y = parseInt(e.target.value, 10) || 0;
-      applyConfig();
-    };
-  }
-
-  let isDragging = false;
-  let startX = 0;
-  let startY = 0;
-  let initialCfgX = 0;
-  let initialCfgY = 0;
-
-  logoContainer.onmousedown = (e) => {
-    if (e.target.tagName === 'INPUT') return;
-    isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    initialCfgX = cfg.x;
-    initialCfgY = cfg.y;
-    logoContainer.style.cursor = 'grabbing';
-    e.preventDefault();
+  // 4. Double-click on Logo image to upload
+  logoImg.ondblclick = (e) => {
+    e.stopPropagation();
+    if (fileInput) fileInput.click();
   };
 
-  window.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-      logoContainer.dataset.wasDragged = 'true';
-    }
-    cfg.x = Math.max(-60, Math.min(100, initialCfgX + dx));
-    cfg.y = Math.max(-40, Math.min(80, initialCfgY + dy));
-    applyConfig();
-  });
+  // Click on logo selects it (adds dashed border & keeps controls active)
+  logoContainer.onclick = (e) => {
+    if (e.target.closest('.logo-floating-toolbar') || e.target.closest('.logo-resize-handle')) return;
+    logoContainer.classList.add('is-active-selected');
+  };
 
-  window.addEventListener('mouseup', () => {
-    if (isDragging) {
-      isDragging = false;
-      logoContainer.style.cursor = 'grab';
+  document.addEventListener('click', (e) => {
+    if (!logoContainer.contains(e.target)) {
+      logoContainer.classList.remove('is-active-selected');
     }
   });
 
-  if (btnReset) {
-    btnReset.onclick = (e) => {
+  // 5. Direct Drag-to-Resize on Logo Handles (Corner & Edge)
+  logoContainer.querySelectorAll('.logo-resize-handle').forEach(handle => {
+    handle.onmousedown = (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      cfg.size = 72;
-      cfg.x = 0;
-      cfg.y = 0;
-      applyConfig();
+      const dir = handle.dataset.dir;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const rep = getRep();
+      const startSize = (typeof window.getReportLogoSize === 'function') ? window.getReportLogoSize(rep) : 72;
+
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = window.getComputedStyle(handle).cursor;
+      logoContainer.classList.add('is-resizing');
+
+      const onMouseMove = (ev) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        let delta = 0;
+        if (dir === 'br' || dir === 'mr' || dir === 'mb') {
+          delta = Math.max(dx, dy);
+        } else if (dir === 'tl') {
+          delta = -Math.max(dx, dy);
+        } else if (dir === 'tr') {
+          delta = Math.max(dx, -dy);
+        } else if (dir === 'bl') {
+          delta = Math.max(-dx, dy);
+        }
+        const newSize = Math.max(30, Math.min(220, Math.round(startSize + delta)));
+        if (typeof window.applyReportLogoSize === 'function') {
+          window.applyReportLogoSize(newSize, rep);
+        }
+        showIndicator(newSize);
+      };
+
+      const onMouseUp = () => {
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        logoContainer.classList.remove('is-resizing');
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        const cur = (typeof window.getReportLogoSize === 'function') ? window.getReportLogoSize(rep) : 72;
+        if (typeof showSaveSuccessToast === 'function') {
+          showSaveSuccessToast('បានរក្សាទុកទំហំ Logo: ' + cur + 'px');
+        }
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
     };
-  }
+  });
+
+  // 6. Move/Drag position (only when drag handles are active or Alt key is held)
+  let isDraggingPos = false;
+  let startPosX = 0;
+  let startPosY = 0;
+  let initialCfgX = cfg.x || 0;
+  let initialCfgY = cfg.y || 0;
+
+  logoContainer.onmousedown = (e) => {
+    if (e.target.closest('.logo-floating-toolbar') || e.target.closest('.logo-resize-handle') || e.target.tagName === 'INPUT') return;
+    const dragEnabled = (localStorage.getItem('report_drag_handles_visible') === 'true') || e.altKey;
+    if (!dragEnabled) return;
+
+    isDraggingPos = true;
+    startPosX = e.clientX;
+    startPosY = e.clientY;
+    initialCfgX = cfg.x || 0;
+    initialCfgY = cfg.y || 0;
+    logoContainer.style.cursor = 'grabbing';
+    e.preventDefault();
+
+    const onPosMove = (ev) => {
+      if (!isDraggingPos) return;
+      const dx = ev.clientX - startPosX;
+      const dy = ev.clientY - startPosY;
+      cfg.x = Math.max(-60, Math.min(100, initialCfgX + dx));
+      cfg.y = Math.max(-40, Math.min(80, initialCfgY + dy));
+      logoContainer.style.transform = 'translate(' + cfg.x + 'px, ' + cfg.y + 'px)';
+      if (typeof saveReportLogoConfig === 'function') saveReportLogoConfig(cfg);
+    };
+
+    const onPosUp = () => {
+      if (isDraggingPos) {
+        isDraggingPos = false;
+        logoContainer.style.cursor = '';
+      }
+      window.removeEventListener('mousemove', onPosMove);
+      window.removeEventListener('mouseup', onPosUp);
+    };
+
+    window.addEventListener('mousemove', onPosMove);
+    window.addEventListener('mouseup', onPosUp);
+  };
 }
 
 async function renderReportPreview() {
@@ -12059,7 +12175,7 @@ window.applyReportLogoSize = function(sizePx, reportType) {
       img.style.width = 'auto';
       img.style.height = 'auto';
     });
-    container.querySelectorAll('.badge-logo-size').forEach(b => {
+    container.querySelectorAll('.badge-logo-size, .logo-size-badge').forEach(b => {
       b.textContent = `${s}px`;
     });
   }

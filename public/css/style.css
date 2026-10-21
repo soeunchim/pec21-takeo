@@ -3305,3 +3305,206 @@ span.custom-sized-text {
     display: none !important;
   }
 }
+
+
+/* ==============================================================================
+   Interactive Logo Direct Resizing (Direct on Image: Handles, Wheel, Toolbar)
+   ============================================================================== */
+.report-logo-interactive-container {
+  position: relative !important;
+  display: inline-block !important;
+  transition: box-shadow 0.15s ease, outline 0.15s ease;
+  user-select: none;
+}
+
+.report-logo-interactive-container:hover,
+.report-logo-interactive-container.is-active-selected,
+.report-logo-interactive-container.is-resizing {
+  outline: 2px dashed #2563eb !important;
+  outline-offset: 3px !important;
+  border-radius: 4px;
+}
+
+/* Floating Quick Toolbar directly above Logo */
+.logo-floating-toolbar {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 4px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 1050;
+  white-space: nowrap;
+  pointer-events: auto;
+  border: 1px solid #334155;
+  animation: logoToolbarFadeIn 0.15s ease forwards;
+}
+
+@keyframes logoToolbarFadeIn {
+  from { opacity: 0; transform: translate(-50%, 5px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.report-logo-interactive-container:hover .logo-floating-toolbar,
+.report-logo-interactive-container.is-active-selected .logo-floating-toolbar,
+.report-logo-interactive-container.is-resizing .logo-floating-toolbar,
+.show-all-drag-handles .report-logo-interactive-container .logo-floating-toolbar {
+  display: flex !important;
+}
+
+.logo-floating-toolbar .logo-tool-btn {
+  background: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  border-radius: 12px;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.logo-floating-toolbar .logo-tool-btn:hover {
+  background: #2563eb;
+  border-color: #3b82f6;
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.logo-floating-toolbar .logo-tool-btn:active {
+  transform: scale(0.95);
+}
+
+.logo-floating-toolbar .logo-size-badge {
+  font-size: 11px;
+  font-family: Consolas, monospace;
+  font-weight: 800;
+  color: #38bdf8;
+  padding: 0 4px;
+  min-width: 36px;
+  text-align: center;
+  user-select: none;
+}
+
+/* 4 Corner & 2 Edge Resize Handles */
+.logo-resize-handle {
+  position: absolute !important;
+  width: 12px !important;
+  height: 12px !important;
+  background: #2563eb !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+  display: none !important;
+  z-index: 1040 !important;
+  transition: transform 0.1s ease, background 0.15s ease !important;
+}
+
+.logo-resize-handle:hover {
+  background: #1d4ed8 !important;
+  transform: scale(1.3) !important;
+}
+
+.report-logo-interactive-container:hover .logo-resize-handle,
+.report-logo-interactive-container.is-active-selected .logo-resize-handle,
+.report-logo-interactive-container.is-resizing .logo-resize-handle,
+.show-all-drag-handles .report-logo-interactive-container .logo-resize-handle {
+  display: block !important;
+}
+
+.logo-handle-br {
+  right: -6px !important;
+  bottom: -6px !important;
+  cursor: nwse-resize !important;
+}
+
+.logo-handle-bl {
+  left: -6px !important;
+  bottom: -6px !important;
+  cursor: nesw-resize !important;
+}
+
+.logo-handle-tr {
+  right: -6px !important;
+  top: -6px !important;
+  cursor: nesw-resize !important;
+}
+
+.logo-handle-tl {
+  left: -6px !important;
+  top: -6px !important;
+  cursor: nwse-resize !important;
+}
+
+.logo-handle-mr {
+  right: -6px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  cursor: ew-resize !important;
+}
+
+.logo-handle-mr:hover {
+  transform: translateY(-50%) scale(1.3) !important;
+}
+
+.logo-handle-mb {
+  bottom: -6px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  cursor: ns-resize !important;
+}
+
+.logo-handle-mb:hover {
+  transform: translateX(-50%) scale(1.3) !important;
+}
+
+/* Floating Live Indicator Badge */
+.logo-resize-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.85);
+  color: #38bdf8;
+  font-family: Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 1060;
+  white-space: nowrap;
+}
+
+.logo-resize-indicator.visible {
+  opacity: 1;
+}
+
+@media print {
+  .logo-floating-toolbar,
+  .logo-resize-handle,
+  .logo-resize-indicator,
+  .report-logo-resize-corner {
+    display: none !important;
+  }
+  .report-logo-interactive-container {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
