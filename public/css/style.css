@@ -2827,7 +2827,7 @@ tr.excel-row-active td.excel-calc-rank {
   transition: transform 0.05s ease-out;
 }
 
-.report-draggable-box:hover {
+.show-all-drag-handles .report-draggable-box:hover {
   outline: 1.5px dashed #3b82f6 !important;
   outline-offset: 3px !important;
 }
@@ -2882,9 +2882,14 @@ tr.excel-row-active td.excel-calc-rank {
   background: #1e40af !important;
 }
 
-.report-draggable-box:hover > .report-box-drag-handle,
-.report-box-drag-handle.is-dragging {
+.show-all-drag-handles .report-draggable-box:hover > .report-box-drag-handle,
+.show-all-drag-handles .report-box-drag-handle,
+.show-all-drag-handles .report-box-drag-handle.is-dragging {
   display: inline-flex !important;
+}
+
+#printContainer:not(.show-all-drag-handles) .report-box-drag-handle {
+  display: none !important;
 }
 
 .report-box-reset-btn {
@@ -3137,4 +3142,14 @@ tr.excel-row-active td.excel-calc-rank {
     display: none !important;
     visibility: hidden !important;
   }
+}
+
+/* Strictly lock editing when full edit mode is not selected */
+#printContainer:not(.report-full-edit-mode) [contenteditable],
+#printContainer:not(.report-full-edit-mode) [contenteditable="true"],
+#printContainer:not(.report-full-edit-mode) [contenteditable="false"] {
+  outline: none !important;
+  cursor: default !important;
+  -webkit-user-modify: read-only !important;
+  user-select: text !important;
 }

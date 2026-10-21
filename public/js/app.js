@@ -6616,7 +6616,7 @@ function buildReportLetterheadHtml(ps, reportType = '') {
                 </div>
               </div>
               <!-- Box 1 (Left Institution Header): Left-aligned, Font Khmer OS Muol Light, Size: 10pt -->
-              <div class="report-inst-header-box" data-report-type="${reportType || ''}" contenteditable="true" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
+              <div class="report-inst-header-box" data-report-type="${reportType || ''}" contenteditable="false" spellcheck="false" title="ប្រអប់ទី១ ៖ អាចកែសម្រួលអត្ថបទបាន">
                 ${instBoxContent}
               </div>
             </div>
@@ -6626,7 +6626,7 @@ function buildReportLetterheadHtml(ps, reportType = '') {
             <div class="report-kingdom-header-box" style="padding-top: 0; white-space: nowrap;">
               <div class="report-kingdom-title">ព្រះរាជាណាចក្រកម្ពុជា</div>
               <div class="report-kingdom-title">ជាតិ  សាសនា  ព្រះមហាក្សត្រ</div>
-              <div class="report-tacteing-emblem" contenteditable="true" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">${localStorage.getItem('report_custom_tacteing') || '5'}</div>
+              <div class="report-tacteing-emblem" contenteditable="false" spellcheck="false" title="និមិត្តសញ្ញា Font Tacteing (Size: 18pt) - អាចកែសម្រួលបាន">${localStorage.getItem('report_custom_tacteing') || '5'}</div>
             </div>
           </td>
           <!-- Column 3 (35%): Right Spacer to balance Box 2 in the exact center of A4 paper -->
@@ -6642,7 +6642,7 @@ function buildReportTitleBoxHtml(ps, titleText, customSubHtml) {
   const savedCustomTitle = localStorage.getItem('report_custom_title_' + currentReportType);
   if (savedCustomTitle && savedCustomTitle.trim()) {
     return `
-      <div class="report-title-section report-title-box report-draggable-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+      <div class="report-title-section report-title-box report-draggable-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
         ${savedCustomTitle}
       </div>
     `;
@@ -6655,7 +6655,7 @@ function buildReportTitleBoxHtml(ps, titleText, customSubHtml) {
   const subHtml = customSubHtml || `<div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>`;
 
   return `
-    <div class="report-title-section report-title-box report-draggable-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+    <div class="report-title-section report-title-box report-draggable-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
       <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">${titleText}</div>
       ${subHtml}
       <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">លេខកូដការិយាល័យ ៖ ${psCodeKhmer}</div>
@@ -7074,7 +7074,7 @@ async function renderReportPreview() {
       });
 
       const sortlistScopeTitleBoxHtml = `
-        <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+        <div class="report-title-section report-title-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">តារាងសម្រាំងបេក្ខជនសម្រាប់ការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
@@ -7228,7 +7228,7 @@ async function renderReportPreview() {
 
     const noticeSubHtml = `
       <div style="font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important; font-size: 11pt !important; line-height: 1.6; color: #000; text-align: justify !important; text-justify: inter-word !important; margin: 4px 0 2px 0; width: 100%;">
-        បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍ នៅ<span class="report-editable-notice-place" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលទីកន្លែងសម្ភាសន៍">${interviewPlace}</span> នាថ្ងៃទី<span class="report-editable-notice-date" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសម្ភាសន៍">${solarDateFormatted}</span> វេលាម៉ោង <span class="report-editable-notice-time" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលម៉ោងសម្ភាសន៍">${interviewTime}</span> តទៅ។
+        បេក្ខជនដែលបានដាក់ពាក្យសុំចូលបម្រើការងារជាមន្ត្រី គ.ក.ប ដូចមានរាយនាមខាងក្រោម ត្រូវមកធ្វើសម្ភាសន៍ នៅ<span class="report-editable-notice-place" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលទីកន្លែងសម្ភាសន៍">${interviewPlace}</span> នាថ្ងៃទី<span class="report-editable-notice-date" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសម្ភាសន៍">${solarDateFormatted}</span> វេលាម៉ោង <span class="report-editable-notice-time" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលម៉ោងសម្ភាសន៍">${interviewTime}</span> តទៅ។
       </div>
     `;
 
@@ -7311,7 +7311,7 @@ async function renderReportPreview() {
     });
 
     const titleBoxHtml = isAllStations ? `
-      <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+      <div class="report-title-section report-title-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">សេចក្ដីជូនដំណឹង</div>
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
@@ -7427,7 +7427,7 @@ async function renderReportPreview() {
     });
 
     const titleBoxHtml = isAllStations ? `
-      <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+      <div class="report-title-section report-title-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">បញ្ជីវត្តមានសម្ភាសន៍ ជ្រើសរើស គ.ក.ប</div>
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
@@ -7568,7 +7568,7 @@ async function renderReportPreview() {
     });
 
     const titleBoxHtml = isAllStations ? `
-      <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+      <div class="report-title-section report-title-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">តារាងស្រង់ពិន្ទុនៃការជ្រើសរើស គ.ក.ប</div>
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
         <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
@@ -7725,7 +7725,7 @@ async function renderReportPreview() {
       });
 
       const communeTitleBoxHtml = `
-        <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
+        <div class="report-title-section report-title-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 1px 0 4px 0;" title="ប្រអប់ទី៣ ៖ ចំណងជើងអាចកែសម្រួលបាន">
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 2px; text-align: center;">លទ្ធផលនៃការសម្ភាសន៍ជ្រើសរើស គ.ក.ប</div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; margin-top: 3px; color: #000; text-align: center;">${scopeBoxTitle}</div>
@@ -8008,7 +8008,7 @@ async function renderReportPreview() {
     reportContentHtml = `
       <div class="print-paper-sheet">
         ${buildReportLetterheadHtml(ps, 'final_roster')}
-        <div class="report-title-section report-title-box" contenteditable="true" spellcheck="false" style="text-align: center; margin: 4px 0 6px 0;" title="ចំណងជើងរបាយការណ៍ ៖ អាចកែសម្រួលបាន">
+        <div class="report-title-section report-title-box" contenteditable="false" spellcheck="false" style="text-align: center; margin: 4px 0 6px 0;" title="ចំណងជើងរបាយការណ៍ ៖ អាចកែសម្រួលបាន">
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 13pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">បញ្ជីរាយនាម</div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 12pt !important; font-weight: normal !important; color: #000; margin-bottom: 4px; text-align: center;">សមាសភាពគណៈកម្មការការិយាល័យបោះឆ្នោត ( គ.ក.ប )</div>
           <div style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 11pt !important; font-weight: normal !important; color: #000; text-align: center;">${mandateText}</div>
@@ -8225,7 +8225,7 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
     const committeeListHtml = (savedList !== null && savedList.trim() !== '') ? savedList : defaultList;
 
     signatureContent = `
-        <div class="editable-sig-committee" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលចំណងជើងគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
+        <div class="editable-sig-committee" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលចំណងជើងគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 8px; color: #000; text-align: center;">
           ${committeeTitle}
         </div>
         <div class="committee-signatures editable-sig-committee-list" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលសមាសភាពគណៈកម្មការ" style="display: inline-block; text-align: left; font-size: 9.5pt; line-height: 2.1; margin: 0 auto; white-space: nowrap;">
@@ -8240,10 +8240,10 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
     const roleTitle = (savedRole !== null && savedRole.trim() !== '') ? savedRole : 'ប្រធាន';
 
     signatureContent = `
-        <div class="editable-sig-committee" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 4px; color: #000; text-align: center;">
+        <div class="editable-sig-committee" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលគណៈកម្មការ" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 4px; color: #000; text-align: center;">
           ${committeeTitle}
         </div>
-        <div class="editable-sig-role" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលមុខតំណែង" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 35px; color: #000; text-align: center;">
+        <div class="editable-sig-role" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលមុខតំណែង" style="font-family: 'Khmer OS Muol Light', 'Khmer OS Muol', serif !important; font-size: 10.5pt !important; font-weight: normal !important; margin-bottom: 35px; color: #000; text-align: center;">
           ${roleTitle}
         </div>
     `;
@@ -8253,10 +8253,10 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
     return `
       <div class="signature-section" style="margin-top: 8px; width: 100%; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid;">
         <div class="signature-box signature-box-right" style="width: auto; min-width: 380px; margin-left: auto; margin-right: 0; text-align: center; color: #000; font-family: var(--font-body);">
-          <div class="editable-sig-date sig-lunar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center;">
+          <div class="editable-sig-date sig-lunar-date-val" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center;">
             ${dateCfg.lunar}
           </div>
-          <div class="editable-sig-date sig-solar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
+          <div class="editable-sig-date sig-solar-date-val" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
             ${dateCfg.solar}
           </div>
           ${signatureContent}
@@ -8270,10 +8270,10 @@ function getOfficialSignatureBlock(ps, reportType = 'sortlist') {
   return `
     <div class="signature-section" style="margin-top: ${sigTopMargin}; width: 100%; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid;">
       <div class="signature-box signature-box-right" style="width: auto; min-width: 290px; max-width: 350px; margin-left: auto; margin-right: 0; text-align: center; color: #000; font-family: var(--font-body); margin-top: 0; padding-top: 0;">
-        <div class="editable-sig-date sig-lunar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center; white-space: nowrap; margin-top: 0; padding-top: 0;">
+        <div class="editable-sig-date sig-lunar-date-val" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទចន្ទគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 2px; text-align: center; white-space: nowrap; margin-top: 0; padding-top: 0;">
           ${dateCfg.lunar}
         </div>
-        <div class="editable-sig-date sig-solar-date-val" contenteditable="true" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
+        <div class="editable-sig-date sig-solar-date-val" contenteditable="false" spellcheck="false" title="ចុចដើម្បីកែសម្រួលកាលបរិច្ឆេទសុរិយគតិ" style="font-size: 10pt; line-height: 1.4; margin-bottom: 4px; text-align: center;">
           ${dateCfg.solar}
         </div>
         ${signatureContent}
@@ -8518,6 +8518,7 @@ function setupDraggableReportBoxes() {
       if (resetBtn) {
         resetBtn.onmousedown = (e) => e.stopPropagation();
         resetBtn.onclick = (e) => {
+          if (localStorage.getItem('report_drag_handles_visible') !== 'true') return;
           e.stopPropagation();
           e.preventDefault();
           boxEl.style.transform = 'translate(0px, 0px)';
@@ -8582,6 +8583,7 @@ function setupDraggableReportBoxes() {
 
       // Mousedown on handle initiates dragging
       handle.onmousedown = (e) => {
+        if (localStorage.getItem('report_drag_handles_visible') !== 'true') return;
         if (e.target.closest('.report-box-reset-btn')) return;
         e.preventDefault();
         e.stopPropagation();
@@ -8590,6 +8592,7 @@ function setupDraggableReportBoxes() {
 
       // Also allow Alt+drag anywhere on the box
       boxEl.addEventListener('mousedown', (e) => {
+        if (localStorage.getItem('report_drag_handles_visible') !== 'true') return;
         if (e.altKey) {
           e.preventDefault();
           e.stopPropagation();
@@ -11324,15 +11327,19 @@ window.applyReportCustomizationModes = function() {
   const isFullEdit = localStorage.getItem('report_full_edit_mode') === 'true';
   const isDragHandles = localStorage.getItem('report_drag_handles_visible') === 'true';
 
+  // 1. Drag / Move Mode
   if (isDragHandles) {
     container.classList.add('show-all-drag-handles');
   } else {
     container.classList.remove('show-all-drag-handles');
   }
 
+  // 2. Full Text Edit Mode
+  const editableSelectors = 'th, td, .report-inst-header-box, .report-tacteing-emblem, .report-kingdom-header-box, .report-title-box, .report-title-section, .signature-box, .final-roster-bottom-breakdown, .editable-sig-committee, .editable-sig-committee-list, .editable-sig-role, .sig-lunar-date-val, .sig-solar-date-val, .report-editable-notice-place, .report-editable-notice-date, .report-editable-notice-time';
+
   if (isFullEdit) {
     container.classList.add('report-full-edit-mode');
-    container.querySelectorAll('th, td, .report-inst-header-box, .report-kingdom-header-box, .report-title-box, .signature-box, .final-roster-bottom-breakdown').forEach(el => {
+    container.querySelectorAll(editableSelectors).forEach(el => {
       if (!el.classList.contains('report-box-drag-handle') && !el.closest('.report-box-drag-handle')) {
         el.setAttribute('contenteditable', 'true');
         el.setAttribute('spellcheck', 'false');
@@ -11340,12 +11347,31 @@ window.applyReportCustomizationModes = function() {
     });
   } else {
     container.classList.remove('report-full-edit-mode');
-    container.querySelectorAll('th, td, .final-roster-bottom-breakdown').forEach(el => {
-      el.removeAttribute('contenteditable');
+    container.querySelectorAll('[contenteditable]').forEach(el => {
+      if (!el.classList.contains('report-box-drag-handle') && !el.closest('.report-box-drag-handle')) {
+        el.removeAttribute('contenteditable');
+        el.setAttribute('contenteditable', 'false');
+      }
     });
   }
-};
 
+  // 3. Update Toolbar button badge
+  const btnCustomize = document.getElementById('btnOpenReportCustomizeModal');
+  if (btnCustomize) {
+    if (isFullEdit || isDragHandles) {
+      let tags = [];
+      if (isFullEdit) tags.push('កែអក្សរ');
+      if (isDragHandles) tags.push('ផ្លាស់ទី');
+      btnCustomize.innerHTML = `⚙️ កំណត់ការកែប្រែ & ជួរឈរ <span style="background: #ef4444; color: #ffffff; border-radius: 8px; padding: 1px 6px; font-size: 10px; font-weight: bold; margin-left: 4px;">${tags.join('+')}</span>`;
+      btnCustomize.className = 'btn btn-warning btn-sm';
+      btnCustomize.style.borderColor = '#f59e0b';
+    } else {
+      btnCustomize.innerHTML = `⚙️ កំណត់ការកែប្រែ & ជួរឈរ <span style="color: #64748b; font-size: 10px; font-weight: 600;">(ចាក់សោ)</span>`;
+      btnCustomize.className = 'btn btn-outline-primary btn-sm';
+      btnCustomize.style.borderColor = '';
+    }
+  }
+};
 window.applyColumnNotesVisibility = function() {
   const isHidden = localStorage.getItem('report_hide_column_notes') === 'true';
   const container = document.getElementById('printContainer');
