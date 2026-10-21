@@ -11467,6 +11467,11 @@ window.applyReportFontSize = function(fontSizePt) {
 };
 
 window.changeReportFontSize = function(delta) {
+  const sel = window.getSelection();
+  if ((sel && sel.rangeCount && !sel.isCollapsed) || (lastActiveReportTarget && document.getElementById('printContainer')?.contains(lastActiveReportTarget))) {
+    window.adjustSelectionFontSize(delta);
+    return;
+  }
   const rep = window.getActiveReportType();
   const current = window.getSavedReportFontSize(rep);
   window.applyReportFontSize(current + delta);
@@ -11611,5 +11616,274 @@ window.applyColumnNotesVisibility = function() {
   const modalToggle = document.getElementById('toggleReportColNotesCheck');
   if (modalToggle) {
     modalToggle.checked = !isHidden;
+  }
+};
+
+
+
+// ==============================================================================
+// DIRECT SELECTION & TARGETED FONT SIZE CONTROLLER
+// អនុញ្ញាតឱ្យ Select អក្សរ ឬចុចលើក្រឡា/ប្លុកជាក់លាក់ដើម្បីប្តូរទំហំអក្សរផ្ទាល់
+// ==============================================================================
+
+let lastActiveReportTarget = null;
+let isInteractingWithFloatingToolbar = false;
+
+// Track active element clicked/focused inside #printContainer
+document.addEventListener('focusin', (e) => {
+  const container = document.getElementById('printContainer');
+  if (container && container.contains(e.target) && e.target !== container) {
+    lastActiveReportTarget = e.target.closest('td, th, .report-title-box, .report-inst-header-box, .report-kingdom-header-box, .signature-box, .final-roster-bottom-breakdown, .editable-sig-committee, .editable-sig-committee-list, .editable-sig-role, .report-editable-notice-place, .report-editable-notice-date, .report-editable-notice-time');
+    if (lastActiveReportTarget) {
+      updateInputFromTarget(lastActiveReportTarget);
+    }
+  }
+}, true);
+
+document.addEventListener('click', (e) => {
+  const floating = document.getElementById('floatingTextFormatToolbar');
+  if (floating && floating.contains(e.target)) {
+    return;
+  }
+  const container = document.getElementById('printContainer');
+  if (container && container.contains(e.target) && e.target !== container) {
+    lastActiveReportTarget = e.target.closest('td, th, .report-title-box, .report-inst-header-box, .report-kingdom-header-box, .signature-box, .final-roster-bottom-breakdown, .editable-sig-committee, .editable-sig-committee-list, .editable-sig-role, .report-editable-notice-place, .report-editable-notice-date, .report-editable-notice-time');
+    if (lastActiveReportTarget) {
+      updateInputFromTarget(lastActiveReportTarget);
+    }
+  } else {
+    // Clicked outside printContainer and floating toolbar
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        hideFloatingToolbar();
+      }
+    }, 150);
+  }
+}, true);
+
+function updateInputFromTarget(el) {
+  if (!el) return;
+  const styleSize = el.style.fontSize;
+  let parsed = parseFloat(styleSize);
+  if (isNaN(parsed)) {
+    const compSize = window.getComputedStyle(el).fontSize;
+    parsed = Math.round((parseFloat(compSize) * 0.75) * 10) / 10; // px to pt approx
+  }
+  if (!isNaN(parsed) && parsed > 5) {
+    const inpToolbar = document.getElementById('reportFontSizeInput');
+    const inpModal = document.getElementById('modalReportFontSizeInput');
+    if (inpToolbar) inpToolbar.value = parsed;
+    if (inpModal) inpModal.value = parsed;
+  }
+}
+
+// Mouseup & keyup listeners to trigger floating toolbar upon text selection
+document.addEventListener('mouseup', (e) => {
+  const floating = document.getElementById('floatingTextFormatToolbar');
+  if (floating && floating.contains(e.target)) return;
+  setTimeout(handleReportSelectionChange, 10);
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Shift' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    setTimeout(handleReportSelectionChange, 10);
+  }
+});
+
+function handleReportSelectionChange() {
+  const selection = window.getSelection();
+  const floating = document.getElementById('floatingTextFormatToolbar');
+  if (!floating) return;
+
+  if (!selection || selection.isCollapsed || !selection.rangeCount) {
+    hideFloatingToolbar();
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  const container = document.getElementById('printContainer');
+  if (!container || !container.contains(range.commonAncestorContainer)) {
+    hideFloatingToolbar();
+    return;
+  }
+
+  // Ensure selection is not empty text
+  const selectedText = selection.toString().trim();
+  if (!selectedText) {
+    hideFloatingToolbar();
+    return;
+  }
+
+  const rect = range.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) {
+    hideFloatingToolbar();
+    return;
+  }
+
+  // Position floating toolbar right above the selected text
+  const top = rect.top + window.scrollY - 10;
+  const left = rect.left + window.scrollX + (rect.width / 2);
+
+  floating.style.top = `${top}px`;
+  floating.style.left = `${left}px`;
+  floating.style.display = 'flex';
+
+  // Detect current size of selected text
+  let currentPt = 11;
+  const parentCustom = range.commonAncestorContainer.parentElement?.closest('.custom-sized-text, [style*="font-size"]');
+  if (parentCustom) {
+    const pSize = parseFloat(parentCustom.style.fontSize);
+    if (!isNaN(pSize)) currentPt = pSize;
+  }
+  const select = document.getElementById('floatingFontSizeSelect');
+  if (select) {
+    select.value = String(currentPt);
+  }
+}
+
+window.hideFloatingToolbar = function() {
+  const floating = document.getElementById('floatingTextFormatToolbar');
+  if (floating) floating.style.display = 'none';
+};
+
+// Apply font size directly to highlighted selection OR targeted cell
+window.applyFontSizeToSelection = function(sizePt) {
+  let size = parseFloat(sizePt);
+  if (isNaN(size) || size < 6) size = 11;
+  if (size > 28) size = 28;
+  size = Math.round(size * 10) / 10;
+
+  const selection = window.getSelection();
+
+  // 1. Text is highlighted: Style the exact highlighted text
+  if (selection && selection.rangeCount && !selection.isCollapsed) {
+    const range = selection.getRangeAt(0);
+    const container = document.getElementById('printContainer');
+    if (container && container.contains(range.commonAncestorContainer)) {
+      // Check if range is already inside a custom-sized-text span
+      const parentSpan = range.commonAncestorContainer.parentElement?.closest('.custom-sized-text');
+      if (parentSpan && selection.toString().trim() === parentSpan.textContent.trim()) {
+        parentSpan.style.setProperty('font-size', `${size}pt`, 'important');
+      } else {
+        try {
+          const span = document.createElement('span');
+          span.className = 'custom-sized-text';
+          span.style.setProperty('font-size', `${size}pt`, 'important');
+
+          const fragment = range.extractContents();
+          span.appendChild(fragment);
+          range.insertNode(span);
+
+          selection.removeAllRanges();
+          const newRange = document.createRange();
+          newRange.selectNodeContents(span);
+          selection.addRange(newRange);
+        } catch (err) {
+          console.warn('Error wrapping selection:', err);
+        }
+      }
+
+      const select = document.getElementById('floatingFontSizeSelect');
+      if (select) select.value = String(size);
+      const inpToolbar = document.getElementById('reportFontSizeInput');
+      if (inpToolbar) inpToolbar.value = size;
+
+      if (typeof showSaveSuccessToast === 'function') {
+        showSaveSuccessToast(`បានប្តូរទំហំអក្សរដែលបាន Select ទៅ ${size}pt`);
+      }
+      return;
+    }
+  }
+
+  // 2. No text highlighted, but a specific cell or box was clicked/focused
+  if (lastActiveReportTarget && document.getElementById('printContainer')?.contains(lastActiveReportTarget)) {
+    lastActiveReportTarget.style.setProperty('font-size', `${size}pt`, 'important');
+    // Also style any non-criteria child if present
+    lastActiveReportTarget.querySelectorAll(':scope > div, :scope > span').forEach(child => {
+      child.style.setProperty('font-size', `${size}pt`, 'important');
+    });
+
+    const inpToolbar = document.getElementById('reportFontSizeInput');
+    if (inpToolbar) inpToolbar.value = size;
+
+    if (typeof showSaveSuccessToast === 'function') {
+      showSaveSuccessToast(`បានប្តូរទំហំអក្សរនៅទីតាំងនេះទៅ ${size}pt`);
+    }
+    return;
+  }
+
+  // 3. Fallback: Scale all table cells in current report
+  window.applyReportFontSize(size);
+};
+
+window.adjustSelectionFontSize = function(delta) {
+  let currentSize = 11;
+  const select = document.getElementById('floatingFontSizeSelect');
+  if (select && select.value) {
+    currentSize = parseFloat(select.value) || 11;
+  } else if (lastActiveReportTarget && lastActiveReportTarget.style.fontSize) {
+    currentSize = parseFloat(lastActiveReportTarget.style.fontSize) || 11;
+  }
+  window.applyFontSizeToSelection(currentSize + delta);
+};
+
+window.toggleSelectionBold = function() {
+  const selection = window.getSelection();
+  if (selection && selection.rangeCount && !selection.isCollapsed) {
+    const range = selection.getRangeAt(0);
+    const parentSpan = range.commonAncestorContainer.parentElement?.closest('b, strong, span.custom-bold-text');
+    if (parentSpan) {
+      // Unbold
+      parentSpan.style.fontWeight = 'normal';
+    } else {
+      try {
+        const span = document.createElement('span');
+        span.className = 'custom-bold-text';
+        span.style.fontWeight = 'bold';
+        const fragment = range.extractContents();
+        span.appendChild(fragment);
+        range.insertNode(span);
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        selection.addRange(newRange);
+      } catch (e) {}
+    }
+    return;
+  }
+
+  if (lastActiveReportTarget) {
+    const curWeight = window.getComputedStyle(lastActiveReportTarget).fontWeight;
+    const isBold = (curWeight === 'bold' || parseInt(curWeight, 10) >= 700);
+    lastActiveReportTarget.style.setProperty('font-weight', isBold ? 'normal' : 'bold', 'important');
+  }
+};
+
+window.resetSelectionFormatting = function() {
+  const selection = window.getSelection();
+  if (selection && selection.rangeCount && !selection.isCollapsed) {
+    const range = selection.getRangeAt(0);
+    const parentCustom = range.commonAncestorContainer.parentElement?.closest('.custom-sized-text, .custom-bold-text');
+    if (parentCustom) {
+      parentCustom.style.removeProperty('font-size');
+      parentCustom.style.removeProperty('font-weight');
+    }
+    if (typeof showSaveSuccessToast === 'function') {
+      showSaveSuccessToast('បានកំណត់ទម្រង់អក្សរដើមឡើងវិញ');
+    }
+    return;
+  }
+
+  if (lastActiveReportTarget) {
+    lastActiveReportTarget.style.removeProperty('font-size');
+    lastActiveReportTarget.style.removeProperty('font-weight');
+    lastActiveReportTarget.querySelectorAll(':scope > div, :scope > span').forEach(c => {
+      c.style.removeProperty('font-size');
+      c.style.removeProperty('font-weight');
+    });
+    if (typeof showSaveSuccessToast === 'function') {
+      showSaveSuccessToast('បានកំណត់ទម្រង់អក្សរដើមឡើងវិញនៅទីតាំងនេះ');
+    }
   }
 };
