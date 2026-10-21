@@ -1645,6 +1645,41 @@
           </div>
         </div>
 
+        <!-- Option 2: Drag & Move Sections & Logo Resizing -->
+        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span>🖼️</span> ទំហំរូបសញ្ញា Logo (Logo Image Size)
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px;">
+            <div style="font-size: 11.5px; color: #475569;">
+              កែតម្រូវទំហំ Logo សម្រាប់សន្លឹករបាយការណ៍នេះ ៖
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 4px;">
+              <button type="button" class="btn btn-outline btn-xs" onclick="changeReportLogoSize(-5)" style="padding: 2px 7px; font-weight: bold; background: #ffffff; border-color: #93c5fd; color: #1e40af;" title="បង្រួម Logo (-5px)">➖ បង្រួម</button>
+              <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1.5px solid #93c5fd; border-radius: 4px; padding: 0 4px; height: 24px;">
+                <input type="number" id="modalReportLogoSizeInput" min="30" max="180" step="2" value="72" style="width: 42px; height: 20px; text-align: center; font-size: 12px; font-weight: 700; color: #1d4ed8; border: none; outline: none; background: transparent; padding: 0; -moz-appearance: textfield;" title="វាយទំហំ Logo ជា Pixel" onchange="applyReportLogoSize(this.value)">
+                <span style="font-size: 11px; font-weight: 700; color: #2563eb;">px</span>
+              </div>
+              <button type="button" class="btn btn-outline btn-xs" onclick="changeReportLogoSize(5)" style="padding: 2px 7px; font-weight: bold; background: #ffffff; border-color: #93c5fd; color: #1e40af;" title="ពង្រីក Logo (+5px)">➕ ពង្រីក</button>
+              <button type="button" class="btn btn-secondary btn-xs" onclick="resetReportLogoSize()" style="padding: 2px 6px; font-size: 10px;" title="កំណត់ទំហំដើម (72px)">↺</button>
+            </div>
+          </div>
+          <!-- Slider & Quick Presets -->
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <input type="range" id="modalReportLogoSizeSlider" min="35" max="150" step="2" value="72" style="flex: 1; height: 6px; cursor: pointer; accent-color: #2563eb;" oninput="applyReportLogoSize(this.value)">
+            <span id="modalReportLogoSizeLabel" style="font-size: 12px; font-weight: 700; color: #1e40af; min-width: 44px; text-align: right;">72px</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+            <span style="font-size: 11px; color: #64748b; font-weight: 600;">ទំហំពេញនិយម ៖</span>
+            <button type="button" class="btn btn-outline btn-xs btn-logo-preset" onclick="applyReportLogoSize(55)" style="padding: 1px 7px; font-size: 11px; background: #fff;">55px</button>
+            <button type="button" class="btn btn-outline btn-xs btn-logo-preset" onclick="applyReportLogoSize(65)" style="padding: 1px 7px; font-size: 11px; background: #fff;">65px</button>
+            <button type="button" class="btn btn-outline btn-xs btn-logo-preset" onclick="applyReportLogoSize(72)" style="padding: 1px 7px; font-size: 11px; background: #fff;">72px (ស្តង់ដារ)</button>
+            <button type="button" class="btn btn-outline btn-xs btn-logo-preset" onclick="applyReportLogoSize(85)" style="padding: 1px 7px; font-size: 11px; background: #fff;">85px</button>
+            <button type="button" class="btn btn-outline btn-xs btn-logo-preset" onclick="applyReportLogoSize(95)" style="padding: 1px 7px; font-size: 11px; background: #fff;">95px</button>
+            <button type="button" class="btn btn-outline btn-xs btn-logo-preset" onclick="applyReportLogoSize(110)" style="padding: 1px 7px; font-size: 11px; background: #fff;">110px</button>
+          </div>
+        </div>
+
         <!-- Option 2: Drag & Move Sections -->
         <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
           <label style="display: flex; align-items: flex-start; justify-content: space-between; cursor: pointer; user-select: none;">
@@ -1766,6 +1801,6 @@
   <!-- Standalone Offline QR Code Library -->
   <script src="js/qrcode.min.js"></script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261021_selection_fixed_v80"></script>
+  <script src="js/app.js?v=20261021_logo_resize_v81"></script>
 </body>
 </html>

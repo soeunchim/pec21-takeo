@@ -6541,11 +6541,18 @@ window.openCommuneScheduleModal = function() {
 // TAB 4: REPORT HEADER HELPERS & LOGO CONTROLS (Box 1, Box 2, Box 3 & Logo)
 // ==============================================================================
 
-function getReportLogoConfig() {
+function getReportLogoConfig(reportType) {
+  const rep = reportType || (typeof window.getActiveReportType === 'function' ? window.getActiveReportType() : (document.getElementById('reportTypeSelect')?.value || ''));
   let cfg = { size: 72, x: 0, y: 0 };
   try {
     const saved = localStorage.getItem('report_logo_config');
     if (saved) cfg = Object.assign(cfg, JSON.parse(saved));
+    if (rep) {
+      const specificSize = localStorage.getItem(`report_logo_size_${rep}`);
+      if (specificSize !== null && !isNaN(parseInt(specificSize, 10))) {
+        cfg.size = parseInt(specificSize, 10);
+      }
+    }
   } catch (e) {}
   return cfg;
 }
@@ -8044,6 +8051,9 @@ async function renderReportPreview() {
   applyColumnNotesVisibility();
   applyReportCustomizationModes();
   applyReportFontSize(getSavedReportFontSize());
+  if (typeof window.applyReportLogoSize === 'function' && typeof window.getReportLogoSize === 'function') {
+    window.applyReportLogoSize(window.getReportLogoSize());
+  }
 }
 
 function sanitizeCandidateText(text) {
@@ -11365,6 +11375,30 @@ window.updateCustomizationModalUI = function() {
   const chkDrag = document.getElementById('toggleReportDragHandlesCheck');
   if (chkDrag) chkDrag.checked = window.isReportDragMode(rep);
 
+  // Sync Logo size in modal
+  if (typeof window.getReportLogoSize === 'function') {
+    const currentLogoSize = window.getReportLogoSize(rep);
+    const inpLogoModal = document.getElementById('modalReportLogoSizeInput');
+    const sliderLogoModal = document.getElementById('modalReportLogoSizeSlider');
+    const labelLogoModal = document.getElementById('modalReportLogoSizeLabel');
+    if (inpLogoModal) inpLogoModal.value = currentLogoSize;
+    if (sliderLogoModal) sliderLogoModal.value = currentLogoSize;
+    if (labelLogoModal) labelLogoModal.textContent = `${currentLogoSize}px`;
+
+    document.querySelectorAll('.btn-logo-preset').forEach(btn => {
+      const bSize = parseInt(btn.textContent, 10);
+      if (!isNaN(bSize) && Math.abs(bSize - currentLogoSize) < 2) {
+        btn.style.background = '#2563eb';
+        btn.style.color = '#ffffff';
+        btn.style.borderColor = '#1d4ed8';
+      } else {
+        btn.style.background = '#ffffff';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+    });
+  }
+
   // 4. Sync Font Size inputs and presets for active report
   const currentFontSize = window.getSavedReportFontSize(rep);
   const inpToolbar = document.getElementById('reportFontSizeInput');
@@ -11983,5 +12017,87 @@ window.resetSelectionFormatting = function() {
     if (typeof showSaveSuccessToast === 'function') {
       showSaveSuccessToast('បានកំណត់ទម្រង់អក្សរដើមឡើងវិញនៅទីតាំងនេះ');
     }
+  }
+};
+
+
+
+// ==============================================================================
+// LOGO RESIZING ENGINE (ទំហំរូបសញ្ញា Logo ដាច់ដោយឡែកតាមរបាយការណ៍)
+// ==============================================================================
+
+window.getReportLogoSize = function(reportType) {
+  const rep = reportType || (typeof window.getActiveReportType === 'function' ? window.getActiveReportType() : 'sortlist');
+  const specific = localStorage.getItem(`report_logo_size_${rep}`);
+  if (specific !== null && !isNaN(parseInt(specific, 10))) {
+    return parseInt(specific, 10);
+  }
+  const cfg = (typeof getReportLogoConfig === 'function') ? getReportLogoConfig(rep) : { size: 72 };
+  return (cfg && cfg.size) ? cfg.size : 72;
+};
+
+window.applyReportLogoSize = function(sizePx, reportType) {
+  const rep = reportType || (typeof window.getActiveReportType === 'function' ? window.getActiveReportType() : 'sortlist');
+  let s = parseInt(sizePx, 10);
+  if (isNaN(s) || s < 25) s = 72;
+  if (s > 200) s = 200;
+
+  localStorage.setItem(`report_logo_size_${rep}`, String(s));
+
+  const cfg = (typeof getReportLogoConfig === 'function') ? getReportLogoConfig(rep) : { size: s };
+  cfg.size = s;
+  if (typeof saveReportLogoConfig === 'function') {
+    saveReportLogoConfig(cfg);
+  }
+
+  // Update in DOM
+  const container = document.getElementById('printContainer');
+  if (container) {
+    container.querySelectorAll('#reportLogoImg, .report-logo-img').forEach(img => {
+      img.style.maxWidth = `${s}px`;
+      img.style.maxHeight = `${s}px`;
+      img.style.width = 'auto';
+      img.style.height = 'auto';
+    });
+    container.querySelectorAll('.badge-logo-size').forEach(b => {
+      b.textContent = `${s}px`;
+    });
+  }
+
+  // Update modal controls
+  const inpModal = document.getElementById('modalReportLogoSizeInput');
+  const sliderModal = document.getElementById('modalReportLogoSizeSlider');
+  const labelModal = document.getElementById('modalReportLogoSizeLabel');
+  if (inpModal) inpModal.value = s;
+  if (sliderModal) sliderModal.value = s;
+  if (labelModal) labelModal.textContent = `${s}px`;
+
+  document.querySelectorAll('.btn-logo-preset').forEach(btn => {
+    const bSize = parseInt(btn.textContent, 10);
+    if (!isNaN(bSize) && Math.abs(bSize - s) < 2) {
+      btn.style.background = '#2563eb';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#1d4ed8';
+    } else {
+      btn.style.background = '#ffffff';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  });
+};
+
+window.changeReportLogoSize = function(delta, reportType) {
+  const rep = reportType || (typeof window.getActiveReportType === 'function' ? window.getActiveReportType() : 'sortlist');
+  const current = window.getReportLogoSize(rep);
+  window.applyReportLogoSize(current + delta, rep);
+};
+
+window.resetReportLogoSize = function(reportType) {
+  const rep = reportType || (typeof window.getActiveReportType === 'function' ? window.getActiveReportType() : 'sortlist');
+  const defaultSize = 72;
+  localStorage.removeItem(`report_logo_size_${rep}`);
+  window.applyReportLogoSize(defaultSize, rep);
+  if (typeof showSaveSuccessToast === 'function') {
+    showSaveSuccessToast(`បានកំណត់ទំហំ Logo ដើមឡើងវិញ (${defaultSize}px)`);
   }
 };
