@@ -8043,6 +8043,7 @@ async function renderReportPreview() {
   setupDraggableReportBoxes();
   applyColumnNotesVisibility();
   applyReportCustomizationModes();
+  applyReportFontSize(getSavedReportFontSize());
 }
 
 function sanitizeCandidateText(text) {
@@ -11267,6 +11268,26 @@ window.updateCustomizationModalUI = function() {
 
   const chkNotes = document.getElementById('toggleReportColNotesCheck');
   if (chkNotes) chkNotes.checked = !isHideNotes;
+
+  // Sync font size
+  const currentFontSize = getSavedReportFontSize();
+  const inpToolbar = document.getElementById('reportFontSizeInput');
+  const inpModal = document.getElementById('modalReportFontSizeInput');
+  if (inpToolbar) inpToolbar.value = currentFontSize;
+  if (inpModal) inpModal.value = currentFontSize;
+
+  document.querySelectorAll('.btn-font-preset').forEach(btn => {
+    const pSize = parseFloat(btn.textContent);
+    if (!isNaN(pSize) && Math.abs(pSize - currentFontSize) < 0.1) {
+      btn.style.background = '#2563eb';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#1d4ed8';
+    } else {
+      btn.style.background = '#ffffff';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  });
 };
 
 window.toggleReportFullEditMode = function(enable) {
@@ -11419,5 +11440,79 @@ window.applyColumnNotesVisibility = function() {
   const modalToggle = document.getElementById('toggleReportColNotesCheck');
   if (modalToggle) {
     modalToggle.checked = !isHidden;
+  }
+};
+
+
+// ==============================================================================
+// REPORT FONT SIZE ENGINE (កំណត់ Size អក្សរនៃតារាង និងរបាយការណ៍)
+// ==============================================================================
+window.getSavedReportFontSize = function() {
+  const saved = localStorage.getItem('report_custom_font_size');
+  if (saved !== null && !isNaN(parseFloat(saved))) {
+    return parseFloat(saved);
+  }
+  const reportType = document.getElementById('reportTypeSelect')?.value || '';
+  return reportType === 'sortlist' ? 10.5 : 11;
+};
+
+window.applyReportFontSize = function(fontSizePt) {
+  let size = parseFloat(fontSizePt);
+  if (isNaN(size) || size < 6) size = 11;
+  if (size > 28) size = 28;
+  size = Math.round(size * 10) / 10;
+
+  localStorage.setItem('report_custom_font_size', String(size));
+  document.documentElement.style.setProperty('--report-table-font-size', `${size}pt`);
+
+  // Update input fields
+  const inpToolbar = document.getElementById('reportFontSizeInput');
+  const inpModal = document.getElementById('modalReportFontSizeInput');
+  if (inpToolbar) inpToolbar.value = size;
+  if (inpModal) inpModal.value = size;
+
+  // Apply directly to tables in #printContainer
+  const container = document.getElementById('printContainer');
+  if (container) {
+    container.querySelectorAll('.official-print-table td, .official-print-table th, .stats-table td, .stats-table th').forEach(el => {
+      if (!el.classList.contains('th-criteria')) {
+        el.style.setProperty('font-size', `${size}pt`, 'important');
+      }
+    });
+
+    // If an editable element currently has focus inside container, adjust it as well
+    const activeEl = document.activeElement;
+    if (activeEl && container.contains(activeEl) && activeEl !== container && activeEl.tagName !== 'BODY') {
+      activeEl.style.setProperty('font-size', `${size}pt`, 'important');
+    }
+  }
+
+  // Update preset buttons in modal
+  document.querySelectorAll('.btn-font-preset').forEach(btn => {
+    const pSize = parseFloat(btn.textContent);
+    if (!isNaN(pSize) && Math.abs(pSize - size) < 0.1) {
+      btn.style.background = '#2563eb';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#1d4ed8';
+    } else {
+      btn.style.background = '#ffffff';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  });
+};
+
+window.changeReportFontSize = function(delta) {
+  const current = window.getSavedReportFontSize();
+  window.applyReportFontSize(current + delta);
+};
+
+window.resetReportFontSize = function() {
+  const reportType = document.getElementById('reportTypeSelect')?.value || '';
+  const defaultSize = reportType === 'sortlist' ? 10.5 : 11;
+  localStorage.removeItem('report_custom_font_size');
+  window.applyReportFontSize(defaultSize);
+  if (typeof showSaveSuccessToast === 'function') {
+    showSaveSuccessToast(`បានកំណត់ទំហំអក្សរដើមឡើងវិញ (${defaultSize}pt)`);
   }
 };
