@@ -9301,8 +9301,9 @@ function exportCurrentReportToExcel() {
     }
   }
 
-  // If notes column is hidden, remove all .col-notes elements from exportTable
-  if (localStorage.getItem('report_hide_column_notes') === 'true') {
+  // If notes column is hidden for current report, remove all .col-notes elements from exportTable
+  const currentRepForExcel = document.getElementById('reportTypeSelect')?.value || reportType;
+  if (typeof window.isReportNotesColumnHidden === 'function' ? window.isReportNotesColumnHidden(currentRepForExcel) : (localStorage.getItem('report_hide_column_notes_' + currentRepForExcel) === 'true')) {
     exportTable.querySelectorAll('.col-notes').forEach(el => el.remove());
     exportTable.querySelectorAll('tr.category-row td[colspan]').forEach(td => {
       const c = parseInt(td.getAttribute('colspan'), 10);
@@ -11246,8 +11247,59 @@ function printStatisticsTable() {
 
 
 // ==============================================================================
-// REPORT CUSTOMIZATION & CONTROLS (កែប្រែអក្សរ, ផ្លាស់ទីប្លុក, លាក់/បង្ហាញ ផ្សេងៗ)
+// REPORT CUSTOMIZATION & CONTROLS (INDEPENDENT PER-REPORT ENGINE)
+// កំណត់ការកែប្រែ, ផ្លាស់ទីប្លុក, និងលាក់/បង្ហាញ ផ្សេងៗ ដាច់ដោយឡែកតាមរបាយការណ៍នីមួយៗ
 // ==============================================================================
+
+window.getActiveReportType = function() {
+  const select = document.getElementById('reportTypeSelect');
+  return (select && select.value) ? select.value : 'sortlist';
+};
+
+window.getReportSheetName = function(repType) {
+  const names = {
+    'sortlist': 'សន្លឹក ១ ៖ សម្រាំងពាក្យបេក្ខជន',
+    'notice': 'សន្លឹក ២ ៖ សេចក្តីជូនដំណឹង',
+    'attendance': 'សន្លឹក ៣ ៖ បញ្ជីវត្តមាន',
+    'scoresheet': 'សន្លឹក ៤ ៖ តារាងស្រង់ពិន្ទុ',
+    'results': 'សន្លឹក ៥ ៖ លទ្ធផលតាមលំដាប់',
+    'commune_results': 'សន្លឹក ៥ ៖ លទ្ធផលតាមលំដាប់',
+    'final_roster': 'សន្លឹក ៦ ៖ បញ្ជីរាយនាម គ.ក.ប'
+  };
+  return names[repType] || 'របាយការណ៍';
+};
+
+window.isReportNotesColumnHidden = function(repType) {
+  const rep = repType || window.getActiveReportType();
+  const specific = localStorage.getItem(`report_hide_column_notes_${rep}`);
+  if (specific !== null) {
+    return specific === 'true';
+  }
+  // Fallback to legacy global if exists
+  const legacy = localStorage.getItem('report_hide_column_notes');
+  return legacy === 'true';
+};
+
+window.isReportFullEditMode = function(repType) {
+  const rep = repType || window.getActiveReportType();
+  return localStorage.getItem(`report_full_edit_mode_${rep}`) === 'true';
+};
+
+window.isReportDragMode = function(repType) {
+  const rep = repType || window.getActiveReportType();
+  return localStorage.getItem(`report_drag_handles_visible_${rep}`) === 'true';
+};
+
+window.getSavedReportFontSize = function(repType) {
+  const rep = repType || window.getActiveReportType();
+  const specific = localStorage.getItem(`report_custom_font_size_${rep}`);
+  if (specific !== null && !isNaN(parseFloat(specific))) {
+    return parseFloat(specific);
+  }
+  return rep === 'sortlist' ? 10.5 : 11;
+};
+
+// Modal open and UI sync
 window.openReportCustomizeModal = function() {
   updateCustomizationModalUI();
   if (typeof openModal === 'function') {
@@ -11255,22 +11307,66 @@ window.openReportCustomizeModal = function() {
   }
 };
 
+window.onModalReportTypeChanged = function(newRepType) {
+  const mainSelect = document.getElementById('reportTypeSelect');
+  if (mainSelect && mainSelect.value !== newRepType) {
+    mainSelect.value = newRepType;
+    // Highlight matching tab on main tab bar
+    document.querySelectorAll('#reportTabsBar .excel-sheet-tab').forEach(t => {
+      if (t.getAttribute('data-report') === newRepType) {
+        t.classList.add('active');
+      } else {
+        t.classList.remove('active');
+      }
+    });
+
+    const schedCard = document.getElementById('reportInterviewScheduleCard');
+    if (schedCard) {
+      schedCard.style.display = (newRepType === 'notice') ? 'block' : 'none';
+    }
+
+    const titleEl = document.getElementById('activeReportSheetTitle');
+    if (titleEl) {
+      titleEl.textContent = window.getReportSheetName(newRepType);
+    }
+
+    if (typeof renderReportPreview === 'function') {
+      renderReportPreview();
+    }
+  }
+  updateCustomizationModalUI();
+};
+
 window.updateCustomizationModalUI = function() {
-  const isFullEdit = localStorage.getItem('report_full_edit_mode') === 'true';
-  const isDragHandles = localStorage.getItem('report_drag_handles_visible') === 'true';
-  const isHideNotes = localStorage.getItem('report_hide_column_notes') === 'true';
+  const rep = window.getActiveReportType();
 
-  const chkFullEdit = document.getElementById('toggleReportFullEditModeCheck');
-  if (chkFullEdit) chkFullEdit.checked = isFullEdit;
+  // 1. Sync Modal Report Type selector dropdown
+  const modalRepSelect = document.getElementById('modalReportTypeSelector');
+  if (modalRepSelect) {
+    modalRepSelect.value = (rep === 'commune_results') ? 'results' : rep;
+  }
 
-  const chkDrag = document.getElementById('toggleReportDragHandlesCheck');
-  if (chkDrag) chkDrag.checked = isDragHandles;
-
+  // Notice for Sheet 6
+  const sheet6Notice = document.getElementById('modalSheet6Notice');
   const chkNotes = document.getElementById('toggleReportColNotesCheck');
-  if (chkNotes) chkNotes.checked = !isHideNotes;
+  if (sheet6Notice) {
+    sheet6Notice.style.display = (rep === 'final_roster') ? 'block' : 'none';
+  }
+  if (chkNotes) {
+    chkNotes.disabled = (rep === 'final_roster');
+    chkNotes.checked = !window.isReportNotesColumnHidden(rep);
+  }
 
-  // Sync font size
-  const currentFontSize = getSavedReportFontSize();
+  // 2. Sync Full Edit Mode Checkbox for active report
+  const chkFullEdit = document.getElementById('toggleReportFullEditModeCheck');
+  if (chkFullEdit) chkFullEdit.checked = window.isReportFullEditMode(rep);
+
+  // 3. Sync Drag Handles Checkbox for active report
+  const chkDrag = document.getElementById('toggleReportDragHandlesCheck');
+  if (chkDrag) chkDrag.checked = window.isReportDragMode(rep);
+
+  // 4. Sync Font Size inputs and presets for active report
+  const currentFontSize = window.getSavedReportFontSize(rep);
   const inpToolbar = document.getElementById('reportFontSizeInput');
   const inpModal = document.getElementById('modalReportFontSizeInput');
   if (inpToolbar) inpToolbar.value = currentFontSize;
@@ -11290,44 +11386,108 @@ window.updateCustomizationModalUI = function() {
   });
 };
 
+// Toggles for active report
 window.toggleReportFullEditMode = function(enable) {
-  localStorage.setItem('report_full_edit_mode', enable ? 'true' : 'false');
+  const rep = window.getActiveReportType();
+  localStorage.setItem(`report_full_edit_mode_${rep}`, enable ? 'true' : 'false');
   applyReportCustomizationModes();
   if (typeof showSaveSuccessToast === 'function') {
-    showSaveSuccessToast(enable ? 'បានបើករបៀបកែប្រែអក្សរផ្ទាល់' : 'បានបិទរបៀបកែប្រែអក្សរ');
+    const sheetName = window.getReportSheetName(rep);
+    showSaveSuccessToast(enable ? `បានបើកកែប្រែអក្សរ (${sheetName})` : `បានចាក់សោកែប្រែ (${sheetName})`);
   }
 };
 
 window.toggleReportDragMode = function(enable) {
-  localStorage.setItem('report_drag_handles_visible', enable ? 'true' : 'false');
+  const rep = window.getActiveReportType();
+  localStorage.setItem(`report_drag_handles_visible_${rep}`, enable ? 'true' : 'false');
   applyReportCustomizationModes();
   if (typeof showSaveSuccessToast === 'function') {
-    showSaveSuccessToast(enable ? 'បានបង្ហាញចំណុចទាញប្លុកគ្រប់ទីតាំង' : 'បានបិទការបង្ហាញចំណុចទាញប្លុក');
+    const sheetName = window.getReportSheetName(rep);
+    showSaveSuccessToast(enable ? `បានបង្ហាញចំណុចទាញ (${sheetName})` : `បានលាក់ចំណុចទាញ (${sheetName})`);
   }
 };
 
 window.toggleReportColumnNotes = function(show) {
-  localStorage.setItem('report_hide_column_notes', show ? 'false' : 'true');
+  const rep = window.getActiveReportType();
+  localStorage.setItem(`report_hide_column_notes_${rep}`, show ? 'false' : 'true');
   applyColumnNotesVisibility();
   if (typeof showSaveSuccessToast === 'function') {
-    showSaveSuccessToast(show ? 'បានបង្ហាញជួរឈរ (ផ្សេងៗ)' : 'បានលាក់ជួរឈរ (ផ្សេងៗ)');
+    const sheetName = window.getReportSheetName(rep);
+    showSaveSuccessToast(show ? `បានបង្ហាញជួរឈរ (ផ្សេងៗ) សម្រាប់ ${sheetName}` : `បានលាក់ជួរឈរ (ផ្សេងៗ) សម្រាប់ ${sheetName}`);
   }
 };
 
 window.quickToggleColumnNotes = function() {
-  const isCurrentlyHidden = localStorage.getItem('report_hide_column_notes') === 'true';
-  window.toggleReportColumnNotes(isCurrentlyHidden);
+  const rep = window.getActiveReportType();
+  const isHidden = window.isReportNotesColumnHidden(rep);
+  window.toggleReportColumnNotes(isHidden);
+};
+
+window.applyReportFontSize = function(fontSizePt) {
+  const rep = window.getActiveReportType();
+  let size = parseFloat(fontSizePt);
+  if (isNaN(size) || size < 6) size = 11;
+  if (size > 28) size = 28;
+  size = Math.round(size * 10) / 10;
+
+  localStorage.setItem(`report_custom_font_size_${rep}`, String(size));
+  document.documentElement.style.setProperty('--report-table-font-size', `${size}pt`);
+
+  const inpToolbar = document.getElementById('reportFontSizeInput');
+  const inpModal = document.getElementById('modalReportFontSizeInput');
+  if (inpToolbar) inpToolbar.value = size;
+  if (inpModal) inpModal.value = size;
+
+  const container = document.getElementById('printContainer');
+  if (container) {
+    container.querySelectorAll('.official-print-table td, .official-print-table th, .stats-table td, .stats-table th').forEach(el => {
+      if (!el.classList.contains('th-criteria')) {
+        el.style.setProperty('font-size', `${size}pt`, 'important');
+      }
+    });
+
+    const activeEl = document.activeElement;
+    if (activeEl && container.contains(activeEl) && activeEl !== container && activeEl.tagName !== 'BODY') {
+      activeEl.style.setProperty('font-size', `${size}pt`, 'important');
+    }
+  }
+
+  document.querySelectorAll('.btn-font-preset').forEach(btn => {
+    const pSize = parseFloat(btn.textContent);
+    if (!isNaN(pSize) && Math.abs(pSize - size) < 0.1) {
+      btn.style.background = '#2563eb';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#1d4ed8';
+    } else {
+      btn.style.background = '#ffffff';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  });
+};
+
+window.changeReportFontSize = function(delta) {
+  const rep = window.getActiveReportType();
+  const current = window.getSavedReportFontSize(rep);
+  window.applyReportFontSize(current + delta);
+};
+
+window.resetReportFontSize = function() {
+  const rep = window.getActiveReportType();
+  const defaultSize = rep === 'sortlist' ? 10.5 : 11;
+  localStorage.removeItem(`report_custom_font_size_${rep}`);
+  window.applyReportFontSize(defaultSize);
+  if (typeof showSaveSuccessToast === 'function') {
+    showSaveSuccessToast(`បានកំណត់ទំហំអក្សរដើមឡើងវិញ (${defaultSize}pt)`);
+  }
 };
 
 window.resetAllDraggableBoxes = function() {
+  const rep = window.getActiveReportType();
   const boxIds = ['logo', 'inst_header', 'kingdom_header', 'title_box', 'signature_box'];
-  const allKeys = Object.keys(localStorage);
   boxIds.forEach(id => {
-    allKeys.forEach(k => {
-      if (k.startsWith(`report_box_pos_${id}_`)) {
-        localStorage.removeItem(k);
-      }
-    });
+    localStorage.removeItem(`report_box_pos_${id}_${rep}`);
+    localStorage.removeItem(`report_box_pos_${id}`);
   });
 
   const container = document.getElementById('printContainer');
@@ -11337,7 +11497,7 @@ window.resetAllDraggableBoxes = function() {
     });
   }
   if (typeof showSaveSuccessToast === 'function') {
-    showSaveSuccessToast('បានកំណត់ទីតាំងដើមទាំងអស់ឡើងវិញ');
+    showSaveSuccessToast(`បានកំណត់ទីតាំងដើមទាំងអស់ឡើងវិញសម្រាប់ ${window.getReportSheetName(rep)}`);
   }
 };
 
@@ -11345,17 +11505,18 @@ window.applyReportCustomizationModes = function() {
   const container = document.getElementById('printContainer');
   if (!container) return;
 
-  const isFullEdit = localStorage.getItem('report_full_edit_mode') === 'true';
-  const isDragHandles = localStorage.getItem('report_drag_handles_visible') === 'true';
+  const rep = window.getActiveReportType();
+  const isFullEdit = window.isReportFullEditMode(rep);
+  const isDragHandles = window.isReportDragMode(rep);
 
-  // 1. Drag / Move Mode
+  // 1. Drag / Move Mode for this report
   if (isDragHandles) {
     container.classList.add('show-all-drag-handles');
   } else {
     container.classList.remove('show-all-drag-handles');
   }
 
-  // 2. Full Text Edit Mode
+  // 2. Full Text Edit Mode for this report
   const editableSelectors = 'th, td, .report-inst-header-box, .report-tacteing-emblem, .report-kingdom-header-box, .report-title-box, .report-title-section, .signature-box, .final-roster-bottom-breakdown, .editable-sig-committee, .editable-sig-committee-list, .editable-sig-role, .sig-lunar-date-val, .sig-solar-date-val, .report-editable-notice-place, .report-editable-notice-date, .report-editable-notice-time';
 
   if (isFullEdit) {
@@ -11392,9 +11553,14 @@ window.applyReportCustomizationModes = function() {
       btnCustomize.style.borderColor = '';
     }
   }
+
+  // Also sync modal UI if modal is open
+  window.updateCustomizationModalUI();
 };
+
 window.applyColumnNotesVisibility = function() {
-  const isHidden = localStorage.getItem('report_hide_column_notes') === 'true';
+  const rep = window.getActiveReportType();
+  const isHidden = window.isReportNotesColumnHidden(rep);
   const container = document.getElementById('printContainer');
   if (container) {
     if (isHidden) {
@@ -11416,7 +11582,7 @@ window.applyColumnNotesVisibility = function() {
     }
   });
 
-  // Adjust district banner rows if any
+  // Adjust district / commune banner rows
   document.querySelectorAll('#printContainer tr.district-banner-row td[colspan], #printContainer tr.commune-banner-row td[colspan]').forEach(td => {
     const origColspan = td.getAttribute('data-orig-colspan') || td.getAttribute('colspan');
     if (!td.hasAttribute('data-orig-colspan')) {
@@ -11431,88 +11597,19 @@ window.applyColumnNotesVisibility = function() {
   // Update quick toggle button text and classes
   const quickBtn = document.getElementById('btnQuickToggleColumnNotes');
   if (quickBtn) {
-    quickBtn.innerHTML = isHidden 
-      ? '👁️ ជួរឈរ (ផ្សេងៗ) ៖ <span style="color:#ef4444; font-weight:bold;">លាក់</span>'
-      : '👁️ ជួរឈរ (ផ្សេងៗ) ៖ <span style="color:#16a34a; font-weight:bold;">បង្ហាញ</span>';
-    quickBtn.className = isHidden ? 'btn btn-outline-danger btn-sm' : 'btn btn-outline-success btn-sm';
+    if (rep === 'final_roster') {
+      quickBtn.style.display = 'none';
+    } else {
+      quickBtn.style.display = 'inline-flex';
+      quickBtn.innerHTML = isHidden 
+        ? '👁️ ជួរឈរ (ផ្សេងៗ) ៖ <span style="color:#ef4444; font-weight:bold;">លាក់</span>'
+        : '👁️ ជួរឈរ (ផ្សេងៗ) ៖ <span style="color:#16a34a; font-weight:bold;">បង្ហាញ</span>';
+      quickBtn.className = isHidden ? 'btn btn-outline-danger btn-sm' : 'btn btn-outline-success btn-sm';
+    }
   }
 
   const modalToggle = document.getElementById('toggleReportColNotesCheck');
   if (modalToggle) {
     modalToggle.checked = !isHidden;
-  }
-};
-
-
-// ==============================================================================
-// REPORT FONT SIZE ENGINE (កំណត់ Size អក្សរនៃតារាង និងរបាយការណ៍)
-// ==============================================================================
-window.getSavedReportFontSize = function() {
-  const saved = localStorage.getItem('report_custom_font_size');
-  if (saved !== null && !isNaN(parseFloat(saved))) {
-    return parseFloat(saved);
-  }
-  const reportType = document.getElementById('reportTypeSelect')?.value || '';
-  return reportType === 'sortlist' ? 10.5 : 11;
-};
-
-window.applyReportFontSize = function(fontSizePt) {
-  let size = parseFloat(fontSizePt);
-  if (isNaN(size) || size < 6) size = 11;
-  if (size > 28) size = 28;
-  size = Math.round(size * 10) / 10;
-
-  localStorage.setItem('report_custom_font_size', String(size));
-  document.documentElement.style.setProperty('--report-table-font-size', `${size}pt`);
-
-  // Update input fields
-  const inpToolbar = document.getElementById('reportFontSizeInput');
-  const inpModal = document.getElementById('modalReportFontSizeInput');
-  if (inpToolbar) inpToolbar.value = size;
-  if (inpModal) inpModal.value = size;
-
-  // Apply directly to tables in #printContainer
-  const container = document.getElementById('printContainer');
-  if (container) {
-    container.querySelectorAll('.official-print-table td, .official-print-table th, .stats-table td, .stats-table th').forEach(el => {
-      if (!el.classList.contains('th-criteria')) {
-        el.style.setProperty('font-size', `${size}pt`, 'important');
-      }
-    });
-
-    // If an editable element currently has focus inside container, adjust it as well
-    const activeEl = document.activeElement;
-    if (activeEl && container.contains(activeEl) && activeEl !== container && activeEl.tagName !== 'BODY') {
-      activeEl.style.setProperty('font-size', `${size}pt`, 'important');
-    }
-  }
-
-  // Update preset buttons in modal
-  document.querySelectorAll('.btn-font-preset').forEach(btn => {
-    const pSize = parseFloat(btn.textContent);
-    if (!isNaN(pSize) && Math.abs(pSize - size) < 0.1) {
-      btn.style.background = '#2563eb';
-      btn.style.color = '#ffffff';
-      btn.style.borderColor = '#1d4ed8';
-    } else {
-      btn.style.background = '#ffffff';
-      btn.style.color = '';
-      btn.style.borderColor = '';
-    }
-  });
-};
-
-window.changeReportFontSize = function(delta) {
-  const current = window.getSavedReportFontSize();
-  window.applyReportFontSize(current + delta);
-};
-
-window.resetReportFontSize = function() {
-  const reportType = document.getElementById('reportTypeSelect')?.value || '';
-  const defaultSize = reportType === 'sortlist' ? 10.5 : 11;
-  localStorage.removeItem('report_custom_font_size');
-  window.applyReportFontSize(defaultSize);
-  if (typeof showSaveSuccessToast === 'function') {
-    showSaveSuccessToast(`បានកំណត់ទំហំអក្សរដើមឡើងវិញ (${defaultSize}pt)`);
   }
 };
