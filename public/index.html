@@ -641,12 +641,12 @@
           <!-- Font Size Controller (Real-time Font Size adjustments) -->
           <div class="report-font-size-controller no-print" id="reportFontSizeToolbarBlock" style="display: flex; align-items: center; gap: 4px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 2px 7px;" title="ពង្រីក ឬបង្រួមទំហំអក្សរនៃតារាង (Font Size)">
             <span style="font-size: 11.5px; font-weight: 700; color: #166534; white-space: nowrap;">🔤 ទំហំអក្សរ ៖</span>
-            <button type="button" id="btnShrinkReportFontSize" class="btn btn-outline btn-xs" style="padding: 1px 6px; font-size: 11px; font-weight: bold; border-color: #86efac; background: #ffffff; color: #166534;" title="បង្រួមទំហំអក្សរ (-0.5pt)" onclick="changeReportFontSize(-0.5)">➖ បង្រួម</button>
+            <button type="button" id="btnShrinkReportFontSize" class="btn btn-outline btn-xs" onmousedown="event.preventDefault()" style="padding: 1px 6px; font-size: 11px; font-weight: bold; border-color: #86efac; background: #ffffff; color: #166534;" title="បង្រួមទំហំអក្សរ (-0.5pt)" onclick="changeReportFontSize(-0.5)">➖ បង្រួម</button>
             <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1.5px solid #86efac; border-radius: 4px; padding: 0 3px; height: 22px;" title="វាយបញ្ចូលទំហំអក្សរដោយផ្ទាល់ អាចវាយទសភាគបាន (ឧ. 9.5, 10, 10.5, 11, 11.5, 12)">
               <input type="number" id="reportFontSizeInput" min="6" max="24" step="0.5" value="11" style="width: 36px; height: 18px; text-align: center; font-size: 12px; font-weight: 700; color: #15803d; border: none; outline: none; background: transparent; padding: 0; -moz-appearance: textfield;" title="ចុចដើម្បីវាយលេខទំហំដោយផ្ទាល់" onchange="applyReportFontSize(this.value)">
               <span id="reportFontSizeLabel" style="font-size: 10.5px; font-weight: 700; color: #16a34a;">pt</span>
             </div>
-            <button type="button" id="btnExpandReportFontSize" class="btn btn-outline btn-xs" style="padding: 1px 6px; font-size: 11px; font-weight: bold; border-color: #86efac; background: #ffffff; color: #166534;" title="ពង្រីកទំហំអក្សរ (+0.5pt)" onclick="changeReportFontSize(0.5)">➕ ពង្រីក</button>
+            <button type="button" id="btnExpandReportFontSize" class="btn btn-outline btn-xs" onmousedown="event.preventDefault()" style="padding: 1px 6px; font-size: 11px; font-weight: bold; border-color: #86efac; background: #ffffff; color: #166534;" title="ពង្រីកទំហំអក្សរ (+0.5pt)" onclick="changeReportFontSize(0.5)">➕ ពង្រីក</button>
             <button type="button" id="btnResetReportFontSize" class="btn btn-secondary btn-xs" style="padding: 0 5px; font-size: 10px; border-radius: 3px;" title="កំណត់ទំហំដើមវិញ (Reset)" onclick="resetReportFontSize()">↺</button>
           </div>
           <div class="report-row-height-controller no-print" style="display: flex; align-items: center; gap: 4px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 6px; padding: 2px 7px;" title="ពង្រីក ឬបង្រួមកម្ពស់ជួរដេកនៃតារាង (Row Height)">
@@ -1695,10 +1695,24 @@
 
   
   <!-- Floating Contextual Text Selection Toolbar -->
-  <div id="floatingTextFormatToolbar" class="floating-text-toolbar no-print" style="display: none;">
+  <div id="floatingTextFormatToolbar" class="floating-text-toolbar no-print" style="display: none;" onmousedown="event.stopPropagation()">
     <span style="font-weight: 700; font-size: 11px; color: #93c5fd; white-space: nowrap; margin-right: 2px;">🔤 Size:</span>
     <button type="button" class="btn-floating-tool" title="បង្រួមទំហំអក្សរ (-0.5pt)" onmousedown="event.preventDefault()" onclick="adjustSelectionFontSize(-0.5)">➖</button>
-    <select id="floatingFontSizeSelect" class="floating-size-select" onmousedown="event.stopPropagation()" onchange="applyFontSizeToSelection(this.value)">
+    <span id="floatingCurrentSizeLabel" style="font-size: 11.5px; font-weight: 700; color: #60a5fa; padding: 0 4px; min-width: 34px; text-align: center;">11pt</span>
+    <button type="button" class="btn-floating-tool" title="ពង្រីកទំហំអក្សរ (+0.5pt)" onmousedown="event.preventDefault()" onclick="adjustSelectionFontSize(0.5)">➕</button>
+    <div style="width: 1px; height: 16px; background: #475569; margin: 0 3px;"></div>
+    <!-- Quick Presets Directly on Floating Toolbar -->
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(9)">9</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(10)">10</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(10.5)">10.5</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(11)">11</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(12)">12</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(13)">13</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(14)">14</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(16)">16</button>
+    <button type="button" class="btn-floating-tool btn-floating-preset" onmousedown="event.preventDefault()" onclick="applyFontSizeToSelection(18)">18</button>
+    <div style="width: 1px; height: 16px; background: #475569; margin: 0 3px;"></div>
+    <select id="floatingFontSizeSelect" class="floating-size-select" onmousedown="saveCurrentSelectionBeforeSelect(event)" onchange="applyFontSizeToSelection(this.value)">
       <option value="8">8 pt</option>
       <option value="9">9 pt</option>
       <option value="9.5">9.5 pt</option>
@@ -1715,8 +1729,10 @@
       <option value="20">20 pt</option>
       <option value="24">24 pt</option>
     </select>
-    <button type="button" class="btn-floating-tool" title="ពង្រីកទំហំអក្សរ (+0.5pt)" onmousedown="event.preventDefault()" onclick="adjustSelectionFontSize(0.5)">➕</button>
-    <div style="width: 1px; height: 16px; background: #475569; margin: 0 3px;"></div>
+    <button type="button" class="btn-floating-tool" title="អក្សរដិត (Bold)" onmousedown="event.preventDefault()" onclick="toggleSelectionBold()"><b>B</b></button>
+    <button type="button" class="btn-floating-tool" title="កំណត់ទំហំដើមវិញ" onmousedown="event.preventDefault()" onclick="resetSelectionFormatting()">↺</button>
+    <button type="button" class="btn-floating-tool" title="បិទ" onmousedown="event.preventDefault()" onclick="hideFloatingToolbar()" style="margin-left: 2px; color: #94a3b8; font-size: 14px;">&times;</button>
+  </div>
     <button type="button" class="btn-floating-tool" title="អក្សរដិត (Bold)" onmousedown="event.preventDefault()" onclick="toggleSelectionBold()"><b>B</b></button>
     <button type="button" class="btn-floating-tool" title="កំណត់ទំហំដើមវិញ" onmousedown="event.preventDefault()" onclick="resetSelectionFormatting()">↺</button>
     <button type="button" class="btn-floating-tool" title="បិទ" onmousedown="event.preventDefault()" onclick="hideFloatingToolbar()" style="margin-left: 2px; color: #94a3b8; font-size: 14px;">&times;</button>
@@ -1750,6 +1766,6 @@
   <!-- Standalone Offline QR Code Library -->
   <script src="js/qrcode.min.js"></script>
   <script src="js/momentkh.js"></script>
-  <script src="js/app.js?v=20261021_selection_font_v79"></script>
+  <script src="js/app.js?v=20261021_selection_fixed_v80"></script>
 </body>
 </html>
